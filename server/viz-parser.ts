@@ -1,53 +1,56 @@
-import { BlockchainAward } from 'models/BlockchainAward'
-import { VIZ } from '../lib/viz'
-import { processAward } from './processors/processAward'
+import { getLastSavedBlock, OpInBlock, OpInBlockModel } from '../models/OpInBlock'
+import { VIZ } from '../helpers/viz'
 
 const viz = new VIZ()
 var currentBlock: number = 0
 
-export function startVizParsing() {
-    var promises = Promise.all([viz.getDynamicGlobalProperties()])
-    if (currentBlock === 0) {
-        promises = Promise.all([
-            viz.getDynamicGlobalProperties(),
-            // getLatestBlock(),
-        ])
-    }
-    promises.then(
-        async resolve => {
-            const lastIrreversibleBlock = parseInt(resolve[0]['last_irreversible_block_num'])
-            if (currentBlock === 0) {
-                // TODO: get saved currentBlock 
-                if (process.env.NODE_ENV !== "production") {
-                    currentBlock = lastIrreversibleBlock - 10
-                }
-                console.log("Parsing continued from block", currentBlock)
-            }
-            while (lastIrreversibleBlock > currentBlock) {
-                await processNextBlock().then(() => currentBlock++)
-            }
-        },
-        rejectReason => {
-            console.log("Unable to start viz parsing: " + rejectReason)
-            viz.changeNode()
+export async function startVizParsing() {
+    try {
+        if (currentBlock === 0) {
+            currentBlock = await getLastSavedBlock() + 1
+            console.log("Parsing continued from block", currentBlock)
         }
-    ).finally(() => setTimeout(startVizParsing, 15000))
+        viz.getDynamicGlobalProperties().then(
+            async (resolve: any) => {
+                const lastIrreversibleBlock = parseInt(resolve['last_irreversible_block_num'])
+                while (lastIrreversibleBlock > currentBlock) {
+                    await processNextBlock().then(() => currentBlock++)
+                }
+            },
+            rejectReason => {
+                console.log("Unable to start viz parsing: " + rejectReason)
+                viz.changeNode()
+            }
+        ).finally(() => setTimeout(startVizParsing, 15000))
+    } catch (e) {
+        console.log(e)
+        setTimeout(startVizParsing, 15000)
+    }
 }
 
 async function processNextBlock() {
-    await viz.getOpsInBlock(currentBlock)
+    await viz.getOpsInBlock(currentBlock, false)
         .then(
-            result => {
+            async (result: any) => {
+                var operations: OpInBlock[] = []
                 for (const i in result) {
-                    const operation = result[i].op[0]
-                    if (operation === 'receive_award') {
-                        const awardOperation = result[i].op[1] as BlockchainAward
-                        processAward(awardOperation)
+                    const o = result[i]
+                    var opInBlock = new OpInBlock()
+                    if (o.trx_id !== '0000000000000000000000000000000000000000') {
+                        opInBlock.trx_id = o.trx_id
                     }
+                    opInBlock.block = o.block
+                    opInBlock.timestamp = o.timestamp
+                    opInBlock.type = o.op[0]
+                    opInBlock.obj = o.op[1]
+                    operations.push(opInBlock)
+                }
+                const block = await OpInBlockModel.insertMany(operations)
+                if (currentBlock % 10 === 0) {
+                    console.log(block)
                 }
             },
-            rejected => {
-                console.log("Rejected: ", rejected)
+            _ => {
                 viz.changeNode()
             }
         )

@@ -1,7 +1,7 @@
 export class BlockchainAward {
-    block: number
-    initiator: string
-    shares: string
-    receiver: string
-    memo: string
+    block!: number
+    initiator!: string
+    shares!: string
+    receiver!: string
+    memo!: string
 }

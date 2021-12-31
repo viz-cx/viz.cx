@@ -1,5 +1,7 @@
 {
   "compilerOptions": {
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
     "target": "esnext",
     "module": "esnext",
     "jsx": "preserve",
@@ -9,7 +11,7 @@
     ],
     "baseUrl": ".",
     "moduleResolution": "node",
-    "strict": false,
+    "strict": true,
     "allowJs": true,
     "noEmit": true,
     "allowSyntheticDefaultImports": true,
