@@ -2,7 +2,13 @@ This is a viz.cx sources based on [Next.js](https://nextjs.org/) project.
 
 ## Getting Started
 
-First, run the development server:
+First, copy file `.env.example` with name `.env`:
+
+```bash
+cp .env.example .env
+```
+
+and fill it. Then, run the development server:
 
 ```bash
 npm run dev
