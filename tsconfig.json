@@ -2,7 +2,7 @@
   "compilerOptions": {
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
-    "target": "esnext",
+    "target": "es2017",
     "module": "commonjs",
     "jsx": "preserve",
     "lib": [
@@ -13,7 +13,7 @@
     "moduleResolution": "node",
     "strict": true,
     "allowJs": true,
-    "noEmit": true,
+    "noEmit": false,
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
