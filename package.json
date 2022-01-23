@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "dev": "nodemon",
-    "build": "next build && tsc --project tsconfig.server.json",
+    "build": "next build && tsc",
     "start": "node dist/server/index.js"
   },
   "dependencies": {
