@@ -1,6 +1,11 @@
-import { getModelForClass, modelOptions, prop } from "@typegoose/typegoose"
+import { getModelForClass, modelOptions, prop, Severity } from "@typegoose/typegoose"
 
-@modelOptions({ schemaOptions: { collection: 'blocks' } })
+@modelOptions({
+    schemaOptions: { collection: 'blocks' },
+    options: {
+        allowMixed: Severity.ALLOW
+    }
+})
 export class OpInBlock {
     @prop({ required: true, index: true })
     block!: number
