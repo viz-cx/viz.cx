@@ -1,8 +1,16 @@
 export class VIZ {
-    public static vizJS = require("viz-js-lib")
+    private static vizJS = require("viz-js-lib")
+    private static instance: VIZ
 
-    constructor() {
+    private constructor() {
         VIZ.vizJS.config.set('websocket', 'https://node.viz.cx/')
+    }
+
+    public static getInstance(): VIZ {
+        if (!VIZ.instance) {
+            VIZ.instance = new VIZ()
+        }
+        return VIZ.instance
     }
 
     public changeNode() {
@@ -28,13 +36,13 @@ export class VIZ {
         return this.transferToVesting(wif, from, to, stringAmount)
     }
 
-    public makeAward(receiver: string, memo: string, energy: number, referrer: string|null = null, account: any) {
+    public makeAward(receiver: string, memo: string, energy: number, referrer: string | null = null, account: any) {
         const from = process.env.ACCOUNT ?? ""
         const wif = process.env.WIF ?? ""
         return this.award(receiver, from, wif, energy, memo, referrer, account)
     }
 
-    private award(receiver: string, from: string, wif: string, energy: number, memo: string, referrer: string|null, account: any) {
+    private award(receiver: string, from: string, wif: string, energy: number, memo: string, referrer: string | null, account: any) {
         return new Promise((resolve, reject) => {
             var custom_sequence = 0
             var beneficiaries = []

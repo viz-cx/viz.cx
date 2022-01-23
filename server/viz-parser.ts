@@ -1,7 +1,7 @@
 import { getLastSavedBlock, OpInBlock, OpInBlockModel } from '../models/OpInBlock'
 import { VIZ } from '../helpers/viz'
 
-const viz = new VIZ()
+const viz = VIZ.getInstance()
 var currentBlock: number = 0
 
 export async function startVizParsing() {
