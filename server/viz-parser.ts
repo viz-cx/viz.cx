@@ -1,5 +1,6 @@
-import { getLastSavedBlock, OpInBlock, OpInBlockModel } from '../models/OpInBlock'
+import { OpInBlock, OpInBlockModel } from '../models/OpInBlock'
 import { VIZ } from '../helpers/viz'
+import { processVoiceProtocol } from './processors/processVoiceProtocol'
 
 const viz = VIZ.getInstance()
 var currentBlock: number = 0
@@ -46,7 +47,8 @@ async function processNextBlock() {
                     operations.push(opInBlock)
                 }
                 const block = await OpInBlockModel.insertMany(operations)
-                if (currentBlock % 10 === 0) {
+                await runProcessors()
+                if (currentBlock % 50 === 0) {
                     console.log(block)
                 }
             },
@@ -54,5 +56,9 @@ async function processNextBlock() {
                 viz.changeNode()
             }
         )
+}
+
+async function runProcessors() {
+    await processVoiceProtocol()
 }
 
