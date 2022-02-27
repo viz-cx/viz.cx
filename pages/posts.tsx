@@ -37,7 +37,9 @@ const Home = (props: any) => {
     content = (
       <ul>
         {props.posts.map((post: any) => {
-          return <li key={post._id}>{post.d.t}</li>
+          return <li key={post._id}>
+            <h3><a href={`/posts/`+post._id}>{post.d.t}</a></h3>
+          </li>
         })}
       </ul>
     )
@@ -69,13 +71,13 @@ const Home = (props: any) => {
 
 Home.getInitialProps = async ({ query }: any) => {
   let page = query.page || 0
-  const posts = await axios.get(`http://localhost:3000/api/posts?page=${page}`)
+  const result = await axios.get(`http://localhost:3000/api/posts?page=${page}`)
   return {
-    totalCount: posts.data.meta.totalCount,
-    pageCount: posts.data.meta.pageCount,
-    currentPage: posts.data.meta.currentPage,
-    perPage: posts.data.meta.perPage,
-    posts: posts.data.posts,
+    totalCount: result.data.meta.totalCount,
+    pageCount: result.data.meta.pageCount,
+    currentPage: result.data.meta.currentPage,
+    perPage: result.data.meta.perPage,
+    posts: result.data.posts,
     isLoading: false,
   }
 }
