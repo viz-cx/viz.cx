@@ -37,8 +37,8 @@ const Home = (props: any) => {
     content = (
       <ul>
         {props.posts.map((post: any) => {
-          return <li key={post._id}>
-            <h3><a href={`/posts/`+post._id}>{post.d.t}</a></h3>
+          return <li key={post.slug}>
+            <h3><a href={`/posts/` + post.slug}>{post.d.t}</a></h3>
           </li>
         })}
       </ul>

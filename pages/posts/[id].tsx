@@ -1,48 +1,74 @@
-import axios from "axios"
+import { markdown_clear_code, markdown_decode_text } from 'helpers/markdown'
+import { MongoVoicePostModel } from 'models/MongoVoicePost'
+import { VoicePostType } from 'models/VoicePost'
+import { useRouter } from 'next/router'
+
+import { startMongo } from '../../helpers/startMongo'
+import styles from '../../styles/Home.module.css'
 
 function Post({ post }: any) {
+    const router = useRouter()
+    if (router.isFallback) {
+        return <div>Loading...</div>
+    }
+    let nsfw_text = ''
     switch (post.t) {
-        case "p":
-            return (<div>
-                <h1>{post.d.t}</h1>
-                <div>{post.d.m}</div>
-            </div>)
-        case "t":
-            return (<div>
-                <h1>Note {post._id}</h1>
-                {post.d.t}
-            </div>)
+        case VoicePostType.Text:
+            if (typeof post.d.text !== 'undefined') {
+                nsfw_text = post.d.text
+            } else {
+                if (typeof post.d.t !== 'undefined') {
+                    nsfw_text = post.d.t
+                }
+            }
+            break
+        case VoicePostType.Publication:
+            nsfw_text = markdown_clear_code(post.d.m) //markdown
+            nsfw_text = markdown_decode_text(nsfw_text)
+            let mnemonics_pattern = /&#[a-z0-9\-\.]+;/g
+            nsfw_text = nsfw_text.replace(mnemonics_pattern, '') //remove unexpected html mnemonics
+            break
+    }
+    return (<div className={styles.container}>
+        <h1>{post.title}</h1>
+        {/* <div>Author: {post.author}</div> */}
+        <div className={styles.posts}>{nsfw_text}</div>
+    </div>)
+}
+
+export async function getStaticPaths() {
+    await startMongo()
+    let posts = await MongoVoicePostModel.find({})
+    const paths = posts.map((post) => {
+        return {
+            params: { id: post.slug }
+        }
+    })
+    return {
+        fallback: true,
+        paths: paths
     }
 }
 
-// export async function getStaticPaths() {
-//     let lastPage = await getLastPageNumber()
-//     let paths = [Object]
-//     while (lastPage > 0) {
-//         lastPage -= 1
-//         const response = await axios.get(`/posts?page=${lastPage}`)
-//         const posts = response.data.posts
-//         paths += posts.map((post: any) => ({
-//             params: { id: post.id }
-//         }))
-//     }
-//     return { paths, fallback: false }
-// }
-
-// export async function getStaticProps({ params }: any) {
-//     const response = await axios.get(`/posts/${params.id}`)
-//     const post = response.data.posts
-//     // Pass post data to the page via props
-//     return { props: { post } }
-// }
-
-Post.getInitialProps = async ({ query }: any) => {
-    let id = query.id || ""
-    const result = await axios.get(`http://localhost:3000/api/posts/${id}`)
-    return {
-      post: result.data.post,
-      isLoading: false,
+export async function getStaticProps({ params }: any) {
+    await startMongo()
+    const post = await MongoVoicePostModel.findOne({ slug: params.id })
+    if (!post) {
+        return {
+            notFound: true
+        }
     }
-  }
+    return {
+        props: {
+            post: {
+                title: post.title,
+                author: post.author,
+                t: post.t,
+                d: post.d
+            }
+        },
+        // revalidate: 10
+    }
+}
 
 export default Post

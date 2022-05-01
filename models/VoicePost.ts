@@ -1,6 +1,11 @@
 import { modelOptions, prop, Severity } from "@typegoose/typegoose"
 import { Benificiary } from "./Benificiary"
 
+export enum VoicePostType {
+    Publication = "p",
+    Text = "t",
+}
+
 @modelOptions({
     options: {
         allowMixed: Severity.ALLOW
@@ -14,7 +19,7 @@ export class VoicePost {
     d!: VoicePublicationData | VoiceTextData // data
 
     @prop({ required: false })
-    t?: string // type ("t" or "p" for now; default "t")
+    t?: VoicePostType // type ("t" or "p" for now; default "t")
 
     @prop({ required: false })
     v?: number // version (increase if back compatibility is broken)
@@ -46,8 +51,11 @@ export class VoicePublicationData {
 
 // Simple short text note without markup
 export class VoiceTextData {
-    @prop({ required: true })
+    @prop({ required: false })
     t!: string // simple text note
+    
+    @prop({ required: false })
+    text!: string // for backward compatibility
 
     @prop({ required: false })
     r?: string // link to replied context in viz:// url scheme

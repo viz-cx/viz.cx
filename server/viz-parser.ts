@@ -1,4 +1,4 @@
-import { OpInBlock, OpInBlockModel } from '../models/OpInBlock'
+import { getLastSavedBlock, OpInBlock, OpInBlockModel } from '../models/OpInBlock'
 import { VIZ } from '../helpers/viz'
 import { processVoiceProtocol } from './processors/processVoiceProtocol'
 

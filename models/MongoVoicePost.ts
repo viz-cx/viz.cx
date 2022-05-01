@@ -14,6 +14,15 @@ export class MongoVoicePost extends VoicePost {
 
     @prop({ required: true, index: true })
     block!: number
+
+    @prop({ required: true, index: true })
+    author!: string
+
+    @prop({ required: true })
+    title!: string
+
+    @prop({ required: true })
+    slug!: string
 }
 
 export const MongoVoicePostModel = getModelForClass(MongoVoicePost, {
