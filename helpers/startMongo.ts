@@ -1,9 +1,16 @@
 import { mongoose } from '@typegoose/typegoose'
-import { connect } from 'mongoose'
 import env from './env'
 
+let cachedMongoose: Promise<any>|null = null
+
 export async function startMongo() {
-  return connect(env.MONGO)
+  if (cachedMongoose) {
+    return cachedMongoose
+  }
+  cachedMongoose = mongoose.connect(env.MONGO)
+    .then(() => console.log('Connected Successfully'))
+    .catch((err) => console.error('Not Connected'))
+  return cachedMongoose
 }
 
 export async function withTransaction(
