@@ -20,7 +20,7 @@ export async function processVoiceProtocol() {
             voicePost.block = post.block
             voicePost.author = customObject.required_regular_auths[0]
             let title = ""
-            if (typeof voicePost.d.t !== 'undefined') {
+            if (voicePost.d && typeof voicePost.d.t !== 'undefined') {
                 title = voicePost.d.t
             }
             voicePost.title = makeTitle(title, voicePost.block)
