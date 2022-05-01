@@ -12,7 +12,7 @@ export async function processVoiceProtocol() {
                 "obj.id": "V",
                 "block": { $gt: lastSavedBlock }
             })
-            .limit(10)
+            .limit(1)
         const mongoPosts = newPosts.flatMap(post => {
             const customObject = post.obj as BlockchainCustom
             let json = JSON.parse(customObject.json)

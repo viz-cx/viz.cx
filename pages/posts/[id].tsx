@@ -66,7 +66,7 @@ export async function getStaticProps({ params }: any) {
             post: {
                 title: post.title,
                 author: post.author,
-                t: post.t,
+                t: post.t || VoicePostType.Text,
                 d: post.d
             }
         },
