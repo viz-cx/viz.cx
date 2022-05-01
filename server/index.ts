@@ -5,6 +5,7 @@ import { startVizParsing } from './viz-parser'
 import { startMongo } from '../helpers/startMongo'
 require('dotenv').config()
 
+const host = process.env.HOST || "http://localhost"
 const port = parseInt(process.env.PORT || '3000', 10)
 const dev = process.env.NODE_ENV !== 'production'
 const app = next({ dev })
@@ -21,7 +22,7 @@ async function start() {
 
     // tslint:disable-next-line:no-console
     console.log(
-      `> Server listening at http://localhost:${port} as ${dev ? 'development' : process.env.NODE_ENV
+      `> Server listening at ${host}:${port} as ${dev ? 'development' : process.env.NODE_ENV
       }`
     )
     startVizParsing()
