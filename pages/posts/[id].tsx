@@ -12,6 +12,7 @@ function Post({ post }: any) {
         return <div>Loading...</div>
     }
     let nsfw_text = ''
+    let title = ''
     switch (post.t) {
         case VoicePostType.Text:
             if (typeof post.d.text !== 'undefined') {
@@ -23,6 +24,8 @@ function Post({ post }: any) {
             }
             break
         case VoicePostType.Publication:
+            let strikethrough_pattern = /\~\~(.*?)\~\~/gm
+            title = markdown_decode_text(post.d.t.replace(strikethrough_pattern, '<strike>$1</strike>'))
             nsfw_text = markdown_clear_code(post.d.m) //markdown
             nsfw_text = markdown_decode_text(nsfw_text)
             let mnemonics_pattern = /&#[a-z0-9\-\.]+;/g
@@ -30,7 +33,7 @@ function Post({ post }: any) {
             break
     }
     return (<div className={styles.container}>
-        <h1>{post.title}</h1>
+        <h1>{title}</h1>
         {/* <div>Author: {post.author}</div> */}
         <div className={styles.posts}>{nsfw_text}</div>
     </div>)

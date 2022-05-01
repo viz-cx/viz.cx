@@ -15,7 +15,8 @@ export async function processVoiceProtocol() {
             .limit(10)
         const mongoPosts = newPosts.flatMap(post => {
             const customObject = post.obj as BlockchainCustom
-            let voicePost = JSON.parse(customObject.json) as MongoVoicePost
+            let json = JSON.parse(customObject.json)
+            let voicePost = json as MongoVoicePost
             voicePost.block = post.block
             voicePost.author = customObject.required_regular_auths[0]
             voicePost.title = makeTitle(voicePost.d.t, voicePost.block)

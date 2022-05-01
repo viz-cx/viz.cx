@@ -2,7 +2,7 @@ import { mongoose } from '@typegoose/typegoose'
 import { connect } from 'mongoose'
 import env from './env'
 
-export function startMongo() {
+export async function startMongo() {
   return connect(env.MONGO)
 }
 
