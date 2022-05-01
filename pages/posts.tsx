@@ -71,9 +71,8 @@ const Home = (props: any) => {
 
 Home.getInitialProps = async ({ query }: any) => {
   let page = query.page || 0
-  const host = process.env.HOST || "http://localhost"
-  const port = parseInt(process.env.PORT || '3000', 10)
-  const result = await axios.get(`${host}:${port}/api/posts?page=${page}`)
+  const host = process.env.HOST || "http://localhost:3000"
+  const result = await axios.get(`${host}/api/posts?page=${page}`)
   return {
     totalCount: result.data.meta.totalCount,
     pageCount: result.data.meta.pageCount,
