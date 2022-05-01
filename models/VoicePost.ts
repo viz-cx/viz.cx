@@ -12,7 +12,7 @@ export enum VoicePostType {
     }
 })
 export class VoicePost {
-    @prop({ required: true })
+    @prop({ required: false })
     p!: number // previous block for linking
 
     @prop({ required: true })
