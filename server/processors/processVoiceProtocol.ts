@@ -19,7 +19,11 @@ export async function processVoiceProtocol() {
             let voicePost = json as MongoVoicePost
             voicePost.block = post.block
             voicePost.author = customObject.required_regular_auths[0]
-            voicePost.title = makeTitle(voicePost.d.t, voicePost.block)
+            let title = ""
+            if (typeof voicePost.d.t !== 'undefined') {
+                title = voicePost.d.t
+            }
+            voicePost.title = makeTitle(title, voicePost.block)
             voicePost.slug = slugify(`${voicePost.title} ${voicePost.block}`, {
                 replacement: '-',
                 remove: undefined,
