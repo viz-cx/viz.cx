@@ -1,9 +1,0 @@
-{
-    "watch": [
-        "pages",
-        "models",
-        "server"
-    ],
-    "exec": "next build && ts-node server/index.ts",
-    "ext": "js ts tsx"
-}
