@@ -1,6 +1,5 @@
 """Special functions for VIZ Blockchain to MongoDB parser"""
 import datetime as dt
-from bson.json_util import dumps
 import os
 import pymongo
 from viz import Client
