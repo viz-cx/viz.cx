@@ -40,9 +40,9 @@ def getLastSavedBlock() -> int:
 def home():
     return({'key':'Hello'})
 
-@app.get('/dgp')
+@app.get('/info')
 def info():
-    return viz.get_dynamic_global_properties()
+    return viz.rpc.get_dynamic_global_properties()
 
 @app.get('/block/{block}')
 def info(block):
