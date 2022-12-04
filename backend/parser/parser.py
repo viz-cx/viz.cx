@@ -20,7 +20,8 @@ def start_parsing():
                     for tx in ops:
                         save_transaction(tx)
                     last_blocknum_in_bd = block
-                    print("Saved block {}".format(last_blocknum_in_bd))
+                    if block % 100 == 0:
+                        print("Saved block {}".format(last_blocknum_in_bd))
             else:
                 print('Last block was catch up. Parsing will continue in 15 seconds')
                 sleep(15)
