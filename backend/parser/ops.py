@@ -1,11 +1,27 @@
 """Special functions for VIZ Blockchain to MongoDB parser"""
+from asyncio import sleep
 import datetime as dt
 import os
+import random
 import pymongo
 from viz import Client
 
-node = 'https://node.viz.cx/'
-viz = Client(node=node)
+nodes = [
+    'https://node.viz.cx/',
+    'https://viz.lexai.host/',
+    'https://api.viz.world/'
+]
+
+def change_node():
+    global viz
+    try:
+        node = random.choice(nodes)
+        print("Update node to {}".format(node))
+        viz = Client(node=node)
+    except:
+        change_node()
+
+change_node()
 
 db = pymongo.MongoClient(os.getenv('MONGO'))[os.getenv('DB_NAME')]
 coll = db[os.getenv('COLLECTION')]
