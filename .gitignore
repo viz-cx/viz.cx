@@ -38,3 +38,4 @@ yarn-error.log*
 .env
 robots.txt
 sitemap*.xml
+__pycache__
