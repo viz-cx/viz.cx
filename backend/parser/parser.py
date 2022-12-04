@@ -1,9 +1,9 @@
 """VIZ Blockchain to MongoDB parser"""
-from parser.ops import *
+from helpers.mongo import get_last_blocknum_in_db, save_transaction
+from helpers.viz import get_last_block_in_chain, get_ops_in_block
 from time import sleep
 
 def start_parsing():
-    # Getting last blocknumber from MongoDB
     try:
         last_blocknum_in_bd = get_last_blocknum_in_db()
         print("Last block in db: {}".format(last_blocknum_in_bd))
@@ -14,19 +14,17 @@ def start_parsing():
     while True:
         try:
             last_blocknum_in_bkchn = get_last_block_in_chain()
-            i = 0
             if last_blocknum_in_bkchn - last_blocknum_in_bd > 1:
                 for block in range(last_blocknum_in_bd + 1, last_blocknum_in_bkchn):
-                    parse_raw_tx_to_mongodb(block)
-                    print("Saved block {}".format(block))
-                    sleep(0.1)
+                    ops = get_ops_in_block(block, False)
+                    for tx in ops:
+                        save_transaction(tx)
+                    last_blocknum_in_bd = block
+                    print("Saved block {}".format(last_blocknum_in_bd))
             else:
-                while i < 60:
-                    last_blocknum_in_bd += 1
-                    parse_raw_tx_to_mongodb(last_blocknum_in_bd, coll)
-                    i += 1
-                    sleep(3)
-        except:
-            print('Error. Waiting for 10 seconds.')
+                print('Last block was catch up. Parsing will continue in 15 seconds')
+                sleep(15)
+        except Exception as e:
+            print('Error: {}. Restart in 10 seconds.'.format(str(e)))
             sleep(10)
             print('Restarting...')
