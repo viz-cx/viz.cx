@@ -8,7 +8,7 @@ from parser.ops import *
 thread = Thread(target=start_parsing, daemon=True, name='parser')
 thread.start()
 
-app = FastAPI()
+app = FastAPI(root_path=os.getenv('ROOT_PATH'))
 
 @app.get('/')
 def home():
