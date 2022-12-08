@@ -23,7 +23,7 @@ def save_block(block):
             tx.pop('trx_id')
         tx_t = dt.datetime.fromisoformat(tx.get('timestamp'))
         tx.update({'timestamp': tx_t})
-    coll.insert_one({'block {}'.format(blocknumber): block})
+    coll.insert_one({'block': block, 'block_number': blocknumber})
     
 def get_last_block_in_db() -> list:
     """Return last block from collection in MongoDB database."""
