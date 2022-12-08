@@ -154,7 +154,9 @@ cython_debug/
 
 # User defined
 *.ipynb
-run_server.bat
+*.bat
+*.zip
+lite-parser.py
 # PyCharm
 #  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
 #  be found at https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore
