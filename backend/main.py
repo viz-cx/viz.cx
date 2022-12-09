@@ -25,7 +25,7 @@ def latest():
 # Количество всех операций в блокчейне.
 @app.get('/count_tx/all')
 def count_all_tx() -> dict:
-    result = helpers.api.get_all_tx_number_in_db()
+    result = helpers.api.get_all_blocks_count_in_db()
     return {'transactions': result, 'operation type': 'all', 'date': 'all'}
 
 # Количество всех операций в блокчейне за заданный период с указанной даты.
@@ -35,7 +35,7 @@ def count_all_tx_in_period(to_date:dt.datetime=dt.datetime.now(),
     to_date_str = dt.datetime.strftime(to_date, '%Y-%m-%d %H:%M:%S')
     from_date_str = dt.datetime.strftime(to_date - period, '%Y-%m-%d %H:%M:%S')
     period_in_seconds = period.seconds
-    result = helpers.api.get_all_tx_number_in_db_in_period(to_date, period)
+    result = helpers.api.get_all_blocks_count_in_db_in_period(to_date, period)
     return {'transactions': result, 'operation type': 'all',
             'date': {'from': from_date_str, 'to': to_date_str}}
 
