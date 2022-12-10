@@ -22,6 +22,15 @@ period:dt.timedelta=dt.timedelta(hours=1)) -> int:
                                                 '$lt':to_date}})
     return result
 
+def get_all_tx_count_in_db() -> int:
+    """Return number of all transactions in database."""
+    result = tuple(coll.aggregate([
+        {'$unwind': '$block'},
+        {'$group': {'_id': 'all transactions', 'count':{'$sum': 1}}},
+        {'$project': {'_id': 0, 'all transactions': '$count'}}
+    ]))[0]
+    return int(result['all transactions'])
+
 def get_tx_number(operation_type):
     """Return number of selected operation."""
     return(coll.count_documents({'op': operation_type}))

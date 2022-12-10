@@ -22,10 +22,10 @@ def home():
 def latest():
     return get_last_block_in_db()
 
-# Количество всех операций в блокчейне.
+# Количество всех операций в БД.
 @app.get('/count_tx/all')
 def count_all_tx() -> dict:
-    result = helpers.api.get_all_blocks_count_in_db()
+    result = helpers.api.get_all_tx_count_in_db()
     return {'transactions': result, 'operation type': 'all', 'date': 'all'}
 
 # Количество всех операций в блокчейне за заданный период с указанной даты.
