@@ -64,7 +64,7 @@ def get_all_tx_count_in_db() -> int:
 
 def get_tx_number(operation_type):
     """Return number of selected operation."""
-    return (coll.count_documents({'op': operation_type}))
+    return (coll.count_documents({'block.op.0': operation_type}))
 
 
 def get_tx_number_in_db_in_period(operation_type: str = 'witness_reward',
