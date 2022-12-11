@@ -13,7 +13,7 @@ router = APIRouter(
 @router.get("/all")
 def shares_all() -> dict:
     result = get_sum_shares_all()
-    return {"shares": result, "operation type": "all", "date": "all"}
+    return {"shares": result, "operation_type": "all", "date": "all"}
 
 
 # Количество SHARES, распределенных в указанный период.
@@ -24,11 +24,10 @@ def shares_all_in_period(
 ) -> dict:
     to_date_str = dt.datetime.strftime(to_date, "%Y-%m-%d %H:%M:%S")
     from_date_str = dt.datetime.strftime(to_date - period, "%Y-%m-%d %H:%M:%S")
-    period_in_seconds = period.seconds
     result = get_sum_shares_in_period(to_date, period)
     return {
         "shares": result,
-        "operation type": "all",
+        "operation_type": "all",
         "date": {"from": from_date_str, "to": to_date_str},
     }
 
@@ -43,11 +42,9 @@ def shares_by_op_type_in_period(
 ) -> dict:
     to_date_str = dt.datetime.strftime(to_date, "%Y-%m-%d %H:%M:%S")
     from_date_str = dt.datetime.strftime(to_date - period, "%Y-%m-%d %H:%M:%S")
-    period_in_seconds = period.seconds
-    result = get_sum_shares_by_op_in_period(
-        operation_type, to_date, period)
+    result = get_sum_shares_by_op_in_period(operation_type, to_date, period)
     return {
         "shares": result,
-        "operation type": operation_type,
+        "operation_type": operation_type,
         "date": {"from": from_date_str, "to": to_date_str},
     }

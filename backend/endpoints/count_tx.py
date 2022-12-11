@@ -12,7 +12,7 @@ router = APIRouter(
 @router.get("/all")
 def count_all_tx() -> dict:
     result = get_all_tx_count_in_db()
-    return {"transactions": result, "operation type": "all", "date": "all"}
+    return {"transactions": result, "operation_type": "all", "date": "all"}
 
 
 # Количество всех операций в блокчейне за заданный период с указанной даты.
@@ -23,11 +23,10 @@ def count_all_tx_in_period(
 ) -> dict:
     to_date_str = dt.datetime.strftime(to_date, "%Y-%m-%d %H:%M:%S")
     from_date_str = dt.datetime.strftime(to_date - period, "%Y-%m-%d %H:%M:%S")
-    period_in_seconds = period.seconds
     result = get_all_blocks_count_in_db_in_period(to_date, period)
     return {
         "transactions": result,
-        "operation type": "all",
+        "operation_type": "all",
         "date": {"from": from_date_str, "to": to_date_str},
     }
 
@@ -49,11 +48,9 @@ def count_tx_by_op_type_in_period(
 ) -> dict:
     to_date_str = dt.datetime.strftime(to_date, "%Y-%m-%d %H:%M:%S")
     from_date_str = dt.datetime.strftime(to_date - period, "%Y-%m-%d %H:%M:%S")
-    period_in_seconds = period.seconds
-    result = get_tx_number_in_db_in_period(
-        operation_type, to_date, period)
+    result = get_tx_number_in_db_in_period(operation_type, to_date, period)
     return {
         "transactions": result,
-        "operation type": operation_type,
+        "operation_type": operation_type,
         "date": {"from": from_date_str, "to": to_date_str},
     }

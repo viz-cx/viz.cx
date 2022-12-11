@@ -6,7 +6,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from parser.parser import start_parsing
 from helpers.router import router
 
-
 thread = Thread(target=start_parsing, daemon=True, name="parser")
 thread.start()
 
