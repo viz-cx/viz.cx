@@ -4,10 +4,14 @@ from threading import Thread
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from parser.parser import start_parsing
+from sorter.sorter import start_sorting
 from helpers.router import router
 
-thread = Thread(target=start_parsing, daemon=True, name="parser")
-thread.start()
+parsing_thread = Thread(target=start_parsing, daemon=True, name="parser")
+parsing_thread.start()
+
+sorting_thread = Thread(target=start_sorting, daemon=True, name='sorter')
+sorting_thread.start()
 
 app = FastAPI(root_path=os.getenv("ROOT_PATH"))
 

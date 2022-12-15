@@ -1,3 +1,4 @@
+"""Helper module to VIZ blockchain."""
 import random
 from typing import Any
 from viz import Client
