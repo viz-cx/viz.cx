@@ -16,8 +16,12 @@ export default defineNuxtConfig({
         { name: "msapplication-TileColor", content: "#da532c" },
         { name: "theme-color", content: "#ffffff" },
       ],
+      script: [
+        {
+          src: "https://unpkg.com/viz-js-lib@latest/dist/viz.min.js",
+          type: "text/javascript",
+        },
       ],
-      script: [],
       link: [
         {
           rel: "apple-touch-icon",

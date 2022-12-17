@@ -1,5 +1,5 @@
 <template>
     <div>
-        main page
+        DAO VIZ
     </div>
 </template>

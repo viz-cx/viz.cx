@@ -47,6 +47,10 @@ export default {
                 title: 'Analytics',
                 value: '/analytics',
             },
+            {
+                title: 'VIZ account',
+                value: '/viz'
+            }
         ],
     }),
     watch: {
