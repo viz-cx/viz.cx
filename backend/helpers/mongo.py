@@ -12,7 +12,7 @@ try:
     ops_shares = os.getenv("OPS_SHARES").split('/')
     ops_custom = os.getenv("OPS_CUSTOM")
     count_max_ops_in_block = float(os.getenv("COUNT_MAX_OPS_IN_BLOCK"))
-    
+
 except Exception as e:
     print(str(e))
 
@@ -21,6 +21,7 @@ if '/' in ops_custom:
 else:
     ops_custom = [ops_custom]
 
+sorted_op_types = ops_custom + ops_shares
 
 def save_block(block):
     """Save block to MongoDB collection."""
@@ -109,17 +110,19 @@ def get_all_blocks_count_in_db_in_period(to_date: dt.datetime = dt.datetime.now(
 # Количество всех транзакций в БД.
 def get_all_tx_count_in_db() -> int:
     """Return number of all transactions in database."""
-    result = tuple(coll.aggregate([
-        {'$unwind': '$block'},
-        {'$group': {'_id': 'all_transactions', 'count': {'$sum': 1}}},
-        {'$project': {'_id': 0, 'all_transactions': '$count'}}
-    ]))[0]
-    return int(result['all_transactions'])
+    tx_count = coll_ops.estimated_document_count()
+    for op_type in sorted_op_types:
+        tx_count += coll_ops[op_type].estimated_document_count()
+    return tx_count
 
 
-def get_tx_number(operation_type):
-    """Return number of selected operation."""
-    return (coll.count_documents({'block.op.0': operation_type}))
+def get_tx_number(operation_type) -> int:
+    """Return number of selected operation in sorted operations."""
+    if operation_type in sorted_op_types:
+        result = coll_ops[operation_type].estimated_document_count()
+    else:
+        result = coll.count_documents({'block.op.0': operation_type})
+    return result
 
 
 def get_tx_number_in_db_in_period(operation_type: str = 'witness_reward',
