@@ -5,6 +5,7 @@ from time import sleep
 
 
 def start_parsing():
+    """Parse VIZ Blockchain blocks to MongoDB."""
     try:
         last_blocknum_in_bd = get_last_blocknum_in_db()
         print("Last block in db: {}".format(last_blocknum_in_bd))
@@ -24,6 +25,6 @@ def start_parsing():
                 print('Last block was catch up. Parsing will continue in 15 seconds')
                 sleep(15)
         except Exception as e:
-            print('Error: {}. Restart in 10 seconds.'.format(str(e)))
+            print('Parsing error: {}. Restart in 10 seconds.'.format(str(e)))
             sleep(10)
             print('Restarting...')

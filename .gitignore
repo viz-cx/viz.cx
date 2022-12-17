@@ -43,3 +43,6 @@ __pycache__
 # user defined
 .vscode
 *.zip
+backend/test.py
+backend/backend.7z
+*.7z
