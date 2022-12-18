@@ -21,7 +21,9 @@ WORKDIR /app
 
 COPY --from=builder /app  .
 
+RUN sudo yarn global add pm2 --prefix /usr/local
+
 ENV HOST 0.0.0.0
 EXPOSE 3000
 
-CMD [ "node", ".output/server/index.mjs" ]
+CMD [ "pm2-runtime", ".output/server/index.mjs" ]
