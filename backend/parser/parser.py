@@ -1,5 +1,5 @@
 """VIZ Blockchain to MongoDB parser"""
-from helpers.mongo import get_last_blocknum_in_db, save_block
+from helpers.mongo import get_last_blocknum, save_block
 from helpers.viz import get_last_block_in_chain, get_ops_in_block
 from time import sleep
 
@@ -7,7 +7,7 @@ from time import sleep
 def start_parsing():
     """Parse VIZ Blockchain blocks to MongoDB."""
     try:
-        last_blocknum_in_bd = get_last_blocknum_in_db()
+        last_blocknum_in_bd = get_last_blocknum()
         print("Last block in db: {}".format(last_blocknum_in_bd))
     except IndexError:
         print('Blocks not found in current MongoDB collection. Start from 1.')

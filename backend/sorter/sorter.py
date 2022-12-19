@@ -2,7 +2,7 @@
 import pymongo
 import os
 from env import *
-from helpers.mongo import get_last_blocknum_and_subcoll, get_last_blocknum_in_db, sort_block_ops_to_subcolls
+from helpers.mongo import get_last_blocknum_and_subcoll, get_last_blocknum, sort_block_ops_to_subcolls
 from time import sleep
 
 
@@ -44,7 +44,7 @@ def start_sorting():
             last_bnum_in_scoll = 0
         while True:
             try:
-                last_blocknum_in_db = get_last_blocknum_in_db()
+                last_blocknum_in_db = get_last_blocknum()
                 if last_blocknum_in_db - last_bnum_in_scoll > 1:
                     sort_start_blocknum = last_bnum_in_scoll + 1
                     print('Sorting start from {}.'.format(sort_start_blocknum))
