@@ -1,6 +1,6 @@
 import datetime as dt
 from fastapi import APIRouter
-from helpers.mongo import get_sum_shares_all, get_sum_shares_by_op_in_period, get_sum_shares_in_period
+import helpers.mongo as mongo
 
 
 router = APIRouter(
@@ -12,19 +12,19 @@ router = APIRouter(
 # Количество SHARES, распределённых за всё время.
 @router.get("/all")
 def sum_shares() -> dict:
-    result = get_sum_shares_all()
+    result = mongo.get_sum_shares_all()
     return {"shares": result, "operation_type": "all", "date": "all"}
 
 
 # Количество SHARES, распределенных в указанный период.
-@router.get("/{to_date_str}/{period_in_seconds}")
+@router.get("/{to_date_str}/{from_date_str}")
 def sum_shares_in_period(
     to_date: dt.datetime = dt.datetime.now(),
-    period: dt.timedelta = dt.timedelta(hours=1),
+    from_date: dt.datetime = dt.datetime.now() - dt.timedelta(hours=1)
 ) -> dict:
     to_date_str = dt.datetime.strftime(to_date, "%Y-%m-%d %H:%M:%S")
-    from_date_str = dt.datetime.strftime(to_date - period, "%Y-%m-%d %H:%M:%S")
-    result = get_sum_shares_in_period(to_date, period)
+    from_date_str = dt.datetime.strftime(from_date, "%Y-%m-%d %H:%M:%S")
+    result = mongo.get_sum_shares_in_period(to_date, from_date)
     return {
         "shares": result,
         "operation_type": "all",
@@ -34,17 +34,29 @@ def sum_shares_in_period(
 
 # Количество распределенных SHARES по заданной операции за заданный
 # период (минута, час, день, месяц).
-@router.get("/{operation_type}/{to_date_str}/{period_in_seconds}")
+@router.get("/{operation_type}/{to_date_str}/{from_date_str}")
 def sum_shares_by_op_type_in_period(
     operation_type: str = "witness_reward",
     to_date: dt.datetime = dt.datetime.now(),
-    period: dt.timedelta = dt.timedelta(hours=1),
+    from_date: dt.datetime = dt.datetime.now() - dt.timedelta(hours=1),
 ) -> dict:
     to_date_str = dt.datetime.strftime(to_date, "%Y-%m-%d %H:%M:%S")
-    from_date_str = dt.datetime.strftime(to_date - period, "%Y-%m-%d %H:%M:%S")
-    result = get_sum_shares_by_op_in_period(operation_type, to_date, period)
+    from_date_str = dt.datetime.strftime(from_date, "%Y-%m-%d %H:%M:%S")
+    result = mongo.get_sum_shares_by_op_in_period(operation_type, to_date, from_date)
     return {
         "shares": result,
         "operation_type": operation_type,
         "date": {"from": from_date_str, "to": to_date_str},
     }
+
+
+# Топ постов в телеграм по полученным SHARES, выдаваемый с разными
+# настройками. По умолчанию, топ-5 за неделю.
+@router.get("/tg_stats/top_ch_posts/{to_date_str}/{period_in_seconds}/{in_top}/{to_skip}")
+def show_top_tg_ch_posts_by_shares_in_period(
+    to_date: dt.datetime=dt.datetime.now(),
+    from_date: dt.datetime = dt.datetime.now() - dt.timedelta(weeks=1),
+    in_top: int=5,
+    to_skip: int=0
+) -> list:
+    return mongo.get_top_tg_ch_posts_by_shares(to_date, from_date, in_top, to_skip)
