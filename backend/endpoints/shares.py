@@ -11,14 +11,14 @@ router = APIRouter(
 
 # Количество SHARES, распределённых за всё время.
 @router.get("/all")
-def shares_all() -> dict:
+def sum_shares() -> dict:
     result = get_sum_shares_all()
     return {"shares": result, "operation_type": "all", "date": "all"}
 
 
 # Количество SHARES, распределенных в указанный период.
 @router.get("/{to_date_str}/{period_in_seconds}")
-def shares_all_in_period(
+def sum_shares_in_period(
     to_date: dt.datetime = dt.datetime.now(),
     period: dt.timedelta = dt.timedelta(hours=1),
 ) -> dict:
@@ -35,7 +35,7 @@ def shares_all_in_period(
 # Количество распределенных SHARES по заданной операции за заданный
 # период (минута, час, день, месяц).
 @router.get("/{operation_type}/{to_date_str}/{period_in_seconds}")
-def shares_by_op_type_in_period(
+def sum_shares_by_op_type_in_period(
     operation_type: str = "witness_reward",
     to_date: dt.datetime = dt.datetime.now(),
     period: dt.timedelta = dt.timedelta(hours=1),

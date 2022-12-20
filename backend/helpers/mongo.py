@@ -12,7 +12,7 @@ try:
     ops_shares = os.getenv("OPS_SHARES").split('/')
     ops_custom = os.getenv("OPS_CUSTOM")
     count_max_ops_in_block = float(os.getenv("COUNT_MAX_OPS_IN_BLOCK"))
-    
+
 except Exception as e:
     print(str(e))
 
@@ -21,6 +21,7 @@ if '/' in ops_custom:
 else:
     ops_custom = [ops_custom]
 
+sorted_op_types = ops_custom + ops_shares
 
 def save_block(block):
     """Save block to MongoDB collection."""
@@ -33,21 +34,23 @@ def save_block(block):
         tx.update({"timestamp": tx_t})
     coll.insert_one({"block": block, "_id": blocknumber})
 
-def get_last_block_in_db() -> dict:
+def get_last_block() -> dict:
     """Return last block from collection in MongoDB database."""
     result = coll.find({}).sort(
         "_id", pymongo.DESCENDING).limit(1)
     return tuple(result)[0]
 
 
-def get_last_blocknum_in_db() -> int:
-    """Return number of last block from collection in MongoDB database."""
-    result = get_last_block_in_db()
+def get_last_blocknum() -> int:
+    """Return number of last block from collection in MongoDB
+    database."""
+    result = get_last_block()
     blocknum = int(result["_id"])
     return blocknum
 
 def get_last_blocknum_and_subcoll() -> dict:
-    """Returns collection name and number of last block from subcollections."""
+    """Returns collection name and number of last block from
+    subcollections."""
     bnum_max = 0
     subcoll_bnum_max = None
     subcolls = ops_shares + ops_custom
@@ -70,7 +73,7 @@ def get_last_blocknum_and_subcoll() -> dict:
 
 def sort_block_ops_to_subcolls(block_n_num):
     """Divide block to subcollection by operations. SHARES and CUSTOM ops:
-    to separate subcollections. And 'ops' collection for unsorted others."""
+        to separate subcollections. And 'ops' collection for unsorted others."""
     op_number = 0.0
     block_number = block_n_num['_id']
     block = block_n_num['block']
@@ -92,110 +95,138 @@ def sort_block_ops_to_subcolls(block_n_num):
             coll_ops.insert_one(op_new_json)
 
 # Количество всех блоков в БД.
-def get_all_blocks_count_in_db() -> int:
+def get_all_blocks_count() -> int:
     """Return number of all blocks in the database."""
     result = coll.estimated_document_count({})
     return result
 
-# Количество всех блоков в БД в заданном периоде.
-def get_all_blocks_count_in_db_in_period(to_date: dt.datetime = dt.datetime.now(),
-                                         period: dt.timedelta = dt.timedelta(hours=1)) -> int:
+# Количество всех операций в БД в заданном периоде.
+def get_ops_count_in_period(
+    to_date: dt.datetime = dt.datetime.now(),
+    period: dt.timedelta = dt.timedelta(hours=1)
+) -> int:
     """Return number of all operations in the database for selected date
-        in selected period."""
-    result = coll.count_documents({'block.timestamp': {'$gt': (to_date - period),
-                                                       '$lt': to_date}})
+    in selected period."""
+    ops_count = coll_ops.count_documents(
+        {'timestamp': {'$gt': to_date - period,'$lt': to_date}}
+    )
+    for op in sorted_op_types:
+        ops_count += coll_ops[op].count_documents(
+            {'timestamp': {'$gt': to_date - period, '$lt': to_date}}
+        )
+    return ops_count
+
+# Количество всех операций в БД.
+def get_ops_count() -> int:
+    """Return number of all transactions in database."""
+    ops_count = coll_ops.estimated_document_count()
+    for op_type in sorted_op_types:
+        ops_count += coll_ops[op_type].estimated_document_count()
+    return ops_count
+
+
+def get_ops_count_by_type(operation_type) -> int:
+    """Return number of selected operation in database."""
+    if operation_type in sorted_op_types:
+        result = coll_ops[operation_type].estimated_document_count()
+    else:
+        result = coll_ops.count_documents({'op.0': operation_type})
     return result
 
-# Количество всех транзакций в БД.
-def get_all_tx_count_in_db() -> int:
-    """Return number of all transactions in database."""
-    result = tuple(coll.aggregate([
-        {'$unwind': '$block'},
-        {'$group': {'_id': 'all_transactions', 'count': {'$sum': 1}}},
-        {'$project': {'_id': 0, 'all_transactions': '$count'}}
-    ]))[0]
-    return int(result['all_transactions'])
 
-
-def get_tx_number(operation_type):
-    """Return number of selected operation."""
-    return (coll.count_documents({'block.op.0': operation_type}))
-
-
-def get_tx_number_in_db_in_period(operation_type: str = 'witness_reward',
-                                  to_date: dt.datetime = dt.datetime.now(),
-                                  period: dt.timedelta = dt.timedelta(hours=1)) -> int:
+def get_ops_count_by_type_in_period(
+    operation_type: str = 'witness_reward',
+    to_date: dt.datetime = dt.datetime.now(),
+    period: dt.timedelta = dt.timedelta(hours=1)
+) -> int:
     """Return number of chosen operations in the database for selected
-        date in selected period."""
-    result = coll.count_documents({'timestamp': {'$gt': (to_date - period),
-                                                 '$lt': to_date},
-                                   'block.op.0': operation_type})
+    date in selected period."""
+    if operation_type in sorted_op_types:
+        result = coll_ops[operation_type].count_documents({
+            'timestamp': {'$gt': (to_date - period), '$lt': to_date}
+        })
+    else:
+        result = coll_ops.count_documents({
+            'timestamp': {'$gt': (to_date - period),'$lt': to_date},
+            'op.0': operation_type})
     return result
 
 
 def get_sum_shares_in_period(to_date: dt.datetime = dt.datetime.now(),
                              period: dt.timedelta = dt.timedelta(hours=1)) -> float:
     """Return sum of SHARES for selected date in selected period."""
-    result = tuple(coll.find({'timestamp': {'$gt': (to_date - period),
-                                            '$lt': to_date}},
-                             {'block.op.1.shares': 1, '_id': 0}))
-    shares = 0
-    for item in result:
-        shares += float(item['block']['op'][1]['shares'].split(sep=' ')[0])
-    return shares
+    sum_shares = 0
+    for op_type in ops_shares:
+        result = coll_ops[op_type].aggregate([
+            {'$match': {'timestamp': {'$gt': to_date - period,'$lt': to_date}}},
+            {'$group': {'_id': None,'shares': {'$sum': {'$sum':'$op.shares'}}}}
+        ])
+        try:
+            sum_shares += tuple(result)[0]['shares']
+        except IndexError:
+            continue
+    return sum_shares
 
 
 def get_sum_shares_all() -> float:
     """Return sum of all SHARES."""
-    result = list(coll.aggregate([
-        {
-            "$project": {
-                "_id": "$_id",
-                "shares": {
-                    "$map": {
-                        "input": "$block.op",
-                        "as": "el",
-                        "in": {
-                            '$toDouble': {
-                                "$first": {
-                                    "$split": [
-                                        {"$first": "$$el.shares"}, " "]
-                                }
-                            }
-                        }
-                    }
-                },
-
-            }
-        },
-        {
-            "$group": {
-                "_id": "null",
-                "sum": {"$sum": {"$first": "$shares"}},
-            }
-        }
-    ]))[0]['sum']
-    return result
+    sum_shares = 0
+    for op_type in ops_shares:
+        result = coll_ops[op_type].aggregate([
+            {'$group': {'_id': None,'shares': {'$sum': {'$sum':'$op.shares'}}}}
+        ])
+        try:
+            sum_shares += tuple(result)[0]['shares']
+        except IndexError:
+            continue
+    return sum_shares
 
 
 def get_sum_shares_by_op(operation_type: str = 'witness_reward') -> float:
     """Return sum of SHARES for chosen operation."""
-    result = tuple(coll.find({'op': operation_type},
-                   {'_id': 0, 'op.shares': 1}))
-    shares = 0
-    for item in result:
-        shares += float(item['op'][0]['shares'].split(sep=' ')[0])
-    return shares
+    if operation_type in sorted_op_types:
+        result = coll_ops[operation_type].aggregate([
+            {'$group': {'_id': None,'shares': {'$sum': {'$sum': '$op.shares'}}}}
+        ])
+        sum_shares = tuple(result)[0]['shares']
+    else:
+        try:
+            result = coll_ops.aggregate([
+                {'$match': {'op.0': operation_type}},
+                {'$group': {'_id': None,'shares': {'$sum': {'$sum': '$op.shares'}}}}
+            ])
+            sum_shares = tuple(result)[0]['shares']
+        except IndexError:
+            sum_shares = 0
+    return sum_shares
 
 
-def get_sum_shares_by_op_in_period(operation_type: str = 'witness_reward',
-                                   to_date: dt.datetime = dt.datetime.now(),
-                                   period: dt.timedelta = dt.timedelta(hours=1)) -> float:
+def get_sum_shares_by_op_in_period(
+    operation_type: str = 'witness_reward',
+    to_date: dt.datetime = dt.datetime.now(),
+    period: dt.timedelta = dt.timedelta(hours=1)
+) -> float:
     """Return sum of SHARES for chosen operation for selected date in
     selected period."""
-    result = tuple(coll.find({'op': operation_type},
-                             {'op.shares': 1, '_id': 0}))
-    shares = 0
-    for item in result:
-        shares += float(item['op'][0]['shares'].split(sep=' ')[0])
-    return shares
+    if operation_type in sorted_op_types:
+        result = coll_ops[operation_type].aggregate([
+            {'$match': {'timestamp': {'$gt': to_date - period,'$lt': to_date}}},
+            {'$group': {'_id': None,'shares': {'$sum': {'$sum': '$op.shares'}}}}
+        ])
+        sum_shares = tuple(result)[0]['shares']
+    else:
+        try:
+            result = coll_ops.aggregate([
+                {'$match': {
+                    'timestamp': {'$gt': to_date - period,'$lt': to_date},
+                    '$op.0': operation_type
+                }},
+                {'$group': {
+                    '_id': None,
+                    'shares': {'$sum': {'$sum': '$op.shares'}}
+                }}
+            ])
+            sum_shares = tuple(result)[0]['shares']
+        except pymongo.errors.OperationFailure:
+            sum_shares = 0
+    return sum_shares
