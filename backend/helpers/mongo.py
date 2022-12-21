@@ -73,7 +73,7 @@ def get_last_blocknum_and_subcoll() -> dict:
 
 def sort_block_ops_to_subcolls(block_n_num):
     """Divide block to subcollection by operations. SHARES and CUSTOM ops:
-        to separate subcollections. And 'ops' collection for unsorted others."""
+    to separate subcollections. And 'ops' collection for unsorted others."""
     op_number = 0.0
     block_number = block_n_num['_id']
     block = block_n_num['block']
@@ -103,16 +103,16 @@ def get_all_blocks_count() -> int:
 # Количество всех операций в БД в заданном периоде.
 def get_ops_count_in_period(
     to_date: dt.datetime = dt.datetime.now(),
-    period: dt.timedelta = dt.timedelta(hours=1)
+    from_date: dt.datetime = dt.datetime.now() - dt.timedelta(hours=1)
 ) -> int:
     """Return number of all operations in the database for selected date
     in selected period."""
     ops_count = coll_ops.count_documents(
-        {'timestamp': {'$gt': to_date - period,'$lt': to_date}}
+        {'timestamp': {'$gt': from_date,'$lt': to_date}}
     )
     for op in sorted_op_types:
         ops_count += coll_ops[op].count_documents(
-            {'timestamp': {'$gt': to_date - period, '$lt': to_date}}
+            {'timestamp': {'$gt': from_date, '$lt': to_date}}
         )
     return ops_count
 
@@ -137,28 +137,30 @@ def get_ops_count_by_type(operation_type) -> int:
 def get_ops_count_by_type_in_period(
     operation_type: str = 'witness_reward',
     to_date: dt.datetime = dt.datetime.now(),
-    period: dt.timedelta = dt.timedelta(hours=1)
+    from_date: dt.datetime = dt.datetime.now() - dt.timedelta(hours=1)
 ) -> int:
     """Return number of chosen operations in the database for selected
     date in selected period."""
     if operation_type in sorted_op_types:
         result = coll_ops[operation_type].count_documents({
-            'timestamp': {'$gt': (to_date - period), '$lt': to_date}
+            'timestamp': {'$gt': from_date, '$lt': to_date}
         })
     else:
         result = coll_ops.count_documents({
-            'timestamp': {'$gt': (to_date - period),'$lt': to_date},
+            'timestamp': {'$gt': from_date,'$lt': to_date},
             'op.0': operation_type})
     return result
 
 
-def get_sum_shares_in_period(to_date: dt.datetime = dt.datetime.now(),
-                             period: dt.timedelta = dt.timedelta(hours=1)) -> float:
+def get_sum_shares_in_period(
+    to_date: dt.datetime = dt.datetime.now(),
+    from_date: dt.datetime = dt.datetime.now() - dt.timedelta(hours=1)
+) -> float:
     """Return sum of SHARES for selected date in selected period."""
     sum_shares = 0
     for op_type in ops_shares:
         result = coll_ops[op_type].aggregate([
-            {'$match': {'timestamp': {'$gt': to_date - period,'$lt': to_date}}},
+            {'$match': {'timestamp': {'$gt': from_date,'$lt': to_date}}},
             {'$group': {'_id': None,'shares': {'$sum': {'$sum':'$op.shares'}}}}
         ])
         try:
@@ -204,13 +206,13 @@ def get_sum_shares_by_op(operation_type: str = 'witness_reward') -> float:
 def get_sum_shares_by_op_in_period(
     operation_type: str = 'witness_reward',
     to_date: dt.datetime = dt.datetime.now(),
-    period: dt.timedelta = dt.timedelta(hours=1)
+    from_date: dt.datetime = dt.datetime.now() - dt.timedelta(hours=1)
 ) -> float:
     """Return sum of SHARES for chosen operation for selected date in
     selected period."""
     if operation_type in sorted_op_types:
         result = coll_ops[operation_type].aggregate([
-            {'$match': {'timestamp': {'$gt': to_date - period,'$lt': to_date}}},
+            {'$match': {'timestamp': {'$gt': from_date,'$lt': to_date}}},
             {'$group': {'_id': None,'shares': {'$sum': {'$sum': '$op.shares'}}}}
         ])
         sum_shares = tuple(result)[0]['shares']
@@ -230,3 +232,37 @@ def get_sum_shares_by_op_in_period(
         except pymongo.errors.OperationFailure:
             sum_shares = 0
     return sum_shares
+
+
+def get_top_tg_ch_posts_by_shares(
+    to_date: dt.datetime=dt.datetime.now(),
+    from_date: dt.datetime = dt.datetime.now() - dt.timedelta(weeks=1),
+    in_top: int=5,
+    to_skip: int=0
+) -> list:
+    """Return top Telegram channels posts by shares."""
+    result = list(coll_ops['receive_award'].aggregate([
+        {'$match': {
+            'timestamp': {'$gt': from_date,'$lt': to_date},
+            'op.memo': {'$regex': '^channel:@'}
+        }},
+        {'$group': {
+            '_id': '$op.memo',
+            'shares': {'$sum': {'$sum': '$op.shares'}}
+        }},
+        {'$sort': {'shares': -1}},
+        {'$skip': to_skip},
+        {'$limit': in_top}
+    ]))
+    i = 0
+    for item in result:
+        link_to_post = item['_id'][0].replace(':', '/', 2)
+        link_to_post = link_to_post.replace('channel/@',
+                                            'https://t.me/', 1)
+        result[i] = {
+            'link to post': link_to_post,
+            'shares': item['shares']
+        }
+        i += 1
+    return result
+
