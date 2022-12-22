@@ -234,7 +234,7 @@ def get_sum_shares_by_op_in_period(
     return sum_shares
 
 
-def get_top_tg_ch_posts_by_shares(
+def get_top_tg_ch_posts_by_shares_in_period(
     to_date: dt.datetime=dt.datetime.now(),
     from_date: dt.datetime = dt.datetime.now() - dt.timedelta(weeks=1),
     in_top: int=5,
@@ -260,9 +260,69 @@ def get_top_tg_ch_posts_by_shares(
         link_to_post = link_to_post.replace('channel/@',
                                             'https://t.me/', 1)
         result[i] = {
-            'link to post': link_to_post,
-            'shares': item['shares']
+            link_to_post: item['shares']
         }
         i += 1
     return result
 
+def get_top_tg_ch_by_shares_in_period(
+    to_date: dt.datetime=dt.datetime.now(),
+    from_date: dt.datetime = dt.datetime.now() - dt.timedelta(weeks=1),
+    in_top: int=5,
+    to_skip: int=0
+) -> list:
+    """Return top Telegram channels by received SHARES."""
+    result = coll_ops['receive_award'].aggregate([
+        {'$match': {
+            'timestamp': {'$gt': from_date,'$lt': to_date},
+            'op.memo': {'$regex': '^channel:@'}
+        }},
+        {'$project': {
+            '_id': 0,
+            'channel': {'$arrayElemAt': [{'$split': [{'$arrayElemAt': ['$op.memo', 0]}, ':']}, 1]},
+            'shares': '$op.shares'
+        }},
+        {'$group': {
+            '_id': '$channel',
+            'shares': {'$sum': {'$sum': '$shares'}}
+        }},
+        {'$sort': {'shares': -1}},
+        {'$skip': to_skip},
+        {'$limit': in_top}
+    ])
+    result = list(result)
+    i = 0
+    for item in result:
+        link_to_ch = item['_id'].replace('@', 'https://t.me/', 1)
+        result[i] = {link_to_ch: item['shares']}
+        i += 1
+    return result
+
+def get_top_tg_ch_posts_by_awards_count(
+    to_date: dt.datetime=dt.datetime.now(),
+    from_date: dt.datetime = dt.datetime.now() - dt.timedelta(weeks=1),
+    in_top: int=5,
+    to_skip: int=0
+) -> list:
+    """Return top Telegram channel posts by awards count."""
+    result = list(coll_ops['receive_award'].aggregate([
+        {'$match': {
+        'timestamp': {'$gt': from_date,'$lt': to_date},
+        'op.memo': {'$regex': '^channel:@'}
+        }},
+        {'$group': {
+            '_id': '$op.memo',
+            'awards': {'$sum': {'$sum': 1}}
+        }},
+        {'$sort': {'awards': -1}},
+        {'$skip': to_skip},
+        {'$limit': in_top}
+    ]))
+    i = 0
+    for item in result:
+        link_to_post = item['_id'][0].replace(':', '/', 2)
+        link_to_post = link_to_post.replace('channel/@',
+                                            'https://t.me/', 1)
+        result[i] = {link_to_post: item['awards']}
+        i += 1
+    return result
