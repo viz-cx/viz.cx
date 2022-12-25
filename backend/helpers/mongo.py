@@ -381,7 +381,7 @@ def get_top_tg_ch_by_shares_in_period(
     return result
 
 
-def get_top_tg_ch_posts_by_awards_count(
+def get_top_tg_ch_posts_by_awards_count_in_period(
     to_date: dt.datetime = dt.datetime.now(),
     from_date: dt.datetime = dt.datetime.now() - dt.timedelta(weeks=1),
     in_top: int = 5,
@@ -412,13 +412,54 @@ def get_top_tg_ch_posts_by_awards_count(
     i = 0
     for item in result:
         link_to_post = item["_id"][0].replace(":", "/", 2)
-        link_to_post = link_to_post.replace("channel:@", "https://t.me/", 1)
+        link_to_post = link_to_post.replace("channel/@", "https://t.me/", 1)
         result[i] = {link_to_post: item["awards"]}
         i += 1
     return result
 
 
-def get_top_tg_ch_by_awards_in_period(
+def get_tg_ch_post_awards_and_shares_in_period(
+    tg_ch_post_link: str = "https://t.me/viz_news/80",
+    to_date: dt.datetime = dt.datetime.now(),
+    from_date: dt.datetime = dt.datetime.now() - dt.timedelta(weeks=1),
+) -> dict:
+    """Return telegram channel post awards count and received SHARES in period"""
+    memo_post_link = tg_ch_post_link.split("t.me/", 1)[-1]
+    memo_post_link = "channel:@" + memo_post_link.replace("/", ":")
+    result = coll_ops["receive_award"].aggregate(
+        [
+            {
+                "$match": {
+                    "timestamp": {"$gt": from_date, "$lt": to_date},
+                    "op.memo": memo_post_link,
+                }
+            },
+            {
+                "$project": {
+                    "_id": 0,
+                    "post_link": tg_ch_post_link,
+                    "shares": "$op.shares",
+                }
+            },
+            {
+                "$group": {
+                    "_id": "$post_link",
+                    "awards": {"$sum": {"$sum": 1}},
+                    "shares": {"$sum": {"$sum": "$shares"}},
+                }
+            },
+        ]
+    )
+    result = tuple(result)
+    if len(result) != 0:
+        result = result[0]
+        result["post link"] = result.pop("_id")
+    else:
+        result = {"awards": 0, "shares": 0, "post link": tg_ch_post_link}
+    return result
+
+
+def get_top_tg_chs_by_awards_count_in_period(
     to_date: dt.datetime = dt.datetime.now(),
     from_date: dt.datetime = dt.datetime.now() - dt.timedelta(weeks=1),
     in_top: int = 5,
@@ -534,9 +575,43 @@ def get_top_readdleme_posts_by_shares_in_period(
     )
     i = 0
     for item in result:
-        link_to_post = "".join(readdleme_prefix, item["_id"][0])
+        link_to_post = readdleme_prefix + item["_id"][0]
         result[i] = {link_to_post: item["shares"]}
         i += 1
+    return result
+
+
+def get_readdleme_post_awards_and_shares_in_period(
+    link_to_post: str = "https://readdle.me/#viz://@readdle/22099872/",
+    to_date: dt.datetime = dt.datetime.now(),
+    from_date: dt.datetime = dt.datetime.now() - dt.timedelta(weeks=1),
+) -> dict:
+    """Return Readdle.Me post awards count and received SHARES in period"""
+    memo_post_link = link_to_post.split("#viz://", 1)[-1]
+    memo_post_link = "viz://" + memo_post_link
+    result = coll_ops["receive_award"].aggregate(
+        [
+            {
+                "$match": {
+                    "timestamp": {"$gt": from_date, "$lt": to_date},
+                    "op.memo": memo_post_link,
+                }
+            },
+            {
+                "$group": {
+                    "_id": "$op.memo",
+                    "awards": {"$sum": {"$sum": 1}},
+                    "shares": {"$sum": {"$sum": "$op.shares"}},
+                }
+            },
+        ]
+    )
+    result = tuple(result)
+    if len(result) != 0:
+        result = result[0]
+        result["post link"] = readdleme_prefix + result.pop("_id")[0]
+    else:
+        result = {"awards": 0, "shares": 0, "post link": link_to_post}
     return result
 
 
