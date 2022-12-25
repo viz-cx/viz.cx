@@ -116,16 +116,16 @@ def get_all_blocks_count() -> int:
 # Количество всех операций в БД в заданном периоде.
 def get_ops_count_in_period(
     to_date: dt.datetime = dt.datetime.now(),
-    from_date: dt.datetime = dt.datetime.now() - dt.timedelta(hours=1),
+    from_date: dt.datetime = dt.datetime.now() - dt.timedelta(hours=1)
 ) -> int:
     """Return number of all operations in the database for selected date
     in selected period."""
     ops_count = coll_ops.count_documents(
-        {"timestamp": {"$gt": from_date, "$lt": to_date}}
+        {'timestamp': {'$gt': from_date,'$lt': to_date}}
     )
     for op in sorted_op_types:
         ops_count += coll_ops[op].count_documents(
-            {"timestamp": {"$gt": from_date, "$lt": to_date}}
+            {'timestamp': {'$gt': from_date, '$lt': to_date}}
         )
     return ops_count
 
@@ -151,42 +151,32 @@ def get_ops_count_by_type(operation_type) -> int:
 def get_ops_count_by_type_in_period(
     operation_type: str = "witness_reward",
     to_date: dt.datetime = dt.datetime.now(),
-    from_date: dt.datetime = dt.datetime.now() - dt.timedelta(hours=1),
+    from_date: dt.datetime = dt.datetime.now() - dt.timedelta(hours=1)
 ) -> int:
     """Return number of chosen operations in the database for selected
     date in selected period."""
     if operation_type in sorted_op_types:
-        result = coll_ops[operation_type].count_documents(
-            {"timestamp": {"$gt": from_date, "$lt": to_date}}
-        )
+        result = coll_ops[operation_type].count_documents({
+            'timestamp': {'$gt': from_date, '$lt': to_date}
+        })
     else:
-        result = coll_ops.count_documents(
-            {
-                "timestamp": {"$gt": from_date, "$lt": to_date},
-                "op.0": operation_type,
-            }
-        )
+        result = coll_ops.count_documents({
+            'timestamp': {'$gt': from_date,'$lt': to_date},
+            'op.0': operation_type})
     return result
 
 
 def get_sum_shares_in_period(
     to_date: dt.datetime = dt.datetime.now(),
-    from_date: dt.datetime = dt.datetime.now() - dt.timedelta(hours=1),
+    from_date: dt.datetime = dt.datetime.now() - dt.timedelta(hours=1)
 ) -> float:
     """Return sum of SHARES for selected date in selected period."""
     sum_shares = 0
     for op_type in ops_shares:
-        result = coll_ops[op_type].aggregate(
-            [
-                {"$match": {"timestamp": {"$gt": from_date, "$lt": to_date}}},
-                {
-                    "$group": {
-                        "_id": None,
-                        "shares": {"$sum": {"$sum": "$op.shares"}},
-                    }
-                },
-            ]
-        )
+        result = coll_ops[op_type].aggregate([
+            {'$match': {'timestamp': {'$gt': from_date,'$lt': to_date}}},
+            {'$group': {'_id': None,'shares': {'$sum': {'$sum':'$op.shares'}}}}
+        ])
         try:
             sum_shares += tuple(result)[0]["shares"]
         except IndexError:
@@ -251,7 +241,7 @@ def get_sum_shares_by_op(operation_type: str = "witness_reward") -> float:
 def get_sum_shares_by_op_in_period(
     operation_type: str = "witness_reward",
     to_date: dt.datetime = dt.datetime.now(),
-    from_date: dt.datetime = dt.datetime.now() - dt.timedelta(hours=1),
+    from_date: dt.datetime = dt.datetime.now() - dt.timedelta(hours=1)
 ) -> float:
     """Return sum of SHARES for chosen operation for selected date in
     selected period."""
