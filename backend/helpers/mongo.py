@@ -60,20 +60,13 @@ def get_last_blocknum_and_subcoll() -> dict:
     subcoll_bnum_max = None
     subcolls = ops_shares + ops_custom
     for coll_op in subcolls:
-        result = tuple(
-            coll_ops[coll_op]
-            .find({}, {"_id": 1})
-            .sort("_id", pymongo.DESCENDING)
-            .limit(1)
-        )
+        result = tuple(coll_ops[coll_op].find({}, {"_id": 1}).sort("_id", pymongo.DESCENDING).limit(1))
         if len(result) != 0:
             bnum_max_in_coll = result[0]["_id"]
             if bnum_max_in_coll > bnum_max:
                 bnum_max = int(bnum_max_in_coll)
                 subcoll_bnum_max = coll_ops[coll_op]
-    result = tuple(
-        coll_ops.find({}, {"_id": 1}).sort("_id", pymongo.DESCENDING).limit(1)
-    )
+    result = tuple(coll_ops.find({}, {"_id": 1}).sort("_id", pymongo.DESCENDING).limit(1))
     if len(result) != 0:
         bnum_max_in_coll = result[0]["_id"]
         if bnum_max_in_coll > bnum_max:
@@ -120,13 +113,9 @@ def get_ops_count_in_period(
 ) -> int:
     """Return number of all operations in the database for selected date
     in selected period."""
-    ops_count = coll_ops.count_documents(
-        {"timestamp": {"$gt": from_date, "$lt": to_date}}
-    )
+    ops_count = coll_ops.count_documents({"timestamp": {"$gt": from_date, "$lt": to_date}})
     for op in sorted_op_types:
-        ops_count += coll_ops[op].count_documents(
-            {"timestamp": {"$gt": from_date, "$lt": to_date}}
-        )
+        ops_count += coll_ops[op].count_documents({"timestamp": {"$gt": from_date, "$lt": to_date}})
     return ops_count
 
 
@@ -156,9 +145,7 @@ def get_ops_count_by_type_in_period(
     """Return number of chosen operations in the database for selected
     date in selected period."""
     if operation_type in sorted_op_types:
-        result = coll_ops[operation_type].count_documents(
-            {"timestamp": {"$gt": from_date, "$lt": to_date}}
-        )
+        result = coll_ops[operation_type].count_documents({"timestamp": {"$gt": from_date, "$lt": to_date}})
     else:
         result = coll_ops.count_documents(
             {
@@ -581,6 +568,42 @@ def get_top_readdleme_posts_by_shares_in_period(
     return result
 
 
+def get_top_readdleme_posts_by_awards_in_period(
+    to_date: dt.datetime = dt.datetime.now(),
+    from_date: dt.datetime = dt.datetime.now() - dt.timedelta(weeks=1),
+    in_top: int = 5,
+    to_skip: int = 0,
+) -> list:
+    """Return top Readdle.Me posts by awards count."""
+    result = list(
+        coll_ops["receive_award"].aggregate(
+            [
+                {
+                    "$match": {
+                        "timestamp": {"$gt": from_date, "$lt": to_date},
+                        "op.memo": {"$regex": "^viz://@"},
+                    }
+                },
+                {
+                    "$group": {
+                        "_id": "$op.memo",
+                        "awards": {"$sum": {"$sum": 1}},
+                    }
+                },
+                {"$sort": {"awards": -1}},
+                {"$skip": to_skip},
+                {"$limit": in_top},
+            ]
+        )
+    )
+    i = 0
+    for item in result:
+        link_to_post = "".join(readdleme_prefix, item["_id"][0])
+        result[i] = {link_to_post: item["awards"]}
+        i += 1
+    return result
+
+
 def get_readdleme_post_awards_and_shares_in_period(
     link_to_post: str = "https://readdle.me/#viz://@readdle/22099872/",
     to_date: dt.datetime = dt.datetime.now(),
@@ -668,42 +691,6 @@ def get_top_readdleme_authors_by_shares_in_period(
     return result
 
 
-def get_top_readdleme_posts_by_awards_in_period(
-    to_date: dt.datetime = dt.datetime.now(),
-    from_date: dt.datetime = dt.datetime.now() - dt.timedelta(weeks=1),
-    in_top: int = 5,
-    to_skip: int = 0,
-) -> list:
-    """Return top Readdle.Me posts by awards count."""
-    result = list(
-        coll_ops["receive_award"].aggregate(
-            [
-                {
-                    "$match": {
-                        "timestamp": {"$gt": from_date, "$lt": to_date},
-                        "op.memo": {"$regex": "^viz://@"},
-                    }
-                },
-                {
-                    "$group": {
-                        "_id": "$op.memo",
-                        "awards": {"$sum": {"$sum": 1}},
-                    }
-                },
-                {"$sort": {"awards": -1}},
-                {"$skip": to_skip},
-                {"$limit": in_top},
-            ]
-        )
-    )
-    i = 0
-    for item in result:
-        link_to_post = "".join(readdleme_prefix, item["_id"][0])
-        result[i] = {link_to_post: item["awards"]}
-        i += 1
-    return result
-
-
 def get_top_readdleme_authors_by_awards_in_period(
     to_date: dt.datetime = dt.datetime.now(),
     from_date: dt.datetime = dt.datetime.now() - dt.timedelta(weeks=1),
@@ -753,4 +740,43 @@ def get_top_readdleme_authors_by_awards_in_period(
         link_to_author = readdleme_prefix + "viz://" + item["_id"]
         result[i] = {link_to_author: item["awards"]}
         i += 1
+    return result
+
+
+def get_readdleme_author_awards_and_shares_in_period(
+    readdleme_author_id: str = "@readdle",
+    to_date: dt.datetime = dt.datetime.now(),
+    from_date: dt.datetime = dt.datetime.now() - dt.timedelta(weeks=1),
+) -> dict:
+    """Return Readdle.Me authors awards count and received SHARES."""
+    result = coll_ops["receive_award"].aggregate(
+        [
+            {
+                "$match": {
+                    "timestamp": {"$gt": from_date, "$lt": to_date},
+                    "op.memo": {"$regex": "^viz://" + readdleme_author_id},
+                }
+            },
+            {
+                "$project": {
+                    "_id": 0,
+                    "author": readdleme_author_id,
+                    "shares": "$op.shares",
+                }
+            },
+            {
+                "$group": {
+                    "_id": "$author",
+                    "awards": {"$sum": {"$sum": 1}},
+                    "shares": {"$sum": {"$sum": "$shares"}},
+                },
+            },
+        ]
+    )
+    result = tuple(result)
+    if len(result) != 0:
+        result = result[0]
+        result["author"] = result.pop("_id")
+    else:
+        result = {"awards": 0, "shares": 0, "author": readdleme_author_id}
     return result
