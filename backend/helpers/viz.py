@@ -3,10 +3,7 @@ import random
 from typing import Any
 from viz import Client
 
-nodes = [
-    'wss://node.viz.cx/ws',
-    'wss://viz.lexai.host/ws'
-]
+nodes = ["wss://node.viz.cx/ws", "wss://viz.lexai.host/ws"]
 
 
 def change_node(selectFirst=False):
@@ -33,5 +30,5 @@ def get_dgp() -> Any:
 
 def get_last_block_in_chain() -> int:
     """Return number of last irreversible block from the VIZ blockchain."""
-    result = get_dgp()['last_irreversible_block_num']
+    result = get_dgp()["last_irreversible_block_num"]
     return int(result)

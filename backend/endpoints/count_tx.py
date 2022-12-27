@@ -23,7 +23,7 @@ def count_ops_in_period(
 ) -> dict:
     to_date_str = dt.datetime.strftime(to_date, "%Y-%m-%d %H:%M:%S")
     from_date_str = dt.datetime.strftime(to_date - period, "%Y-%m-%d %H:%M:%S")
-    result = mongo.get_ops_count_in_period(to_date, period)
+    result = mongo.get_ops_count_in_period(to_date, dt.datetime.now() - period)
     return {
         "operations": result,
         "operation_type": "all",
@@ -38,7 +38,7 @@ def count_ops_by_op_type(operation_type: str = "witness_reward") -> dict:
     return {
         "operations": result,
         "operation_type": operation_type,
-        "date": "all"
+        "date": "all",
     }
 
 
@@ -52,7 +52,9 @@ def count_ops_by_op_type_in_period(
 ) -> dict:
     to_date_str = dt.datetime.strftime(to_date, "%Y-%m-%d %H:%M:%S")
     from_date_str = dt.datetime.strftime(to_date - period, "%Y-%m-%d %H:%M:%S")
-    result = mongo.get_ops_count_by_type_in_period(operation_type, to_date, period)
+    result = mongo.get_ops_count_by_type_in_period(
+        operation_type, to_date, dt.datetime.now() - period
+    )
     return {
         "operations": result,
         "operation_type": operation_type,

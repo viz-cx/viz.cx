@@ -1,23 +1,24 @@
 """Helper module for working with MongoDB"""
 import datetime as dt
 import os
-import re
-from unittest import result
 import pymongo
-
+from pymongo import errors
 
 try:
-    db = pymongo.MongoClient(os.getenv("MONGO"))[os.getenv("DB_NAME")]
-    coll = db[os.getenv("COLLECTION")]
-    coll_ops = db[os.getenv("COLLECTION_OPS")]
-    coll_custom = coll_ops[os.getenv("COLLECTION_CUSTOM")]
-    ops_shares = os.getenv("OPS_SHARES").split("/")
-    ops_custom = os.getenv("OPS_CUSTOM")
-    count_max_ops_in_block = float(os.getenv("COUNT_MAX_OPS_IN_BLOCK"))
-    readdleme_prefix = os.getenv("READDLEME_PREFIX")
-
+    db = pymongo.MongoClient(os.getenv("MONGO", ""))[os.getenv("DB_NAME", "")]
+    coll = db[os.getenv("COLLECTION", "")]
+    coll_ops = db[os.getenv("COLLECTION_OPS", "")]
+    coll_custom = coll_ops[os.getenv("COLLECTION_CUSTOM", "")]
+    ops_shares = os.getenv("OPS_SHARES", "").split("/")
+    ops_custom = os.getenv("OPS_CUSTOM", "")
+    count_max_ops_in_block = float(os.getenv("COUNT_MAX_OPS_IN_BLOCK", ""))
+    readdleme_prefix = os.getenv("READDLEME_PREFIX", "")
 except Exception as e:
+    ops_shares = []
+    ops_custom = ""
+    readdleme_prefix = ""
     print(str(e))
+
 
 if "/" in ops_custom:
     ops_custom = ops_custom.split("/")
@@ -116,16 +117,16 @@ def get_all_blocks_count() -> int:
 # Количество всех операций в БД в заданном периоде.
 def get_ops_count_in_period(
     to_date: dt.datetime = dt.datetime.now(),
-    from_date: dt.datetime = dt.datetime.now() - dt.timedelta(hours=1)
+    from_date: dt.datetime = dt.datetime.now() - dt.timedelta(hours=1),
 ) -> int:
     """Return number of all operations in the database for selected date
     in selected period."""
     ops_count = coll_ops.count_documents(
-        {'timestamp': {'$gt': from_date,'$lt': to_date}}
+        {"timestamp": {"$gt": from_date, "$lt": to_date}}
     )
     for op in sorted_op_types:
         ops_count += coll_ops[op].count_documents(
-            {'timestamp': {'$gt': from_date, '$lt': to_date}}
+            {"timestamp": {"$gt": from_date, "$lt": to_date}}
         )
     return ops_count
 
@@ -151,32 +152,42 @@ def get_ops_count_by_type(operation_type) -> int:
 def get_ops_count_by_type_in_period(
     operation_type: str = "witness_reward",
     to_date: dt.datetime = dt.datetime.now(),
-    from_date: dt.datetime = dt.datetime.now() - dt.timedelta(hours=1)
+    from_date: dt.datetime = dt.datetime.now() - dt.timedelta(hours=1),
 ) -> int:
     """Return number of chosen operations in the database for selected
     date in selected period."""
     if operation_type in sorted_op_types:
-        result = coll_ops[operation_type].count_documents({
-            'timestamp': {'$gt': from_date, '$lt': to_date}
-        })
+        result = coll_ops[operation_type].count_documents(
+            {"timestamp": {"$gt": from_date, "$lt": to_date}}
+        )
     else:
-        result = coll_ops.count_documents({
-            'timestamp': {'$gt': from_date,'$lt': to_date},
-            'op.0': operation_type})
+        result = coll_ops.count_documents(
+            {
+                "timestamp": {"$gt": from_date, "$lt": to_date},
+                "op.0": operation_type,
+            }
+        )
     return result
 
 
 def get_sum_shares_in_period(
     to_date: dt.datetime = dt.datetime.now(),
-    from_date: dt.datetime = dt.datetime.now() - dt.timedelta(hours=1)
+    from_date: dt.datetime = dt.datetime.now() - dt.timedelta(hours=1),
 ) -> float:
     """Return sum of SHARES for selected date in selected period."""
     sum_shares = 0
     for op_type in ops_shares:
-        result = coll_ops[op_type].aggregate([
-            {'$match': {'timestamp': {'$gt': from_date,'$lt': to_date}}},
-            {'$group': {'_id': None,'shares': {'$sum': {'$sum':'$op.shares'}}}}
-        ])
+        result = coll_ops[op_type].aggregate(
+            [
+                {"$match": {"timestamp": {"$gt": from_date, "$lt": to_date}}},
+                {
+                    "$group": {
+                        "_id": None,
+                        "shares": {"$sum": {"$sum": "$op.shares"}},
+                    }
+                },
+            ]
+        )
         try:
             sum_shares += tuple(result)[0]["shares"]
         except IndexError:
@@ -241,7 +252,7 @@ def get_sum_shares_by_op(operation_type: str = "witness_reward") -> float:
 def get_sum_shares_by_op_in_period(
     operation_type: str = "witness_reward",
     to_date: dt.datetime = dt.datetime.now(),
-    from_date: dt.datetime = dt.datetime.now() - dt.timedelta(hours=1)
+    from_date: dt.datetime = dt.datetime.now() - dt.timedelta(hours=1),
 ) -> float:
     """Return sum of SHARES for chosen operation for selected date in
     selected period."""
@@ -277,7 +288,7 @@ def get_sum_shares_by_op_in_period(
                 ]
             )
             sum_shares = tuple(result)[0]["shares"]
-        except pymongo.errors.OperationFailure:
+        except errors.OperationFailure:
             sum_shares = 0
     return sum_shares
 
@@ -688,7 +699,9 @@ def get_top_readdleme_posts_by_awards_in_period(
     )
     i = 0
     for item in result:
-        link_to_post = "".join(readdleme_prefix, item["_id"][0])
+        link_to_post = "".join(
+            readdleme_prefix, item["_id"][0]
+        )  # type: ignore
         result[i] = {link_to_post: item["awards"]}
         i += 1
     return result

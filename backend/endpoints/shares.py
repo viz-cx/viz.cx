@@ -1,5 +1,4 @@
 import datetime as dt
-from unittest import result
 from fastapi import APIRouter
 import helpers.mongo as mongo
 
@@ -21,7 +20,7 @@ def sum_shares() -> dict:
 @router.get("/{to_date_str}/{from_date_str}")
 def sum_shares_in_period(
     to_date: dt.datetime = dt.datetime.now(),
-    from_date: dt.datetime = dt.datetime.now() - dt.timedelta(hours=1)
+    from_date: dt.datetime = dt.datetime.now() - dt.timedelta(hours=1),
 ) -> dict:
     to_date_str = dt.datetime.strftime(to_date, "%Y-%m-%d %H:%M:%S")
     from_date_str = dt.datetime.strftime(from_date, "%Y-%m-%d %H:%M:%S")
@@ -43,7 +42,9 @@ def sum_shares_by_op_type_in_period(
 ) -> dict:
     to_date_str = dt.datetime.strftime(to_date, "%Y-%m-%d %H:%M:%S")
     from_date_str = dt.datetime.strftime(from_date, "%Y-%m-%d %H:%M:%S")
-    result = mongo.get_sum_shares_by_op_in_period(operation_type, to_date, from_date)
+    result = mongo.get_sum_shares_by_op_in_period(
+        operation_type, to_date, from_date
+    )
     return {
         "shares": result,
         "operation_type": operation_type,
