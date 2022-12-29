@@ -1,7 +1,7 @@
 """Helper module to VIZ blockchain."""
 import random
 from typing import Any
-from viz import Client
+from viz import Client as VIZ
 
 nodes = ["wss://node.viz.cx/ws", "wss://viz.lexai.host/ws"]
 
@@ -11,7 +11,7 @@ def change_node(selectFirst=False):
     try:
         node = nodes[0] if selectFirst else random.choice(nodes)
         print("Change node to {}".format(node))
-        viz = Client(node=node)
+        viz = VIZ(node=node)
     except:
         change_node()
 

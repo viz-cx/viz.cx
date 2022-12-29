@@ -2,6 +2,8 @@ import helpers.mongo as mongo
 from fastapi import APIRouter
 import datetime as dt
 
+from helpers.types import OpType
+
 router = APIRouter(
     prefix="/count_ops",
     tags=["Count"],
@@ -33,7 +35,9 @@ def count_ops_in_period(
 
 # Количество операций по заданному типу за всё время.
 @router.get("/{operation_type}")
-def count_ops_by_op_type(operation_type: str = "witness_reward") -> dict:
+def count_ops_by_op_type(
+    operation_type: OpType = OpType.witness_reward,
+) -> dict:
     result = mongo.get_ops_count_by_type(operation_type)
     return {
         "operations": result,
@@ -46,7 +50,7 @@ def count_ops_by_op_type(operation_type: str = "witness_reward") -> dict:
 # час, день, неделя, месяц).
 @router.get("/{operation_type}/{to_date_str}/{period_in_seconds}")
 def count_ops_by_op_type_in_period(
-    operation_type: str = "witness_reward",
+    operation_type: OpType = OpType.witness_reward,
     to_date: dt.datetime = dt.datetime.now(),
     period: dt.timedelta = dt.timedelta(hours=1),
 ) -> dict:
