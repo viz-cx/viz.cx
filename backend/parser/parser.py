@@ -1,10 +1,11 @@
 """VIZ Blockchain to MongoDB parser"""
+from typing import NoReturn
 from helpers.mongo import get_last_blocknum, save_block
 from helpers.viz import get_last_block_in_chain, get_ops_in_block
 from time import sleep
 
 
-def start_parsing():
+def start_parsing() -> NoReturn:
     """Parse VIZ Blockchain blocks to MongoDB."""
     try:
         last_blocknum_in_bd = get_last_blocknum()
