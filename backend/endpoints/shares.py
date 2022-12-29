@@ -1,7 +1,7 @@
 import datetime as dt
-from unittest import result
 from fastapi import APIRouter
 import helpers.mongo as mongo
+from helpers.types import OpType
 
 
 router = APIRouter(
@@ -21,7 +21,7 @@ def sum_shares() -> dict:
 @router.get("/{to_date_str}/{from_date_str}")
 def sum_shares_in_period(
     to_date: dt.datetime = dt.datetime.now(),
-    from_date: dt.datetime = dt.datetime.now() - dt.timedelta(hours=1)
+    from_date: dt.datetime = dt.datetime.now() - dt.timedelta(hours=1),
 ) -> dict:
     to_date_str = dt.datetime.strftime(to_date, "%Y-%m-%d %H:%M:%S")
     from_date_str = dt.datetime.strftime(from_date, "%Y-%m-%d %H:%M:%S")
@@ -37,13 +37,15 @@ def sum_shares_in_period(
 # период (минута, час, день, месяц).
 @router.get("/{operation_type}/{to_date_str}/{from_date_str}")
 def sum_shares_by_op_type_in_period(
-    operation_type: str = "witness_reward",
+    operation_type: OpType = OpType.witness_reward,
     to_date: dt.datetime = dt.datetime.now(),
     from_date: dt.datetime = dt.datetime.now() - dt.timedelta(hours=1),
 ) -> dict:
     to_date_str = dt.datetime.strftime(to_date, "%Y-%m-%d %H:%M:%S")
     from_date_str = dt.datetime.strftime(from_date, "%Y-%m-%d %H:%M:%S")
-    result = mongo.get_sum_shares_by_op_in_period(operation_type, to_date, from_date)
+    result = mongo.get_sum_shares_by_op_in_period(
+        operation_type, to_date, from_date
+    )
     return {
         "shares": result,
         "operation_type": operation_type,
@@ -68,7 +70,7 @@ def show_top_tg_ch_posts_by_shares_in_period(
         to_date, from_date, in_top, to_skip
     )
     return {
-        "top tg posts with shares": result,
+        "top_tg_posts_with_shares": result,
         "date": {"from": from_date_str, "to": to_date_str},
     }
 
@@ -90,7 +92,7 @@ def show_top_tg_ch_posts_by_awards_count_in_period(
         to_date, from_date, in_top, to_skip
     )
     return {
-        "top tg posts with awards": result,
+        "top_tg_posts_with_awards": result,
         "date": {"from": from_date_str, "to": to_date_str},
     }
 
@@ -130,7 +132,7 @@ def show_top_tg_channels_by_shares_in_period(
         to_date, from_date, in_top, to_skip
     )
     return {
-        "top tg channels with shares": result,
+        "top_tg_channels_with_shares": result,
         "date": {"from": from_date_str, "to": to_date_str},
     }
 
@@ -152,7 +154,7 @@ def show_top_tg_channels_by_awards_count_in_period(
         to_date, from_date, in_top, to_skip
     )
     return {
-        "top tg channels with awards count": result,
+        "top_tg_channels_with_awards_count": result,
         "date": {"from": from_date_str, "to": to_date_str},
     }
 
@@ -188,7 +190,7 @@ def show_top_readdleme_posts_by_shares_in_period(
         to_date, from_date, in_top, to_skip
     )
     return {
-        "top readdle.me posts with shares": result,
+        "top_readdle.me_posts_with_shares": result,
         "date": {"from": from_date_str, "to": to_date_str},
     }
 
@@ -209,7 +211,7 @@ def show_top_readdleme_posts_by_awards_count_in_period(
         to_date, from_date, in_top, to_skip
     )
     return {
-        "top readdle.me posts with awards": result,
+        "top_readdle.me_posts_with_awards": result,
         "date": {"from": from_date_str, "to": to_date_str},
     }
 

@@ -1,33 +1,21 @@
 """Helper module for working with MongoDB"""
 import datetime as dt
 import os
-import re
-from unittest import result
 import pymongo
+from pymongo import errors
+from helpers.types import OpType, ops_custom, ops_shares
 
-
-try:
-    db = pymongo.MongoClient(os.getenv("MONGO"))[os.getenv("DB_NAME")]
-    coll = db[os.getenv("COLLECTION")]
-    coll_ops = db[os.getenv("COLLECTION_OPS")]
-    coll_custom = coll_ops[os.getenv("COLLECTION_CUSTOM")]
-    ops_shares = os.getenv("OPS_SHARES").split("/")
-    ops_custom = os.getenv("OPS_CUSTOM")
-    count_max_ops_in_block = float(os.getenv("COUNT_MAX_OPS_IN_BLOCK"))
-    readdleme_prefix = os.getenv("READDLEME_PREFIX")
-
-except Exception as e:
-    print(str(e))
-
-if "/" in ops_custom:
-    ops_custom = ops_custom.split("/")
-else:
-    ops_custom = [ops_custom]
+db = pymongo.MongoClient(os.getenv("MONGO", ""))[os.getenv("DB_NAME", "")]
+coll = db[os.getenv("COLLECTION", "")]
+coll_ops = db[os.getenv("COLLECTION_OPS", "")]
+coll_custom = coll_ops[OpType.custom]
+count_max_ops_in_block = 100_000
+readdleme_prefix = "https://readdle.me/#"
 
 sorted_op_types = ops_custom + ops_shares
 
 
-def save_block(block):
+def save_block(block) -> None:
     """Save block to MongoDB collection."""
     blocknumber = block[0]["block"]
     for tx in block:
@@ -60,22 +48,29 @@ def get_last_blocknum_and_subcoll() -> dict:
     subcoll_bnum_max = None
     subcolls = ops_shares + ops_custom
     for coll_op in subcolls:
-        result = tuple(coll_ops[coll_op].find({}, {"_id": 1}).sort("_id", pymongo.DESCENDING).limit(1))
+        result = tuple(
+            coll_ops[coll_op]
+            .find({}, {"_id": 1})
+            .sort("_id", pymongo.DESCENDING)
+            .limit(1)
+        )
         if len(result) != 0:
             bnum_max_in_coll = result[0]["_id"]
             if bnum_max_in_coll > bnum_max:
                 bnum_max = int(bnum_max_in_coll)
                 subcoll_bnum_max = coll_ops[coll_op]
-    result = tuple(coll_ops.find({}, {"_id": 1}).sort("_id", pymongo.DESCENDING).limit(1))
+    result = tuple(
+        coll_ops.find({}, {"_id": 1}).sort("_id", pymongo.DESCENDING).limit(1)
+    )
     if len(result) != 0:
         bnum_max_in_coll = result[0]["_id"]
         if bnum_max_in_coll > bnum_max:
             bnum_max = int(bnum_max_in_coll)
             subcoll_bnum_max = coll_ops
-    return {"last block num": bnum_max, "collection": subcoll_bnum_max}
+    return {"last_block_num": bnum_max, "collection": subcoll_bnum_max}
 
 
-def sort_block_ops_to_subcolls(block_n_num):
+def sort_block_ops_to_subcolls(block_n_num) -> None:
     """Divide block to subcollection by operations. SHARES and CUSTOM ops:
     to separate subcollections. And 'ops' collection for unsorted others."""
     op_number = 0.0
@@ -109,16 +104,16 @@ def get_all_blocks_count() -> int:
 # Количество всех операций в БД в заданном периоде.
 def get_ops_count_in_period(
     to_date: dt.datetime = dt.datetime.now(),
-    from_date: dt.datetime = dt.datetime.now() - dt.timedelta(hours=1)
+    from_date: dt.datetime = dt.datetime.now() - dt.timedelta(hours=1),
 ) -> int:
     """Return number of all operations in the database for selected date
     in selected period."""
     ops_count = coll_ops.count_documents(
-        {'timestamp': {'$gt': from_date,'$lt': to_date}}
+        {"timestamp": {"$gt": from_date, "$lt": to_date}}
     )
     for op in sorted_op_types:
         ops_count += coll_ops[op].count_documents(
-            {'timestamp': {'$gt': from_date, '$lt': to_date}}
+            {"timestamp": {"$gt": from_date, "$lt": to_date}}
         )
     return ops_count
 
@@ -142,34 +137,44 @@ def get_ops_count_by_type(operation_type) -> int:
 
 
 def get_ops_count_by_type_in_period(
-    operation_type: str = "witness_reward",
+    operation_type: OpType = OpType.witness_reward,
     to_date: dt.datetime = dt.datetime.now(),
-    from_date: dt.datetime = dt.datetime.now() - dt.timedelta(hours=1)
+    from_date: dt.datetime = dt.datetime.now() - dt.timedelta(hours=1),
 ) -> int:
     """Return number of chosen operations in the database for selected
     date in selected period."""
     if operation_type in sorted_op_types:
-        result = coll_ops[operation_type].count_documents({
-            'timestamp': {'$gt': from_date, '$lt': to_date}
-        })
+        result = coll_ops[operation_type].count_documents(
+            {"timestamp": {"$gt": from_date, "$lt": to_date}}
+        )
     else:
-        result = coll_ops.count_documents({
-            'timestamp': {'$gt': from_date,'$lt': to_date},
-            'op.0': operation_type})
+        result = coll_ops.count_documents(
+            {
+                "timestamp": {"$gt": from_date, "$lt": to_date},
+                "op.0": operation_type,
+            }
+        )
     return result
 
 
 def get_sum_shares_in_period(
     to_date: dt.datetime = dt.datetime.now(),
-    from_date: dt.datetime = dt.datetime.now() - dt.timedelta(hours=1)
+    from_date: dt.datetime = dt.datetime.now() - dt.timedelta(hours=1),
 ) -> float:
     """Return sum of SHARES for selected date in selected period."""
     sum_shares = 0
     for op_type in ops_shares:
-        result = coll_ops[op_type].aggregate([
-            {'$match': {'timestamp': {'$gt': from_date,'$lt': to_date}}},
-            {'$group': {'_id': None,'shares': {'$sum': {'$sum':'$op.shares'}}}}
-        ])
+        result = coll_ops[op_type].aggregate(
+            [
+                {"$match": {"timestamp": {"$gt": from_date, "$lt": to_date}}},
+                {
+                    "$group": {
+                        "_id": None,
+                        "shares": {"$sum": {"$sum": "$op.shares"}},
+                    }
+                },
+            ]
+        )
         try:
             sum_shares += tuple(result)[0]["shares"]
         except IndexError:
@@ -198,7 +203,9 @@ def get_sum_shares_all() -> float:
     return sum_shares
 
 
-def get_sum_shares_by_op(operation_type: str = "witness_reward") -> float:
+def get_sum_shares_by_op(
+    operation_type: OpType = OpType.witness_reward,
+) -> float:
     """Return sum of SHARES for chosen operation."""
     if operation_type in sorted_op_types:
         result = coll_ops[operation_type].aggregate(
@@ -232,9 +239,9 @@ def get_sum_shares_by_op(operation_type: str = "witness_reward") -> float:
 
 
 def get_sum_shares_by_op_in_period(
-    operation_type: str = "witness_reward",
+    operation_type: OpType = OpType.witness_reward,
     to_date: dt.datetime = dt.datetime.now(),
-    from_date: dt.datetime = dt.datetime.now() - dt.timedelta(hours=1)
+    from_date: dt.datetime = dt.datetime.now() - dt.timedelta(hours=1),
 ) -> float:
     """Return sum of SHARES for chosen operation for selected date in
     selected period."""
@@ -270,7 +277,7 @@ def get_sum_shares_by_op_in_period(
                 ]
             )
             sum_shares = tuple(result)[0]["shares"]
-        except pymongo.errors.OperationFailure:
+        except errors.OperationFailure:
             sum_shares = 0
     return sum_shares
 
@@ -283,7 +290,7 @@ def get_top_tg_ch_posts_by_shares_in_period(
 ) -> list:
     """Return top Telegram channels posts by shares."""
     result = list(
-        coll_ops["receive_award"].aggregate(
+        coll_ops[OpType.receive_award].aggregate(
             [
                 {
                     "$match": {
@@ -319,7 +326,7 @@ def get_top_tg_ch_by_shares_in_period(
     to_skip: int = 0,
 ) -> list:
     """Return top Telegram channels by received SHARES."""
-    result = coll_ops["receive_award"].aggregate(
+    result = coll_ops[OpType.receive_award].aggregate(
         [
             {
                 "$match": {
@@ -372,7 +379,7 @@ def get_top_tg_ch_posts_by_awards_count_in_period(
 ) -> list:
     """Return top Telegram channel posts by awards count."""
     result = list(
-        coll_ops["receive_award"].aggregate(
+        coll_ops[OpType.receive_award].aggregate(
             [
                 {
                     "$match": {
@@ -409,7 +416,7 @@ def get_tg_ch_post_awards_and_shares_in_period(
     """Return telegram channel post awards count and received SHARES in period"""
     memo_post_link = tg_ch_post_link.split("t.me/", 1)[-1]
     memo_post_link = "channel:@" + memo_post_link.replace("/", ":")
-    result = coll_ops["receive_award"].aggregate(
+    result = coll_ops[OpType.receive_award].aggregate(
         [
             {
                 "$match": {
@@ -449,7 +456,7 @@ def get_top_tg_chs_by_awards_count_in_period(
     to_skip: int = 0,
 ) -> list:
     """Return top telegram channels by awards count."""
-    result = coll_ops["receive_award"].aggregate(
+    result = coll_ops[OpType.receive_award].aggregate(
         [
             {
                 "$match": {
@@ -495,7 +502,7 @@ def get_tg_ch_awards_and_shares_in_period(
     from_date: dt.datetime = dt.datetime.now() - dt.timedelta(weeks=1),
 ) -> dict:
     """Return SHARES and awards received by telegram channel."""
-    result = coll_ops["receive_award"].aggregate(
+    result = coll_ops[OpType.receive_award].aggregate(
         [
             {
                 "$match": {
@@ -536,7 +543,7 @@ def get_top_readdleme_posts_by_shares_in_period(
 ) -> list:
     """Return top Readdle.Me posts by SHARES."""
     result = list(
-        coll_ops["receive_award"].aggregate(
+        coll_ops[OpType.receive_award].aggregate(
             [
                 {
                     "$match": {
@@ -564,42 +571,6 @@ def get_top_readdleme_posts_by_shares_in_period(
     return result
 
 
-def get_top_readdleme_posts_by_awards_in_period(
-    to_date: dt.datetime = dt.datetime.now(),
-    from_date: dt.datetime = dt.datetime.now() - dt.timedelta(weeks=1),
-    in_top: int = 5,
-    to_skip: int = 0,
-) -> list:
-    """Return top Readdle.Me posts by awards count."""
-    result = list(
-        coll_ops["receive_award"].aggregate(
-            [
-                {
-                    "$match": {
-                        "timestamp": {"$gt": from_date, "$lt": to_date},
-                        "op.memo": {"$regex": "^viz://@"},
-                    }
-                },
-                {
-                    "$group": {
-                        "_id": "$op.memo",
-                        "awards": {"$sum": {"$sum": 1}},
-                    }
-                },
-                {"$sort": {"awards": -1}},
-                {"$skip": to_skip},
-                {"$limit": in_top},
-            ]
-        )
-    )
-    i = 0
-    for item in result:
-        link_to_post = "".join(readdleme_prefix, item["_id"][0])
-        result[i] = {link_to_post: item["awards"]}
-        i += 1
-    return result
-
-
 def get_readdleme_post_awards_and_shares_in_period(
     link_to_post: str = "https://readdle.me/#viz://@readdle/22099872/",
     to_date: dt.datetime = dt.datetime.now(),
@@ -608,7 +579,7 @@ def get_readdleme_post_awards_and_shares_in_period(
     """Return Readdle.Me post awards count and received SHARES in period"""
     memo_post_link = link_to_post.split("#viz://", 1)[-1]
     memo_post_link = "viz://" + memo_post_link
-    result = coll_ops["receive_award"].aggregate(
+    result = coll_ops[OpType.receive_award].aggregate(
         [
             {
                 "$match": {
@@ -642,7 +613,7 @@ def get_top_readdleme_authors_by_shares_in_period(
 ) -> list:
     """Return top Readdle.Me authors by SHARES."""
     result = list(
-        coll_ops["receive_award"].aggregate(
+        coll_ops[OpType.receive_award].aggregate(
             [
                 {
                     "$match": {
@@ -687,6 +658,44 @@ def get_top_readdleme_authors_by_shares_in_period(
     return result
 
 
+def get_top_readdleme_posts_by_awards_in_period(
+    to_date: dt.datetime = dt.datetime.now(),
+    from_date: dt.datetime = dt.datetime.now() - dt.timedelta(weeks=1),
+    in_top: int = 5,
+    to_skip: int = 0,
+) -> list:
+    """Return top Readdle.Me posts by awards count."""
+    result = list(
+        coll_ops[OpType.receive_award].aggregate(
+            [
+                {
+                    "$match": {
+                        "timestamp": {"$gt": from_date, "$lt": to_date},
+                        "op.memo": {"$regex": "^viz://@"},
+                    }
+                },
+                {
+                    "$group": {
+                        "_id": "$op.memo",
+                        "awards": {"$sum": {"$sum": 1}},
+                    }
+                },
+                {"$sort": {"awards": -1}},
+                {"$skip": to_skip},
+                {"$limit": in_top},
+            ]
+        )
+    )
+    i = 0
+    for item in result:
+        link_to_post = "".join(
+            readdleme_prefix, item["_id"][0]
+        )  # type: ignore
+        result[i] = {link_to_post: item["awards"]}
+        i += 1
+    return result
+
+
 def get_top_readdleme_authors_by_awards_in_period(
     to_date: dt.datetime = dt.datetime.now(),
     from_date: dt.datetime = dt.datetime.now() - dt.timedelta(weeks=1),
@@ -695,7 +704,7 @@ def get_top_readdleme_authors_by_awards_in_period(
 ) -> list:
     """Return top Readdle.Me authors by awards count."""
     result = list(
-        coll_ops["receive_award"].aggregate(
+        coll_ops[OpType.receive_award].aggregate(
             [
                 {
                     "$match": {
@@ -736,43 +745,4 @@ def get_top_readdleme_authors_by_awards_in_period(
         link_to_author = readdleme_prefix + "viz://" + item["_id"]
         result[i] = {link_to_author: item["awards"]}
         i += 1
-    return result
-
-
-def get_readdleme_author_awards_and_shares_in_period(
-    readdleme_author_id: str = "@readdle",
-    to_date: dt.datetime = dt.datetime.now(),
-    from_date: dt.datetime = dt.datetime.now() - dt.timedelta(weeks=1),
-) -> dict:
-    """Return Readdle.Me authors awards count and received SHARES."""
-    result = coll_ops["receive_award"].aggregate(
-        [
-            {
-                "$match": {
-                    "timestamp": {"$gt": from_date, "$lt": to_date},
-                    "op.memo": {"$regex": "^viz://" + readdleme_author_id},
-                }
-            },
-            {
-                "$project": {
-                    "_id": 0,
-                    "author": readdleme_author_id,
-                    "shares": "$op.shares",
-                }
-            },
-            {
-                "$group": {
-                    "_id": "$author",
-                    "awards": {"$sum": {"$sum": 1}},
-                    "shares": {"$sum": {"$sum": "$shares"}},
-                },
-            },
-        ]
-    )
-    result = tuple(result)
-    if len(result) != 0:
-        result = result[0]
-        result["author"] = result.pop("_id")
-    else:
-        result = {"awards": 0, "shares": 0, "author": readdleme_author_id}
     return result
