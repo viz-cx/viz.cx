@@ -18,3 +18,11 @@ ops_shares = [
     OpType.receive_award,
     OpType.witness_reward,
 ]
+
+
+class ByType(str, Enum):
+    by_shares = "by_shares"
+    by_count = "by_count"
+
+    def __str__(self) -> str:
+        return str(self.value)
