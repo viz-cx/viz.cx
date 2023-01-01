@@ -32,7 +32,7 @@ def start_sorting() -> NoReturn:
     if last_bnum_in_scoll != 0:
         del_last_sorted_ops(last_bnum_in_scoll)
         print("Sorted ops from block {} deleted.".format(last_bnum_in_scoll))
-        last_bnum_in_scoll += -1
+        last_bnum_in_scoll -= 1
     else:
         print("Blocks not found in subcolls.")
         last_bnum_in_scoll = 0
@@ -55,7 +55,6 @@ def start_sorting() -> NoReturn:
                     "Last block from DB was sorted up. Sorting will contnue in 15 seconds."
                 )
                 sleep(15)
-
         except Exception as e:
             print("Sorting error: {}. Restart in 10 seconds.".format(str(e)))
             sleep(10)

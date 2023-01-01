@@ -2,7 +2,6 @@
 import datetime as dt
 import os
 import pymongo
-from pymongo import errors
 from helpers.types import OpType, ops_custom, ops_shares
 
 db = pymongo.MongoClient(os.getenv("MONGO", ""))[os.getenv("DB_NAME", "")]
@@ -218,20 +217,23 @@ def get_sum_shares_by_op(
                 }
             ]
         )
-        sum_shares = tuple(result)[0]["shares"]
-    else:
         try:
-            result = coll_ops.aggregate(
-                [
-                    {"$match": {"op.0": operation_type}},
-                    {
-                        "$group": {
-                            "_id": None,
-                            "shares": {"$sum": {"$sum": "$op.shares"}},
-                        }
-                    },
-                ]
-            )
+            sum_shares = tuple(result)[0]["shares"]
+        except IndexError:
+            sum_shares = 0
+    else:
+        result = coll_ops.aggregate(
+            [
+                {"$match": {"op.0": operation_type}},
+                {
+                    "$group": {
+                        "_id": None,
+                        "shares": {"$sum": {"$sum": "$op.shares"}},
+                    }
+                },
+            ]
+        )
+        try:
             sum_shares = tuple(result)[0]["shares"]
         except IndexError:
             sum_shares = 0
@@ -257,27 +259,30 @@ def get_sum_shares_by_op_in_period(
                 },
             ]
         )
-        sum_shares = tuple(result)[0]["shares"]
-    else:
         try:
-            result = coll_ops.aggregate(
-                [
-                    {
-                        "$match": {
-                            "timestamp": {"$gt": from_date, "$lt": to_date},
-                            "$op.0": operation_type,
-                        }
-                    },
-                    {
-                        "$group": {
-                            "_id": None,
-                            "shares": {"$sum": {"$sum": "$op.shares"}},
-                        }
-                    },
-                ]
-            )
             sum_shares = tuple(result)[0]["shares"]
-        except errors.OperationFailure:
+        except IndexError:
+            sum_shares = 0
+    else:
+        result = coll_ops.aggregate(
+            [
+                {
+                    "$match": {
+                        "timestamp": {"$gt": from_date, "$lt": to_date},
+                        "$op.0": operation_type,
+                    }
+                },
+                {
+                    "$group": {
+                        "_id": None,
+                        "shares": {"$sum": {"$sum": "$op.shares"}},
+                    }
+                },
+            ]
+        )
+        try:
+            sum_shares = tuple(result)[0]["shares"]
+        except IndexError:
             sum_shares = 0
     return sum_shares
 
@@ -443,9 +448,9 @@ def get_tg_ch_post_awards_and_shares_in_period(
     result = tuple(result)
     if len(result) != 0:
         result = result[0]
-        result["post link"] = result.pop("_id")
+        result["post_link"] = result.pop("_id")
     else:
-        result = {"awards": 0, "shares": 0, "post link": tg_ch_post_link}
+        result = {"awards": 0, "shares": 0, "post_link": tg_ch_post_link}
     return result
 
 
@@ -599,9 +604,9 @@ def get_readdleme_post_awards_and_shares_in_period(
     result = tuple(result)
     if len(result) != 0:
         result = result[0]
-        result["post link"] = readdleme_prefix + result.pop("_id")[0]
+        result["post_link"] = readdleme_prefix + result.pop("_id")[0]
     else:
-        result = {"awards": 0, "shares": 0, "post link": link_to_post}
+        result = {"awards": 0, "shares": 0, "post_link": link_to_post}
     return result
 
 

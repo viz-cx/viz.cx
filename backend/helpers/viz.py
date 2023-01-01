@@ -6,7 +6,7 @@ from viz import Client as VIZ
 nodes = ["wss://node.viz.cx/ws", "wss://viz.lexai.host/ws"]
 
 
-def change_node(selectFirst=False):
+def change_node(selectFirst=False) -> None:
     global viz
     try:
         node = nodes[0] if selectFirst else random.choice(nodes)
