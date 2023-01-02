@@ -43,14 +43,10 @@ export default {
                 title: 'Home',
                 value: '/',
             },
-            {
-                title: 'Analytics',
-                value: '/analytics',
-            },
-            {
-                title: 'VIZ account',
-                value: '/viz'
-            },
+            // {
+            //     title: 'VIZ account',
+            //     value: '/viz'
+            // },
             {
                 title: 'Top Telegram Channels',
                 value: '/telegram/top_channels'
