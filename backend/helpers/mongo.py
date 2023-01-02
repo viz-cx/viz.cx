@@ -368,11 +368,9 @@ def get_top_tg_ch_by_shares_in_period(
         ]
     )
     result = list(result)
-    i = 0
     for item in result:
         link_to_channel = item["_id"].replace("@", "https://t.me/", 1)
-        result[i] = {link_to_channel: item["shares"]}
-        i += 1
+        result.append({"channel": link_to_channel, "value": item["shares"]})
     return result
 
 
@@ -493,11 +491,9 @@ def get_top_tg_chs_by_awards_count_in_period(
         ]
     )
     result = list(result)
-    i = 0
     for item in result:
         link_to_channel = item["_id"].replace("@", "https://t.me/", 1)
-        result[i] = {link_to_channel: item["awards"]}
-        i += 1
+        result.append({"channel": link_to_channel, "value": item["awards"]})
     return result
 
 
