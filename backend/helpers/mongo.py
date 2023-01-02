@@ -331,7 +331,7 @@ def get_top_tg_ch_by_shares_in_period(
     to_skip: int = 0,
 ) -> list:
     """Return top Telegram channels by received SHARES."""
-    result = coll_ops[OpType.receive_award].aggregate(
+    data = coll_ops[OpType.receive_award].aggregate(
         [
             {
                 "$match": {
@@ -367,8 +367,8 @@ def get_top_tg_ch_by_shares_in_period(
             {"$limit": in_top},
         ]
     )
-    result = list(result)
-    for item in result:
+    result = list()
+    for item in data:
         link_to_channel = item["_id"].replace("@", "https://t.me/", 1)
         result.append({"channel": link_to_channel, "value": item["shares"]})
     return result
@@ -459,7 +459,7 @@ def get_top_tg_chs_by_awards_count_in_period(
     to_skip: int = 0,
 ) -> list:
     """Return top telegram channels by awards count."""
-    result = coll_ops[OpType.receive_award].aggregate(
+    data = coll_ops[OpType.receive_award].aggregate(
         [
             {
                 "$match": {
@@ -490,8 +490,8 @@ def get_top_tg_chs_by_awards_count_in_period(
             {"$limit": in_top},
         ]
     )
-    result = list(result)
-    for item in result:
+    result = list()
+    for item in data:
         link_to_channel = item["_id"].replace("@", "https://t.me/", 1)
         result.append({"channel": link_to_channel, "value": item["awards"]})
     return result
