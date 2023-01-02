@@ -7,7 +7,7 @@
       <div>
         <div class="text-h6">{{ getFullYearsFromLaunched() }} years</div>
         <p>
-          VIZ blockchain was launched in <a href="https://info.viz.plus/explorer/block/1/">September 2018</a>.
+          VIZ blockchain was launched in <a target="_blank" href="https://info.viz.plus/explorer/block/1/">September 2018</a>.
         </p>
       </div>
     </v-timeline-item>
@@ -19,7 +19,7 @@
       <div>
         <div class="text-h6">Libraries</div>
         <p>
-          We have libraries for <a href="https://github.com/VIZ-Blockchain/viz-js-lib">JavaScript</a>, <a href="https://github.com/VIZ-Blockchain/viz-php-lib">PHP</a>, <a href="https://github.com/VIZ-Blockchain/viz-python-lib">Python</a>, <a href="https://github.com/VIZ-Blockchain/viz-go-lib">Go</a>, <a href="https://github.com/VIZ-Blockchain/viz-swift-lib">Swift</a>, <a href="https://github.com/VIZ-Blockchain/viz-go-lib">Go</a>, <a href="https://github.com/VizTower/viz-transaction">Dart</a>, <a href="https://github.com/lososeg/Graphene.Viz">C#</a> and so on.
+          We have libraries for <a target="_blank" href="https://github.com/VIZ-Blockchain/viz-js-lib">JavaScript</a>, <a target="_blank" href="https://github.com/VIZ-Blockchain/viz-php-lib">PHP</a>, <a target="_blank" href="https://github.com/VIZ-Blockchain/viz-python-lib">Python</a>, <a target="_blank" href="https://github.com/VIZ-Blockchain/viz-go-lib">Go</a>, <a target="_blank" href="https://github.com/VIZ-Blockchain/viz-swift-lib">Swift</a>, <a target="_blank" href="https://github.com/VIZ-Blockchain/viz-go-lib">Go</a>, <a target="_blank" href="https://github.com/VizTower/viz-transaction">Dart</a>, <a target="_blank" href="https://github.com/lososeg/Graphene.Viz">C#</a> and so on.
         </p>
       </div>
     </v-timeline-item>
