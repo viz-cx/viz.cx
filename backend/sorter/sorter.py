@@ -9,7 +9,7 @@ from helpers.mongo import (
     sort_block_ops_to_subcolls,
 )
 from time import sleep
-from helpers.types import OpType, ops_custom, ops_shares
+from helpers.enums import OpType, ops_custom, ops_shares
 
 db = pymongo.MongoClient(os.getenv("MONGO", ""))[os.getenv("DB_NAME", "")]
 coll = db[os.getenv("COLLECTION", "")]

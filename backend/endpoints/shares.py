@@ -1,7 +1,7 @@
 import datetime as dt
 from fastapi import APIRouter
 import helpers.mongo as mongo
-from helpers.types import OpType
+from helpers.enums import OpType
 
 
 router = APIRouter(

@@ -20,9 +20,9 @@ ops_shares = [
 ]
 
 
-class ByType(str, Enum):
-    by_shares = "by_shares"
-    by_count = "by_count"
+class SelectType(str, Enum):
+    shares = "shares"
+    awards = "awards"
 
     def __str__(self) -> str:
         return str(self.value)

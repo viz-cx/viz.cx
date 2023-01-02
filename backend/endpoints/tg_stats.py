@@ -1,7 +1,8 @@
 import datetime as dt
-from fastapi import APIRouter, Query
+from fastapi import APIRouter
+from helpers.dates import parse_date_string, iso8601
 import helpers.mongo as mongo
-from helpers.types import ByType
+from helpers.enums import SelectType
 
 
 router = APIRouter(
@@ -14,27 +15,27 @@ router = APIRouter(
 # выдаваемый с разными настройками. По умолчанию, топ-10 за неделю.
 @router.get("/top_posts")
 def show_top_tg_ch_posts_by_shares_in_period(
-    by: ByType,
-    to_date: dt.datetime = dt.datetime.now(),
-    from_date: dt.datetime = dt.datetime.now() - dt.timedelta(weeks=1),
+    by: SelectType,
+    to_date: str = iso8601(dt.datetime.utcnow()),
+    from_date: str = iso8601(dt.datetime.utcnow() - dt.timedelta(weeks=1)),
     in_top: int = 10,
     to_skip: int = 0,
 ) -> dict:
-    to_date_str = dt.datetime.strftime(to_date, "%Y-%m-%d %H:%M:%S")
-    from_date_str = dt.datetime.strftime(from_date, "%Y-%m-%d %H:%M:%S")
+    to = parse_date_string(to_date)
+    _from = parse_date_string(from_date)
     match by:
-        case ByType.by_shares:
+        case SelectType.shares:
             result = mongo.get_top_tg_ch_posts_by_shares_in_period(
-                to_date, from_date, in_top, to_skip
+                to, _from, in_top, to_skip
             )
-        case ByType.by_count:
+        case SelectType.awards:
             result = mongo.get_top_tg_ch_posts_by_awards_count_in_period(
-                to_date, from_date, in_top, to_skip
+                to, _from, in_top, to_skip
             )
 
     return {
         "posts": result,
-        "date": {"from": from_date_str, "to": to_date_str},
+        "date": {"from": _from, "to": to},
     }
 
 
@@ -42,30 +43,26 @@ def show_top_tg_ch_posts_by_shares_in_period(
 # выдаваемый с разными настройками. По умолчанию, топ-10 за неделю.
 @router.get("/top_channels")
 def show_top_tg_channels_in_period(
-    by: ByType,
-    to_date_str: str = Query(
-        default=dt.datetime.now().isoformat(),
-    ),
-    from_date_str: str = Query(
-        default=(dt.datetime.now() - dt.timedelta(weeks=1)).isoformat(),
-    ),
+    by: SelectType,
+    to_date: str = iso8601(dt.datetime.utcnow()),
+    from_date: str = iso8601(dt.datetime.utcnow() - dt.timedelta(weeks=1)),
     in_top: int = 10,
     to_skip: int = 0,
 ) -> dict:
-    to_date = dt.datetime.fromisoformat(to_date_str)
-    from_date = dt.datetime.fromisoformat(from_date_str)
+    to = parse_date_string(to_date)
+    _from = parse_date_string(from_date)
     match by:
-        case ByType.by_shares:
+        case SelectType.shares:
             result = mongo.get_top_tg_ch_by_shares_in_period(
-                to_date, from_date, in_top, to_skip
+                to, _from, in_top, to_skip
             )
-        case ByType.by_count:
+        case SelectType.awards:
             result = mongo.get_top_tg_chs_by_awards_count_in_period(
-                to_date, from_date, in_top, to_skip
+                to, _from, in_top, to_skip
             )
     return {
         "channels": result,
-        "date": {"from": from_date_str, "to": to_date_str},
+        "date": {"from": _from, "to": to},
     }
 
 
@@ -73,16 +70,12 @@ def show_top_tg_channels_in_period(
 @router.get("/channel")
 def show_tg_channel_awards_and_received_shares_in_period(
     tg_ch_id: str = "@viz_news",
-    to_date_str: str = dt.datetime.now().isoformat(),
-    from_date_str: str = (
-        dt.datetime.now() - dt.timedelta(weeks=1)
-    ).isoformat(),
+    to_date: str = iso8601(dt.datetime.utcnow()),
+    from_date: str = iso8601(dt.datetime.utcnow() - dt.timedelta(weeks=1)),
 ) -> dict:
-    to_date = dt.datetime.fromisoformat(to_date_str)
-    from_date = dt.datetime.fromisoformat(from_date_str)
-    result = mongo.get_tg_ch_awards_and_shares_in_period(
-        tg_ch_id, to_date, from_date
-    )
+    to = parse_date_string(to_date)
+    _from = parse_date_string(from_date)
+    result = mongo.get_tg_ch_awards_and_shares_in_period(tg_ch_id, to, _from)
     return result
 
 
@@ -90,17 +83,15 @@ def show_tg_channel_awards_and_received_shares_in_period(
 @router.get("/post")
 def show_tg_ch_post_awards_and_shares_in_period(
     tg_post_link: str = "https://t.me/viz_news/80",
-    to_date_str: str = dt.datetime.now().isoformat(),
-    from_date_str: str = (
-        dt.datetime.now() - dt.timedelta(weeks=1)
-    ).isoformat(),
+    to_date: str = iso8601(dt.datetime.utcnow()),
+    from_date: str = iso8601(dt.datetime.utcnow() - dt.timedelta(weeks=1)),
 ) -> dict:
-    to_date = dt.datetime.fromisoformat(to_date_str)
-    from_date = dt.datetime.fromisoformat(from_date_str)
+    to = parse_date_string(to_date)
+    _from = parse_date_string(from_date)
     result = mongo.get_tg_ch_post_awards_and_shares_in_period(
-        tg_post_link, to_date, from_date
+        tg_post_link, to, _from
     )
     return {
         "post": result,
-        "date": {"from": from_date_str, "to": to_date_str},
+        "date": {"from": _from, "to": to},
     }
