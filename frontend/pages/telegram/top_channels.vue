@@ -42,7 +42,7 @@ var select = ref('Shares')
 const periods = ['Week', 'Month', 'Year', 'All']
 let period = ref('All')
 const limits = [10, 25, 50, 100, 1000]
-let limit = ref(1000)
+let limit = ref(100)
 
 function getDateByPeriod(period: string): Date {
     let days: number
