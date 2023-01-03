@@ -18,3 +18,11 @@ ops_shares = [
     OpType.receive_award,
     OpType.witness_reward,
 ]
+
+
+class SelectType(str, Enum):
+    shares = "shares"
+    awards = "awards"
+
+    def __str__(self) -> str:
+        return str(self.value)

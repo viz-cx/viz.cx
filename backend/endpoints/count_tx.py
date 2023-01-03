@@ -2,7 +2,7 @@ import helpers.mongo as mongo
 from fastapi import APIRouter
 import datetime as dt
 
-from helpers.types import OpType
+from helpers.enums import OpType
 
 router = APIRouter(
     prefix="/count_ops",

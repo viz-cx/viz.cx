@@ -2,8 +2,7 @@
 import datetime as dt
 import os
 import pymongo
-from pymongo import errors
-from helpers.types import OpType, ops_custom, ops_shares
+from helpers.enums import OpType, ops_custom, ops_shares
 
 db = pymongo.MongoClient(os.getenv("MONGO", ""))[os.getenv("DB_NAME", "")]
 coll = db[os.getenv("COLLECTION", "")]
@@ -218,20 +217,23 @@ def get_sum_shares_by_op(
                 }
             ]
         )
-        sum_shares = tuple(result)[0]["shares"]
-    else:
         try:
-            result = coll_ops.aggregate(
-                [
-                    {"$match": {"op.0": operation_type}},
-                    {
-                        "$group": {
-                            "_id": None,
-                            "shares": {"$sum": {"$sum": "$op.shares"}},
-                        }
-                    },
-                ]
-            )
+            sum_shares = tuple(result)[0]["shares"]
+        except IndexError:
+            sum_shares = 0
+    else:
+        result = coll_ops.aggregate(
+            [
+                {"$match": {"op.0": operation_type}},
+                {
+                    "$group": {
+                        "_id": None,
+                        "shares": {"$sum": {"$sum": "$op.shares"}},
+                    }
+                },
+            ]
+        )
+        try:
             sum_shares = tuple(result)[0]["shares"]
         except IndexError:
             sum_shares = 0
@@ -257,27 +259,30 @@ def get_sum_shares_by_op_in_period(
                 },
             ]
         )
-        sum_shares = tuple(result)[0]["shares"]
-    else:
         try:
-            result = coll_ops.aggregate(
-                [
-                    {
-                        "$match": {
-                            "timestamp": {"$gt": from_date, "$lt": to_date},
-                            "$op.0": operation_type,
-                        }
-                    },
-                    {
-                        "$group": {
-                            "_id": None,
-                            "shares": {"$sum": {"$sum": "$op.shares"}},
-                        }
-                    },
-                ]
-            )
             sum_shares = tuple(result)[0]["shares"]
-        except errors.OperationFailure:
+        except IndexError:
+            sum_shares = 0
+    else:
+        result = coll_ops.aggregate(
+            [
+                {
+                    "$match": {
+                        "timestamp": {"$gt": from_date, "$lt": to_date},
+                        "$op.0": operation_type,
+                    }
+                },
+                {
+                    "$group": {
+                        "_id": None,
+                        "shares": {"$sum": {"$sum": "$op.shares"}},
+                    }
+                },
+            ]
+        )
+        try:
+            sum_shares = tuple(result)[0]["shares"]
+        except IndexError:
             sum_shares = 0
     return sum_shares
 
@@ -326,7 +331,7 @@ def get_top_tg_ch_by_shares_in_period(
     to_skip: int = 0,
 ) -> list:
     """Return top Telegram channels by received SHARES."""
-    result = coll_ops[OpType.receive_award].aggregate(
+    data = coll_ops[OpType.receive_award].aggregate(
         [
             {
                 "$match": {
@@ -362,12 +367,10 @@ def get_top_tg_ch_by_shares_in_period(
             {"$limit": in_top},
         ]
     )
-    result = list(result)
-    i = 0
-    for item in result:
+    result = list()
+    for item in data:
         link_to_channel = item["_id"].replace("@", "https://t.me/", 1)
-        result[i] = {link_to_channel: item["shares"]}
-        i += 1
+        result.append({"channel": link_to_channel, "value": item["shares"]})
     return result
 
 
@@ -443,9 +446,9 @@ def get_tg_ch_post_awards_and_shares_in_period(
     result = tuple(result)
     if len(result) != 0:
         result = result[0]
-        result["post link"] = result.pop("_id")
+        result["post_link"] = result.pop("_id")
     else:
-        result = {"awards": 0, "shares": 0, "post link": tg_ch_post_link}
+        result = {"awards": 0, "shares": 0, "post_link": tg_ch_post_link}
     return result
 
 
@@ -456,7 +459,7 @@ def get_top_tg_chs_by_awards_count_in_period(
     to_skip: int = 0,
 ) -> list:
     """Return top telegram channels by awards count."""
-    result = coll_ops[OpType.receive_award].aggregate(
+    data = coll_ops[OpType.receive_award].aggregate(
         [
             {
                 "$match": {
@@ -487,12 +490,10 @@ def get_top_tg_chs_by_awards_count_in_period(
             {"$limit": in_top},
         ]
     )
-    result = list(result)
-    i = 0
-    for item in result:
+    result = list()
+    for item in data:
         link_to_channel = item["_id"].replace("@", "https://t.me/", 1)
-        result[i] = {link_to_channel: item["awards"]}
-        i += 1
+        result.append({"channel": link_to_channel, "value": item["awards"]})
     return result
 
 
@@ -599,9 +600,9 @@ def get_readdleme_post_awards_and_shares_in_period(
     result = tuple(result)
     if len(result) != 0:
         result = result[0]
-        result["post link"] = readdleme_prefix + result.pop("_id")[0]
+        result["post_link"] = readdleme_prefix + result.pop("_id")[0]
     else:
-        result = {"awards": 0, "shares": 0, "post link": link_to_post}
+        result = {"awards": 0, "shares": 0, "post_link": link_to_post}
     return result
 
 

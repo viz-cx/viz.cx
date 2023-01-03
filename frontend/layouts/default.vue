@@ -27,7 +27,7 @@
 </template>
   
 <script setup>
-const theme = useState('theme', () => 'dark')
+const theme = useState('theme', () => 'light')
 function changeTheme() {
     theme.value = theme.value === 'light' ? 'dark' : 'light'
 }
@@ -43,13 +43,13 @@ export default {
                 title: 'Home',
                 value: '/',
             },
+            // {
+            //     title: 'VIZ account',
+            //     value: '/viz'
+            // },
             {
-                title: 'Analytics',
-                value: '/analytics',
-            },
-            {
-                title: 'VIZ account',
-                value: '/viz'
+                title: 'Top Telegram Channels',
+                value: '/telegram/top_channels'
             }
         ],
     }),
