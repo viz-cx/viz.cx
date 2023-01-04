@@ -26,7 +26,7 @@
                 <tbody>
                     <tr v-for="item in resp['channels']" :key="item.channel">
                         <td>
-                            <a :href="item.channel" target="_blank">{{ item.channel }}</a>
+                            <nuxt-link :href="item.channel" target="_blank">{{ item.channel }}</nuxt-link>
                         </td>
                         <td>{{ select === 'Shares' ? parseFloat(item.value).toFixed(3) : item.value }}</td>
                     </tr>
