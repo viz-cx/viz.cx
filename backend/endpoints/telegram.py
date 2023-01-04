@@ -6,7 +6,7 @@ from helpers.enums import SelectType
 
 
 router = APIRouter(
-    prefix="/tg_stats",
+    prefix="/telegram",
     tags=["Stats"],
     responses={404: {"description": "Not found"}},
 )

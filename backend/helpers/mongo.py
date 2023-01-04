@@ -541,13 +541,13 @@ def get_tg_ch_awards_and_shares_in_period(
 
 
 def get_top_readdleme_posts_by_shares_in_period(
-    to_date: dt.datetime = dt.datetime.now(),
-    from_date: dt.datetime = dt.datetime.now() - dt.timedelta(weeks=1),
-    in_top: int = 5,
-    to_skip: int = 0,
+    to_date: dt.datetime,
+    from_date: dt.datetime,
+    in_top: int,
+    to_skip: int,
 ) -> list:
     """Return top Readdle.Me posts by SHARES."""
-    result = list(
+    data = list(
         coll_ops[OpType.receive_award].aggregate(
             [
                 {
@@ -568,11 +568,10 @@ def get_top_readdleme_posts_by_shares_in_period(
             ]
         )
     )
-    i = 0
-    for item in result:
+    result = list()
+    for item in data:
         link_to_post = readdleme_prefix + item["_id"][0]
-        result[i] = {link_to_post: item["shares"]}
-        i += 1
+        result.append({"post": link_to_post, "value": item["shares"]})
     return result
 
 
@@ -664,13 +663,13 @@ def get_top_readdleme_authors_by_shares_in_period(
 
 
 def get_top_readdleme_posts_by_awards_in_period(
-    to_date: dt.datetime = dt.datetime.now(),
-    from_date: dt.datetime = dt.datetime.now() - dt.timedelta(weeks=1),
-    in_top: int = 5,
-    to_skip: int = 0,
+    to_date: dt.datetime,
+    from_date: dt.datetime,
+    in_top,
+    to_skip,
 ) -> list:
     """Return top Readdle.Me posts by awards count."""
-    result = list(
+    data = list(
         coll_ops[OpType.receive_award].aggregate(
             [
                 {
@@ -691,13 +690,10 @@ def get_top_readdleme_posts_by_awards_in_period(
             ]
         )
     )
-    i = 0
-    for item in result:
-        link_to_post = "".join(
-            readdleme_prefix, item["_id"][0]
-        )  # type: ignore
-        result[i] = {link_to_post: item["awards"]}
-        i += 1
+    result = list()
+    for item in data:
+        link_to_post = readdleme_prefix + item["_id"][0]
+        result.append({"post": link_to_post, "value": item["awards"]})
     return result
 
 

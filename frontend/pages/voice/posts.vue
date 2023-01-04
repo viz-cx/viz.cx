@@ -1,6 +1,6 @@
 <template>
     <div>
-        <h3>Telegram posts</h3>
+        <h3>Voice Protocol Posts</h3>
         <v-container fluid>
             <v-row align="center">
                 <v-select label="By" v-model="select" :items="selects" variant="underlined"></v-select>
@@ -45,8 +45,8 @@ const limits = [10, 25, 50, 100, 1000]
 let limit = ref(10)
 
 const config = useRuntimeConfig()
-const { pending, data: resp } = await useAsyncData("telegram_top_posts",
-    () => $fetch("/telegram/top_posts", {
+const { pending, data: resp } = await useAsyncData("voice_top_posts",
+    () => $fetch("/voice/top_posts", {
         baseURL: config.public.apiBaseUrl,
         params: {
             by: select.value.toLowerCase(),

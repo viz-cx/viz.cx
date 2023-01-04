@@ -51,6 +51,10 @@ export default {
                 title: "Telegram Posts",
                 value: "/telegram/posts",
             },
+            {
+                title: "Voice Posts",
+                value: "/voice/posts",
+            },
         ],
     }),
     watch: {
