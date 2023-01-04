@@ -1,4 +1,4 @@
-function getDateByPeriod(period: string): Date {
+export function getDateByPeriod(period: string): Date {
   let days: number
   switch (period) {
     case "Week":
