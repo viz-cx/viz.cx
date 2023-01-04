@@ -26,6 +26,12 @@ def save_block(block) -> None:
     coll.insert_one({"block": block, "_id": blocknumber})
 
 
+def get_block(id: int) -> dict:
+    """Return block by id from collection in MongoDB database."""
+    result = coll.find({"_id": id}).limit(1)
+    return tuple(result)[0]
+
+
 def get_last_block() -> dict:
     """Return last block from collection in MongoDB database."""
     result = coll.find({}).sort("_id", pymongo.DESCENDING).limit(1)
@@ -287,14 +293,14 @@ def get_sum_shares_by_op_in_period(
     return sum_shares
 
 
-def get_top_tg_ch_posts_by_shares_in_period(
-    to_date: dt.datetime = dt.datetime.now(),
-    from_date: dt.datetime = dt.datetime.now() - dt.timedelta(weeks=1),
-    in_top: int = 5,
-    to_skip: int = 0,
+def get_top_tg_posts_by_shares_in_period(
+    to_date: dt.datetime,
+    from_date: dt.datetime,
+    in_top: int,
+    to_skip: int,
 ) -> list:
-    """Return top Telegram channels posts by shares."""
-    result = list(
+    """Return top Telegram posts by shares."""
+    data = list(
         coll_ops[OpType.receive_award].aggregate(
             [
                 {
@@ -315,12 +321,11 @@ def get_top_tg_ch_posts_by_shares_in_period(
             ]
         )
     )
-    i = 0
-    for item in result:
+    result = list()
+    for item in data:
         link_to_post = item["_id"][0].replace(":", "/", 2)
         link_to_post = link_to_post.replace("channel/@", "https://t.me/", 1)
-        result[i] = {link_to_post: item["shares"]}
-        i += 1
+        result.append({"post": link_to_post, "value": item["shares"]})
     return result
 
 
@@ -374,14 +379,14 @@ def get_top_tg_ch_by_shares_in_period(
     return result
 
 
-def get_top_tg_ch_posts_by_awards_count_in_period(
+def get_top_tg_posts_by_awards_count_in_period(
     to_date: dt.datetime = dt.datetime.now(),
     from_date: dt.datetime = dt.datetime.now() - dt.timedelta(weeks=1),
     in_top: int = 5,
     to_skip: int = 0,
 ) -> list:
-    """Return top Telegram channel posts by awards count."""
-    result = list(
+    """Return top Telegram posts by awards count."""
+    data = list(
         coll_ops[OpType.receive_award].aggregate(
             [
                 {
@@ -402,12 +407,11 @@ def get_top_tg_ch_posts_by_awards_count_in_period(
             ]
         )
     )
-    i = 0
-    for item in result:
+    result = list()
+    for item in data:
         link_to_post = item["_id"][0].replace(":", "/", 2)
         link_to_post = link_to_post.replace("channel/@", "https://t.me/", 1)
-        result[i] = {link_to_post: item["awards"]}
-        i += 1
+        result.append({"post": link_to_post, "value": item["awards"]})
     return result
 
 

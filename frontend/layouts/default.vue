@@ -25,32 +25,32 @@
         </v-main>
     </v-app>
 </template>
-  
-<script setup>
-const theme = useState('theme', () => 'light')
+
+<script setup lang="ts">
+const theme = useState("theme", () => "light")
 function changeTheme() {
-    theme.value = theme.value === 'light' ? 'dark' : 'light'
+    theme.value = theme.value === "light" ? "dark" : "light"
 }
 </script>
-  
-<script>
+
+<script lang="ts">
 export default {
     data: () => ({
         showMenu: false,
         group: null,
         items: [
             {
-                title: 'Home',
-                value: '/',
+                title: "Home",
+                value: "/",
             },
-            // {
-            //     title: 'VIZ account',
-            //     value: '/viz'
-            // },
             {
-                title: 'Top Telegram Channels',
-                value: '/telegram/top_channels'
-            }
+                title: "Telegram Channels",
+                value: "/telegram/channels",
+            },
+            {
+                title: "Telegram Posts",
+                value: "/telegram/posts",
+            },
         ],
     }),
     watch: {

@@ -14,12 +14,12 @@
 
     <v-timeline-item>
       <template v-slot:opposite>
-        Support so many languages...
+        Support all popular languages...
       </template>
       <div>
         <div class="text-h6">Libraries</div>
         <p>
-          We have libraries for <a target="_blank" href="https://github.com/VIZ-Blockchain/viz-js-lib">JavaScript</a>, <a target="_blank" href="https://github.com/VIZ-Blockchain/viz-php-lib">PHP</a>, <a target="_blank" href="https://github.com/VIZ-Blockchain/viz-python-lib">Python</a>, <a target="_blank" href="https://github.com/VIZ-Blockchain/viz-go-lib">Go</a>, <a target="_blank" href="https://github.com/VIZ-Blockchain/viz-swift-lib">Swift</a>, <a target="_blank" href="https://github.com/VizTower/viz-transaction">Dart</a>, <a target="_blank" href="https://github.com/lososeg/Graphene.Viz">C#</a> and so on.
+          VIZ has libraries for <a target="_blank" href="https://github.com/VIZ-Blockchain/viz-js-lib">JavaScript</a>, <a target="_blank" href="https://github.com/VIZ-Blockchain/viz-php-lib">PHP</a>, <a target="_blank" href="https://github.com/VIZ-Blockchain/viz-python-lib">Python</a>, <a target="_blank" href="https://github.com/VIZ-Blockchain/viz-go-lib">Go</a>, <a target="_blank" href="https://github.com/VIZ-Blockchain/viz-swift-lib">Swift</a>, <a target="_blank" href="https://github.com/VizTower/viz-transaction">Dart</a>, <a target="_blank" href="https://github.com/lososeg/Graphene.Viz">C#</a> and so on.
         </p>
       </div>
     </v-timeline-item>

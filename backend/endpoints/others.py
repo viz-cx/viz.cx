@@ -1,5 +1,4 @@
 from fastapi import APIRouter
-import helpers.mongo as mongo
 from helpers.viz import viz
 
 router = APIRouter()
@@ -8,11 +7,6 @@ router = APIRouter()
 @router.get("/")
 def home() -> dict:
     return viz.info()
-
-
-@router.get("/latest_block")
-def latest() -> dict:
-    return mongo.get_last_block()
 
 
 # Вовлечённость за 7 дней. Самые награждаемые: посты в телеграм,
