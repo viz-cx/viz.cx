@@ -747,3 +747,42 @@ def get_top_readdleme_authors_by_awards_in_period(
         result[i] = {link_to_author: item["awards"]}
         i += 1
     return result
+
+
+def get_readdleme_author_awards_and_shares_in_period(
+    readdleme_author_id: str = "@inov8",
+    to_date: dt.datetime = dt.datetime.now(),
+    from_date: dt.datetime = dt.datetime.now() - dt.timedelta(weeks=1),
+) -> dict:
+    """Return Readdle.Me author awards count and received SHARES in period."""
+    result = coll_ops[OpType.receive_award].aggregate(
+        [
+            {
+                "$match": {
+                    "timestamp": {"$gt": from_date, "$lt": to_date},
+                    "op.memo": {"$regex": "^viz://" + readdleme_author_id},
+                }
+            },
+            {
+                "$project": {
+                    "_id": 0,
+                    "account": readdleme_author_id,
+                    "shares": "$op.shares",
+                }
+            },
+            {
+                "$group": {
+                    "_id": "$account",
+                    "awards": {"$sum": {"$sum": 1}},
+                    "shares": {"$sum": {"$sum": "$shares"}},
+                }
+            },
+        ]
+    )
+    result = tuple(result)
+    if len(result) != 0:
+        result = result[0]
+        result["account"] = result.pop("_id")
+    else:
+        result = {"account": readdleme_author_id, "awards": 0, "shares": 0}
+    return result
