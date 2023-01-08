@@ -6,8 +6,8 @@ from helpers.enums import SelectType
 
 
 router = APIRouter(
-    prefix="/tg_stats",
-    tags=["Stats"],
+    prefix="/telegram",
+    tags=["Telegram"],
     responses={404: {"description": "Not found"}},
 )
 
@@ -25,14 +25,13 @@ def show_top_tg_ch_posts_by_shares_in_period(
     _from = parse_date_string(from_date)
     match by:
         case SelectType.shares:
-            result = mongo.get_top_tg_ch_posts_by_shares_in_period(
+            result = mongo.get_top_tg_posts_by_shares_in_period(
                 to, _from, in_top, to_skip
             )
         case SelectType.awards:
-            result = mongo.get_top_tg_ch_posts_by_awards_count_in_period(
+            result = mongo.get_top_tg_posts_by_awards_count_in_period(
                 to, _from, in_top, to_skip
             )
-
     return {
         "posts": result,
         "date": {"from": _from, "to": to},
