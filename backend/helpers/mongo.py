@@ -575,7 +575,6 @@ def get_top_readdleme_posts_by_shares_in_period(
 
 
 def get_readdleme_post_awards_and_shares_in_period(
-    # link_to_post: str = "https://readdle.me/#viz://@readdle/22099872/",
     link_to_post: str = "viz://@readdle/22099872/",
     to_date: dt.datetime = dt.datetime.now(),
     from_date: dt.datetime = dt.datetime.now() - dt.timedelta(weeks=1),
