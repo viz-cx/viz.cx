@@ -13,13 +13,8 @@
 <script setup lang="ts">
 const route = useRoute()
 const config = useRuntimeConfig()
-const { pending, data } = await useAsyncData("/blocks/block",
-    async () => $fetch("/blocks/block", {
-        baseURL: config.public.apiBaseUrl,
-        params: {
-            id: route.params.block
-        }
-    }),
+const { pending, data } = await useAsyncData("/blocks",
+    async () => $fetch(config.public.apiBaseUrl + "/blocks/" + route.params.block),
     {
         transform: (data: any) => {
             return JSON.parse(data['block']
