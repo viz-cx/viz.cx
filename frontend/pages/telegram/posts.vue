@@ -24,7 +24,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="item in resp['posts']" :key="item.post">
+                    <tr v-for="item in resp" :key="item.post">
                         <td>
                             <nuxt-link :href="item.post" target="_blank">{{ item.post }}</nuxt-link>
                         </td>
@@ -45,7 +45,7 @@ const limits = [10, 25, 50, 100, 1000]
 let limit = ref(10)
 
 const config = useRuntimeConfig()
-const { pending, data: resp } = await useAsyncData("telegram_top_posts",
+const { pending, data: resp } = await useAsyncData("/telegram/top_posts",
     () => $fetch("/telegram/top_posts", {
         baseURL: config.public.apiBaseUrl,
         params: {
@@ -57,6 +57,7 @@ const { pending, data: resp } = await useAsyncData("telegram_top_posts",
         },
     }),
     {
+        transform: (data: any) => { return data['posts'] },
         watch: [select, period, limit]
     }
 )

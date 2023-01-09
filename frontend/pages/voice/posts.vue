@@ -24,8 +24,10 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="item in resp['posts']" :key="item.post">
-                        <td><nuxt-link :to="'https://readdle.me/#' + item.post" target="_blank">{{ item.post }}</nuxt-link></td>
+                    <tr v-for="item in resp" :key="item.post">
+                        <td>
+                            <nuxt-link :to="'/voice/' + item.post.replace('viz://@', '')">{{ item.post }}</nuxt-link>
+                        </td>
                         <td>{{ select === 'Shares' ? parseFloat(item.value).toFixed(3) : item.value }}</td>
                     </tr>
                 </tbody>
@@ -43,7 +45,7 @@ const limits = [10, 25, 50, 100, 1000]
 let limit = ref(10)
 
 const config = useRuntimeConfig()
-const { pending, data: resp } = await useAsyncData("voice_top_posts",
+const { pending, data: resp } = await useAsyncData("/voice/top_posts",
     () => $fetch("/voice/top_posts", {
         baseURL: config.public.apiBaseUrl,
         params: {
@@ -55,6 +57,7 @@ const { pending, data: resp } = await useAsyncData("voice_top_posts",
         },
     }),
     {
+        transform: (data: any) => { return data['posts'] },
         watch: [select, period, limit]
     }
 )

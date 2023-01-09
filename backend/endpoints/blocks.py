@@ -9,11 +9,11 @@ router = APIRouter(
 )
 
 
-@router.get("/block")
-def block(id: int = 1) -> dict:
-    return mongo.get_block(id)
-
-
 @router.get("/latest")
 def latest() -> dict:
     return mongo.get_last_block()
+
+
+@router.get("/{id}")
+def block(id: int) -> dict:
+    return mongo.get_block(id)

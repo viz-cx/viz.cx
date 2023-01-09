@@ -3,24 +3,9 @@
     <h3>Telegram channels</h3>
     <v-container fluid>
       <v-row align="center">
-        <v-select
-          label="By"
-          v-model="select"
-          :items="selects"
-          variant="underlined"
-        ></v-select>
-        <v-select
-          label="Period"
-          v-model="period"
-          :items="periods"
-          variant="underlined"
-        ></v-select>
-        <v-select
-          label="Limit"
-          v-model="limit"
-          :items="limits"
-          variant="underlined"
-        ></v-select>
+        <v-select label="By" v-model="select" :items="selects" variant="underlined"></v-select>
+        <v-select label="Period" v-model="period" :items="periods" variant="underlined"></v-select>
+        <v-select label="Limit" v-model="limit" :items="limits" variant="underlined"></v-select>
       </v-row>
     </v-container>
     <div v-if="pending">Loading...</div>
@@ -35,7 +20,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="item in resp['channels']" :key="item.channel">
+          <tr v-for="item in resp" :key="item.channel">
             <td>
               <nuxt-link :href="item.channel" target="_blank">{{
                 item.channel
@@ -52,16 +37,16 @@
 </template>
 
 <script setup lang="ts">
-const selects = ["Shares", "Awards"];
-let select = ref("Shares");
-const periods = ["Week", "Month", "Year", "All"];
-let period = ref("Week");
-const limits = [10, 25, 50, 100, 1000];
-let limit = ref(10);
+const selects = ["Shares", "Awards"]
+let select = ref("Shares")
+const periods = ["Week", "Month", "Year", "All"]
+let period = ref("Week")
+const limits = [10, 25, 50, 100, 1000]
+let limit = ref(10)
 
-const config = useRuntimeConfig();
+const config = useRuntimeConfig()
 const { pending, data: resp } = await useAsyncData(
-  "telegram_top_channels",
+  "/telegram/top_channels",
   () =>
     $fetch("/telegram/top_channels", {
       baseURL: config.public.apiBaseUrl,
@@ -74,7 +59,8 @@ const { pending, data: resp } = await useAsyncData(
       },
     }),
   {
+    transform: (data: any) => { return data['channels'] },
     watch: [select, period, limit],
   }
-);
+)
 </script>
