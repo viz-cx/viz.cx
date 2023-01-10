@@ -1,6 +1,10 @@
 <template>
   <div>
-    <h3>Telegram channels</h3>
+
+    <Head>
+      <Title>{{ title }}</Title>
+    </Head>
+    <h1>{{ title }}</h1>
     <v-container fluid>
       <v-row align="center">
         <v-select label="By" v-model="select" :items="selects" variant="underlined"></v-select>
@@ -37,12 +41,15 @@
 </template>
 
 <script setup lang="ts">
-const selects = ["Shares", "Awards"]
-let select = ref("Shares")
-const periods = ["Week", "Month", "Year", "All"]
-let period = ref("Week")
+const title = 'Telegram Channels'
+const route = useRoute()
+const router = useRouter()
+const selects = ['Shares', 'Awards']
+let select = ref(route.query.by ? capitalize(route.query.by.toString()) : selects[0])
+const periods = ['Week', 'Month', 'Year', 'All']
+let period = ref(route.query.period ? capitalize(route.query.period.toString()) : periods[0])
 const limits = [10, 25, 50, 100, 1000]
-let limit = ref(10)
+let limit = ref(route.query.limit ? route.query.limit : limits[0])
 
 const config = useRuntimeConfig()
 const { pending, data: resp } = await useAsyncData(
@@ -63,4 +70,14 @@ const { pending, data: resp } = await useAsyncData(
     watch: [select, period, limit],
   }
 )
+
+watch([select, period, limit], (newValues) => {
+  router.push({
+    query: {
+      by: newValues[0].toLowerCase(),
+      period: newValues[1].toLowerCase(),
+      limit: newValues[2]
+    },
+  })
+})
 </script>

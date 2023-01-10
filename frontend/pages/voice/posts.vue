@@ -1,6 +1,10 @@
 <template>
     <div>
-        <h3>Voice Protocol Posts</h3>
+
+        <Head>
+            <Title>{{ title }}</Title>
+        </Head>
+        <h1>{{ title }}</h1>
         <v-container fluid>
             <v-row align="center">
                 <v-select label="By" v-model="select" :items="selects" variant="underlined"></v-select>
@@ -26,7 +30,7 @@
                 <tbody>
                     <tr v-for="item in resp" :key="item.post">
                         <td>
-                            <nuxt-link :to="'/voice/' + item.post.replace('viz://@', '')">{{ item.post }}</nuxt-link>
+                            <nuxt-link :to="'/' + item.post.replace('viz://', '')">{{ item.post }}</nuxt-link>
                         </td>
                         <td>{{ select === 'Shares' ? parseFloat(item.value).toFixed(3) : item.value }}</td>
                     </tr>
@@ -37,12 +41,15 @@
 </template>
 
 <script setup lang="ts">
+const title = 'Voice Protocol Posts'
+const route = useRoute()
+const router = useRouter()
 const selects = ['Shares', 'Awards']
-let select = ref('Shares')
+let select = ref(route.query.by ? capitalize(route.query.by.toString()) : selects[0])
 const periods = ['Week', 'Month', 'Year', 'All']
-let period = ref('Week')
+let period = ref(route.query.period ? capitalize(route.query.period.toString()) : periods[0])
 const limits = [10, 25, 50, 100, 1000]
-let limit = ref(10)
+let limit = ref(route.query.limit ? route.query.limit : limits[0])
 
 const config = useRuntimeConfig()
 const { pending, data: resp } = await useAsyncData("/voice/top_posts",
@@ -61,5 +68,15 @@ const { pending, data: resp } = await useAsyncData("/voice/top_posts",
         watch: [select, period, limit]
     }
 )
+
+watch([select, period, limit], (newValues) => {
+    router.push({
+        query: {
+            by: newValues[0].toLowerCase(),
+            period: newValues[1].toLowerCase(),
+            limit: newValues[2]
+        },
+    })
+})
 
 </script>
