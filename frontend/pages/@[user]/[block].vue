@@ -1,35 +1,87 @@
 <template>
     <div>
-        <div v-if="pending || !data">Post not found.</div>
+        <div v-if="pending">
+            <Spinner />
+        </div>
+        <div v-else-if="!data">
+            Post not found.
+        </div>
         <div v-else>
 
             <Head>
                 <Title>{{ data['title'] }}</Title>
                 <Meta v-if="data['description']" name="description" :content="titleFromText(data['description'])" />
             </Head>
-            <a v-if="data['prev']" :href="data['prev']">Previous post</a>
+            <v-breadcrumbs :items="[
+                { title: 'Home', href: '/' },
+                { title: '@' + $route.params.user, href: '/@' + $route.params.user },
+                { title: $route.params.block, href: '/@' + $route.params.user + '/' + $route.params.block }
+            ]"></v-breadcrumbs>
+            <div v-if="data['prev']">
+                Previous post: <nuxt-link :to="voiceLink(data['prev'])">
+                    {{ voiceLink(data['prev'], false) }}
+                </nuxt-link>
+            </div>
             <div v-if="data['description']" v-html="data['description']"></div>
-            <img v-if="data['image']" :src="data['image']" />
+            <div v-if="data['image']">
+                <img :src="data['image']" />
+            </div>
             <div v-if="data['reply']">
-                <a :href="'/' + data['reply'].replace('viz://', '')">
-                    Reply to {{ data['reply'].replace('viz://', '') }}
-                </a>
+                Reply to <nuxt-link :to="voiceLink(data['reply'])">
+                    {{ voiceLink(data['reply'], false) }}
+                </nuxt-link>
             </div>
             <div v-if="data['share']">
-                <a :href="data['share'].replace('viz://', '/')">
-                    Shared post: {{ data['share'].replace('viz://', '') }}
-                </a>
+                Shared link: <nuxt-link :to="voiceLink(data['share'])">
+                    {{ voiceLink(data['share'], false) }}
+                </nuxt-link>
             </div>
             <h1 v-if="data['title']" v-html="data['title']"></h1>
             <div v-if="data['text']" v-html="data['text']"></div>
         </div>
+        <v-container>
+            <v-row justify="space-between" class="text-center">
+                <v-col v-if="pendingStats">
+                    <Spinner />
+                </v-col>
+                <v-col v-else>
+                    <v-menu transition="slide-x-transition" v-model="menu" :close-on-content-click="false"
+                        location="end">
+                        <template v-slot:activator="{ props }">
+                            <v-btn icon="mdi-heart" color="primary" v-bind="props"></v-btn>
+                        </template>
+                        <Award />
+                    </v-menu>
+                    {{ stats['awards'] }} awards with {{ stats['shares'].toFixed(3) }} shares
+                </v-col>
+            </v-row>
+        </v-container>
     </div>
 </template>
 
 <script setup lang="ts">
+let menu = ref(false)
 const route = useRoute()
 const config = useRuntimeConfig()
-const { pending, data } = await useAsyncData(
+
+const params = {
+    link_to_post: 'https://readdle.me/#viz://@' + route.params.user + '/' + route.params.block + '/',
+    to_date: (new Date()).toISOString(),
+    from_date: getDateByPeriod('All').toISOString(),
+}
+console.log(params)
+const { pending: pendingStats, data: stats } = useAsyncData("voice/post",
+    async (): Promise<any> => $fetch("voice/post", {
+        baseURL: config.public.apiBaseUrl,
+        params: params
+    })
+)
+
+watch([stats], (newValue) => {
+    console.log(newValue)
+})
+
+const { pending, data } = useAsyncData(
     "/blocks",
     async () => $fetch(config.public.apiBaseUrl + "/blocks/" + route.params.block),
     {
@@ -73,7 +125,7 @@ const { pending, data } = await useAsyncData(
                 }
             }
             if (json['p']) {
-                result['prev'] = '/@' + route.params.user + '/' + json['p'] + '/'
+                result['prev'] = 'viz://@' + route.params.user + '/' + json['p']
             }
             if (json['d']['r']) {
                 result['reply'] = json['d']['r']

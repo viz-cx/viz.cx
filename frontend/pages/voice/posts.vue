@@ -13,7 +13,7 @@
             </v-row>
         </v-container>
         <div v-if="pending">
-            Loading...
+            <Spinner />
         </div>
         <div v-else>
             <v-table fixed-header>
@@ -30,7 +30,7 @@
                 <tbody>
                     <tr v-for="item in resp" :key="item.post">
                         <td>
-                            <nuxt-link :to="'/' + item.post.replace('viz://', '')">{{ item.post }}</nuxt-link>
+                            <nuxt-link :to="voiceLink(item.post)">{{ voiceLink(item.post, false) }}</nuxt-link>
                         </td>
                         <td>{{ select === 'Shares' ? parseFloat(item.value).toFixed(3) : item.value }}</td>
                     </tr>
@@ -41,7 +41,7 @@
 </template>
 
 <script setup lang="ts">
-const title = 'Voice Protocol Posts'
+const title = 'Voice Posts'
 const route = useRoute()
 const router = useRouter()
 const selects = ['Shares', 'Awards']
@@ -52,8 +52,8 @@ const limits = [10, 25, 50, 100, 1000]
 let limit = ref(route.query.limit ? route.query.limit : limits[0])
 
 const config = useRuntimeConfig()
-const { pending, data: resp } = await useAsyncData("/voice/top_posts",
-    () => $fetch("/voice/top_posts", {
+const { pending, data: resp } = useAsyncData("/voice/top_posts",
+    async () => $fetch("/voice/top_posts", {
         baseURL: config.public.apiBaseUrl,
         params: {
             by: select.value.toLowerCase(),

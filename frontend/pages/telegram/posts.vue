@@ -13,7 +13,7 @@
             </v-row>
         </v-container>
         <div v-if="pending">
-            Loading...
+            <Spinner />
         </div>
         <div v-else>
             <v-table fixed-header>
@@ -52,8 +52,8 @@ const limits = [10, 25, 50, 100, 1000]
 let limit = ref(route.query.limit ? route.query.limit : limits[0])
 
 const config = useRuntimeConfig()
-const { pending, data: resp } = await useAsyncData("/telegram/top_posts",
-    () => $fetch("/telegram/top_posts", {
+const { pending, data: resp } = useAsyncData("/telegram/top_posts",
+    async () => $fetch("/telegram/top_posts", {
         baseURL: config.public.apiBaseUrl,
         params: {
             by: select.value.toLowerCase(),

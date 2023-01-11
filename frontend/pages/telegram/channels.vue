@@ -12,7 +12,9 @@
         <v-select label="Limit" v-model="limit" :items="limits" variant="underlined"></v-select>
       </v-row>
     </v-container>
-    <div v-if="pending">Loading...</div>
+    <div v-if="pending">
+      <Spinner />
+    </div>
     <div v-else>
       <v-table fixed-header>
         <thead>
@@ -52,9 +54,9 @@ const limits = [10, 25, 50, 100, 1000]
 let limit = ref(route.query.limit ? route.query.limit : limits[0])
 
 const config = useRuntimeConfig()
-const { pending, data: resp } = await useAsyncData(
+const { pending, data: resp } = useAsyncData(
   "/telegram/top_channels",
-  () =>
+  async () =>
     $fetch("/telegram/top_channels", {
       baseURL: config.public.apiBaseUrl,
       params: {

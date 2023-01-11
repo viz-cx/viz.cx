@@ -576,19 +576,18 @@ def get_top_readdleme_posts_by_shares_in_period(
 
 
 def get_readdleme_post_awards_and_shares_in_period(
-    link_to_post: str = "https://readdle.me/#viz://@readdle/22099872/",
-    to_date: dt.datetime = dt.datetime.now(),
-    from_date: dt.datetime = dt.datetime.now() - dt.timedelta(weeks=1),
+    link_to_post: str,
+    to_date: dt.datetime,
+    from_date: dt.datetime,
 ) -> dict:
-    """Return Readdle.Me post awards count and received SHARES in period"""
-    memo_post_link = link_to_post.split("#viz://", 1)[-1]
-    memo_post_link = "viz://" + memo_post_link
+    """Return Voice post awards count and received SHARES in period"""
+    memo_post_link = "viz://" + link_to_post.split("viz://", 1)[-1]
     result = coll_ops[OpType.receive_award].aggregate(
         [
             {
                 "$match": {
                     "timestamp": {"$gt": from_date, "$lt": to_date},
-                    "op.memo": memo_post_link,
+                    "op.memo": {"$regex": "^" + memo_post_link},
                 }
             },
             {
@@ -603,9 +602,9 @@ def get_readdleme_post_awards_and_shares_in_period(
     result = tuple(result)
     if len(result) != 0:
         result = result[0]
-        result["post_link"] = readdleme_prefix + result.pop("_id")[0]
+        result["post_link"] = result.pop("_id")[0]
     else:
-        result = {"awards": 0, "shares": 0, "post_link": link_to_post}
+        result = {"awards": 0, "shares": 0, "post_link": memo_post_link}
     return result
 
 
