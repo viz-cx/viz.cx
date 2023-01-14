@@ -65,12 +65,11 @@ const route = useRoute()
 const config = useRuntimeConfig()
 
 const params = {
-    link_to_post: 'https://readdle.me/#viz://@' + route.params.user + '/' + route.params.block + '/',
+    link_to_post: 'viz://@' + route.params.user + '/' + route.params.block,
     to_date: (new Date()).toISOString(),
     from_date: getDateByPeriod('All').toISOString(),
 }
-console.log(params)
-const { pending: pendingStats, data: stats } = useAsyncData("voice/post",
+const { pending: pendingStats, data: stats } = useAsyncData(params.link_to_post,
     async (): Promise<any> => $fetch("voice/post", {
         baseURL: config.public.apiBaseUrl,
         params: params

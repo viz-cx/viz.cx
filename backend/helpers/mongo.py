@@ -2,6 +2,7 @@
 import datetime as dt
 import os
 import pymongo
+import re
 from helpers.enums import OpType, ops_custom, ops_shares
 
 db = pymongo.MongoClient(os.getenv("MONGO", ""))[os.getenv("DB_NAME", "")]
@@ -582,12 +583,13 @@ def get_readdleme_post_awards_and_shares_in_period(
 ) -> dict:
     """Return Voice post awards count and received SHARES in period"""
     memo_post_link = "viz://" + link_to_post.split("viz://", 1)[-1]
+    regex = "^" + re.escape(memo_post_link) + "($|\\/)"
     result = coll_ops[OpType.receive_award].aggregate(
         [
             {
                 "$match": {
                     "timestamp": {"$gt": from_date, "$lt": to_date},
-                    "op.memo": {"$regex": "^" + memo_post_link},
+                    "op.memo": {"$regex": regex},
                 }
             },
             {
