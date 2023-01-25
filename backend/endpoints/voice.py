@@ -37,7 +37,7 @@ def show_top_posts_in_period(
     }
 
 
-# Количество авардов и SHARES, полученные постом в Readdle.Me за указанный период
+# Количество авардов и SHARES, полученные постом за указанный период
 @router.get("/post")
 def show_readdleme_post_awards_and_received_shares_in_period(
     link_to_post: str = "viz://@readdle/22099872/",
