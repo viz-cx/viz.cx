@@ -656,7 +656,7 @@ def get_top_readdleme_authors_by_shares_in_period(
     )
     result = list()
     for item in data:
-        result.append({"author": item["_id"], "value": item["shares"]})
+        result.append({"account": item["_id"], "value": item["shares"]})
     return result
 
 
