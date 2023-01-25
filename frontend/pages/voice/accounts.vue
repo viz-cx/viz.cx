@@ -28,9 +28,9 @@
                   </tr>
               </thead>
               <tbody>
-                  <tr v-for="item in resp" :key="item.post">
+                  <tr v-for="item in resp" :key="item.account">
                       <td>
-                          <nuxt-link :to="voiceLink(item.post)">{{ voiceLink(item.post, false) }}</nuxt-link>
+                          {{ item.account }}
                       </td>
                       <td>{{ select === 'Shares' ? parseFloat(item.value).toFixed(3) : item.value }}</td>
                   </tr>
