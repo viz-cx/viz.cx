@@ -52,7 +52,7 @@ def show_readdleme_post_awards_and_received_shares_in_period(
     return result
 
 
-# Топ аккаунтов в Readdle.Me по полученным SHARES или по количеству авардов.
+# Топ аккаунтов по полученным SHARES или по количеству авардов
 @router.get("/top_accounts")
 def show_top_accounts_in_period(
     by: SelectType,
@@ -75,7 +75,7 @@ def show_top_accounts_in_period(
     return {"accounts": result, "date": {"from": _from, "to": to}}
 
 
-# Количество авардов и SHARES, полученные аккаунтом Readdle.Me за указанный период.
+# Количество авардов и SHARES, полученные аккаунтом за указанный период
 @router.get("/account")
 def show_account_awards_and_received_shares_in_period(
     account_id: str = "@readdle",

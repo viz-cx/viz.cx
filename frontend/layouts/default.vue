@@ -58,6 +58,10 @@ export default {
                 title: "Voice Posts",
                 value: "/voice/posts",
             },
+            {
+                title: "Voice Accounts",
+                value: "/voice/accounts"
+            }
         ],
     }),
     watch: {
