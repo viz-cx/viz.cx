@@ -740,7 +740,7 @@ def get_top_readdleme_authors_by_awards_in_period(
         )
     )
     result = list()
-    for item in result:
+    for item in data:
         result.append({"account": item["_id"], "value": item["awards"]})
     return result
 
