@@ -42,18 +42,14 @@ def start_sorting() -> NoReturn:
             if last_blocknum_in_db - last_bnum_in_scoll > 1:
                 sort_start_blocknum = last_bnum_in_scoll + 1
                 print("Sorting start from {}.".format(sort_start_blocknum))
-                for blocknum in range(
-                    sort_start_blocknum, last_blocknum_in_db + 1
-                ):
+                for blocknum in range(sort_start_blocknum, last_blocknum_in_db + 1):
                     block = coll.find_one({"_id": blocknum})
                     sort_block_ops_to_subcolls(block)
                     if blocknum % 10000 == 0:
                         print("Sorted block {}.".format(blocknum))
                     last_bnum_in_scoll = blocknum
             else:
-                print(
-                    "Last block from DB was sorted up. Sorting will contnue in 15 seconds."
-                )
+                print("Last block from DB was sorted up. Will contnue in 15 seconds.")
                 sleep(15)
         except Exception as e:
             print("Sorting error: {}. Restart in 10 seconds.".format(str(e)))

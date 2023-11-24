@@ -21,11 +21,16 @@ change_node(selectFirst=True)
 
 def get_ops_in_block(block, onlyVirtual: bool) -> Any:
     virtualOpsOnly = 1 if onlyVirtual else 0
-    return viz.rpc.get_ops_in_block(block, virtualOpsOnly)
+    return viz.rpc.get_ops_in_block(  # pyright: ignore[reportOptionalMemberAccess]
+        block, virtualOpsOnly
+    )
 
 
 def get_dgp() -> Any:
-    return viz.rpc.get_dynamic_global_properties()
+    assert viz.rpc is not None
+    return (
+        viz.rpc.get_dynamic_global_properties()  # pyright: ignore[reportOptionalMemberAccess]
+    )
 
 
 def get_last_block_in_chain() -> int:
