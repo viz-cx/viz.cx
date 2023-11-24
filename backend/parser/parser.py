@@ -25,7 +25,7 @@ def start_parsing() -> NoReturn:
                         print("Saved block {}".format(last_blocknum_in_bd))
             else:
                 fetch_new_updates()
-                sleep(9)
+                sleep(3)
         except Exception as e:
             print("Parsing error: {}. Restart in 10 seconds.".format(str(e)))
             sleep(10)

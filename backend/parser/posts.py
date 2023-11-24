@@ -16,7 +16,6 @@ def fetch_new_updates():
         blocks_with_new_posts = get_voice_posts(from_block=last_block_id)
         for block in blocks_with_new_posts:
             posts = fetch_posts_from_block(block)
-            print(block)
             for post in posts:
                 save_voice_post(post)
     except Exception as e:
@@ -38,9 +37,14 @@ def fetch_posts_from_block(block):
             post.timestamp = transaction["timestamp"]
             result.append(post.dict(exclude_none=True))
         except Exception as e:
-            print(e)
+            print("Parse post error: {}".format(str(e)))
             continue
     return result
+
+
+class Benificiary(BaseModel):
+    account: str
+    weight: int
 
 
 class ShortPost(BaseModel):
@@ -48,7 +52,7 @@ class ShortPost(BaseModel):
     text: Optional[str]  # backward compatibility
     r: Optional[str]  # reply
     s: Optional[str]  # share
-    b: Optional[list]  # benificiaries
+    b: Optional[list[Benificiary]]  # benificiaries
 
     def __repr__(self) -> str:
         return "<ShortPost(t={self.t!r})>".format(self=self)
