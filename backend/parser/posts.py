@@ -71,7 +71,7 @@ class VoiceProtocol(BaseModel):
     """https://github.com/VIZ-Blockchain/Free-Speech-Project/blob/master/specification.md"""
 
     p: Optional[int]  # previous
-    t: Optional[Literal["t", "p"]]  # type
+    t: Optional[Literal["t", "text", "p"]]  # type
     d: ExtendedPost | ShortPost  # data
     v: Optional[int]  # version
 
