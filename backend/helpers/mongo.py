@@ -791,7 +791,7 @@ def get_last_saved_post_block_id() -> int:
         post = tuple(result)[0]
         return int(post["block"])
     except IndexError:
-        return 17740801  # first block with voice protocol post
+        return 17740800  # 17740801 is the first block with voice protocol post
 
 
 def get_voice_posts(from_block, limit=10):

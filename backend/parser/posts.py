@@ -27,7 +27,7 @@ def fetch_posts_from_block(block):
     for transaction in block["block"]:
         try:
             op = transaction["op"]
-            if op[0] != "custom":
+            if op[0] != "custom" or op[1]["id"] != "V":
                 continue
             author = op[1]["required_regular_auths"][0]
             js = json.loads(op[1]["json"])
