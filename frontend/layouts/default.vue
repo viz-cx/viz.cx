@@ -3,7 +3,7 @@
 
         <v-navigation-drawer v-model="showMenu" location="end" temporary>
             <v-list dense nav>
-                <v-list-item lines="two" prepend-avatar="https://randomuser.me/api/portraits/women/81.jpg"
+                <v-list-item v-if="true" lines="two" prepend-avatar="https://randomuser.me/api/portraits/women/81.jpg"
                     title="Jane Smith" subtitle="Logged in"></v-list-item>
                 <v-divider></v-divider>
                 <v-list-item v-for="item in items" :key="item.title" :to="item.value">

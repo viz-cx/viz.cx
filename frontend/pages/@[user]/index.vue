@@ -17,7 +17,7 @@
 </template>
 
 <script setup lang="ts">
-import { Ref } from 'vue'
+import type { Ref } from 'vue'
 
 let loading = ref(true)
 let title = ref('')

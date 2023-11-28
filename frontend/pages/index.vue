@@ -38,9 +38,8 @@
       <div>
         <div class="text-h6">Usage</div>
         <p>
-          VIZ blockchain processed {{ pending_ops? 'many': ops.toLocaleString() }} operations in {{
-  pending_block? 'many': block.toLocaleString()
-          }} blocks.
+          VIZ blockchain processed {{ ops ? ops.toLocaleString() : 'many' }} operations in {{
+            block ? block.toLocaleString() : 'many' }} blocks.
         </p>
       </div>
     </v-timeline-item>
@@ -55,23 +54,21 @@ function getFullYearsFromLaunched() {
 }
 
 const config = useRuntimeConfig()
-const { pending: pending_ops, data: ops } = await useAsyncData("/count_ops/all",
+const { data: ops } = await useAsyncData("/count_ops/all",
   () => $fetch("/count_ops/all", {
     baseURL: config.public.apiBaseUrl
   }), {
-    transform: (data: any) => {
-      return data['operations']
-    }
+  transform: (data: any) => {
+    return data['operations']
   }
-)
-const { pending: pending_block, data: block } = await useAsyncData("/blocks/latest",
+})
+const { data: block } = await useAsyncData("/blocks/latest",
   () => $fetch("/blocks/latest", {
     baseURL: config.public.apiBaseUrl
   }), {
-    transform: (data: any) => {
-      return data['_id']
-    }
+  transform: (data: any) => {
+    return data['_id']
   }
-)
+})
 
 </script>
