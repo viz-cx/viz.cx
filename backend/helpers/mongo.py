@@ -810,6 +810,28 @@ def save_voice_post(post):
 
 def get_saved_posts():
     cursor = (
-        coll_posts.find({}, {"_id": 0}).sort("block", pymongo.DESCENDING).limit(100)
+        coll_posts.find(  # "t": {"$in": ["p"]}
+            {
+                "d.t": {"$exists": True},
+                "d.r": {"$not": {"$regex": "^viz://"}},
+                "d.s": {"$not": {"$regex": "^viz://"}},
+            },
+            {"_id": 0},
+        )
+        .sort("block", pymongo.DESCENDING)
+        .limit(1000)
     )
     return tuple(cursor)
+
+
+def get_saved_post(block: int):
+    post = coll_posts.find_one(
+        {
+            "block": block,
+            "d.t": {"$exists": True},
+            "d.r": {"$not": {"$regex": "^viz://"}},
+            "d.s": {"$not": {"$regex": "^viz://"}},
+        },
+        {"_id": 0},
+    )
+    return post
