@@ -10,6 +10,7 @@
         <div v-else class="posts">
             <div v-for="post in posts" :key="post.block">
                 <v-card variant="outlined" hover>
+
                     <v-card-subtitle @click.stop="post.show = !post.show; spotlightPost = post">
                         <nuxt-link :href="'/@' + post.author">@{{ post.author }}</nuxt-link>
                         posted {{ !(post.d.i || post.d.s) ? 'text' : '' }}
@@ -17,9 +18,11 @@
                         {{ post.d.i ? (post.d.s ? ' and ' : '') + 'image' : '' }}
                         {{ timeAgo(post.timestamp) }}:
                     </v-card-subtitle>
+
                     <v-card-text @click.stop="post.show = true; spotlightPost = post">
                         {{ post.show ? fullPost(post) : truncatedText(post.d.t) }}
                     </v-card-text>
+
                     <v-img v-show="post.show" aspect-ratio="16/9" cover :src="post.d.i">
                         <template v-slot:placeholder>
                             <div class="d-flex align-center justify-center fill-height">
@@ -27,13 +30,16 @@
                             </div>
                         </template>
                     </v-img>
+
                     <v-card-actions v-show="post.show">
                         <v-btn icon="$plus"></v-btn>
                         {{ post.shares !== undefined ? post.shares.toFixed(3) : '???' }} VIZ
                         <v-btn icon="$minus"></v-btn>
                         <v-spacer></v-spacer>
-                        <v-btn icon="$edit"></v-btn>
-                        <v-btn icon="$delete"></v-btn>
+                        <div v-show="isUserAuthor(post.author)">
+                            <v-btn icon="$edit"></v-btn>
+                            <v-btn icon="$delete"></v-btn>
+                        </div>
 
                     </v-card-actions>
                 </v-card>
@@ -65,6 +71,10 @@ const { pending, data: posts } = useAsyncData("/posts/",
 function fullPost(post: any) {
     let result = post.d.t
     return result
+}
+
+function isUserAuthor(author: string): boolean {
+    return author === useCookie('login').value
 }
 
 function truncatedText(text: string): string {
