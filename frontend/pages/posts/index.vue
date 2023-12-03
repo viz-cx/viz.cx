@@ -14,7 +14,10 @@
                     <v-card-subtitle @click.stop="post.show = !post.show; spotlightPost = post">
                         <nuxt-link :href="'/@' + post.author">@{{ post.author }}</nuxt-link>
                         posted {{ !(post.d.i || post.d.s) ? 'text' : '' }}
-                        <nuxt-link v-show="post.d.s" :href="post.d.s" target="_blank">link</nuxt-link>
+                        <span v-show="post.d.s">
+                            <nuxt-link :href="post.d.s" target="_blank">link</nuxt-link>
+                            <span v-show="showDomain(post.d.s)"> from <b>{{ showDomain(post.d.s) }}</b></span>
+                        </span>
                         {{ post.d.i ? (post.d.s ? ' and ' : '') + 'image' : '' }}
                         {{ timeAgo(post.timestamp) }}:
                     </v-card-subtitle>
@@ -67,6 +70,14 @@ const { pending, data: posts } = useAsyncData("/posts/",
         },
     }
 )
+
+function showDomain(link: string): string | undefined {
+    try {
+        return (new URL(link)).hostname.replace('www.', '')
+    } catch (_) {
+        return undefined
+    }
+}
 
 function fullPost(post: any) {
     let result = post.d.t
