@@ -80,8 +80,12 @@ function showDomain(link: string): string | undefined {
 }
 
 function fullPost(post: any) {
-    let result = post.d.t
+    let result = fixBreakLines(post.d.t)
     return result
+}
+
+function fixBreakLines(text: string): string {
+    return text.replace(/\r\n/g, '\n')
 }
 
 function isUserAuthor(author: string): boolean {
@@ -89,7 +93,7 @@ function isUserAuthor(author: string): boolean {
 }
 
 function truncatedText(text: string): string {
-    let newText = text.substring(0, 280)
+    let newText = fixBreakLines(text.substring(0, 280))
     if (text.length === newText.length) {
         return newText
     }
