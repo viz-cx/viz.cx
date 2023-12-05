@@ -27,3 +27,33 @@ export async function findAccountsByKey(key: string): Promise<any[]> {
     })
   })
 }
+
+export async function makeAward(
+  wif: string,
+  initiator: string,
+  receiver: string,
+  energy: int,
+  custom_sequence: int = 0,
+  memo: string = "",
+  beneficiaries = []
+): Promise<any> {
+  return new Promise((resolve, reject) => {
+    const { $viz } = useNuxtApp()
+    $viz.broadcast.award(
+      wif,
+      initiator,
+      receiver,
+      energy,
+      custom_sequence,
+      memo,
+      beneficiaries,
+      function (err, response) {
+        if (err) {
+          reject(err)
+          return
+        }
+        resolve(response)
+      }
+    )
+  })
+}
