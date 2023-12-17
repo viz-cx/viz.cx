@@ -35,9 +35,25 @@
                     </v-img>
 
                     <v-card-actions v-show="post.show">
-                        <v-btn icon="$plus"></v-btn>
-                        {{ post.shares !== undefined ? post.shares.toFixed(3) : '???' }} VIZ
-                        <v-btn icon="$minus"></v-btn>
+
+                        <Popper :class="theme" arrow placement="top">
+                            <v-btn icon="$plus"></v-btn>
+                            <template #content>
+                                <LazyAward :extended="false" :receiver="post.author"
+                                    :memo="'viz://@' + post.author + '/' + post.block" :negative="false"></LazyAward>
+                            </template>
+                        </Popper>
+
+                        {{ post.shares !== undefined ? post.shares.toFixed(2) : '???' }} VIZ
+
+                        <Popper :class="theme" arrow placement="top">
+                            <v-btn icon="$minus"></v-btn>
+                            <template #content>
+                                <LazyAward :extended="false" receiver="cx.id"
+                                    :memo="'viz://@' + post.author + '/' + post.block" :negative="true"></LazyAward>
+                            </template>
+                        </Popper>
+
                         <v-spacer></v-spacer>
                         <div v-show="isUserAuthor(post.author)">
                             <v-btn icon="$edit"></v-btn>
@@ -55,7 +71,15 @@
 
 <script setup lang="ts">
 import RelativeTime from '@yaireo/relative-time'
+import Popper from "vue3-popper"
 const relativeTime = new RelativeTime({ locale: 'en' })
+const theme = useState("theme", () => "light")
+
+defineComponent({
+    components: {
+        Popper,
+    },
+})
 
 const title = 'Posts'
 
@@ -129,5 +153,27 @@ useAsyncData("fetch metadata",
     padding: 0 10px;
     font: 18px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
     color: #444
+}
+
+.dark {
+    --popper-theme-background-color: #333;
+    --popper-theme-background-color-hover: #333;
+    --popper-theme-text-color: #eeeeee;
+    --popper-theme-border-width: 0px;
+    --popper-theme-border-radius: 6px;
+    /* --popper-theme-padding: 32px; */
+    --popper-theme-box-shadow: 0 6px 30px -6px rgba(0, 0, 0, 0.25);
+}
+
+.light {
+    --popper-theme-background-color: #ffffff;
+    --popper-theme-background-color-hover: #ffffff;
+    --popper-theme-text-color: #333333;
+    --popper-theme-border-width: 1px;
+    --popper-theme-border-style: solid;
+    --popper-theme-border-color: #eeeeee;
+    --popper-theme-border-radius: 6px;
+    /* --popper-theme-padding: 32px; */
+    --popper-theme-box-shadow: 0 6px 30px -6px rgba(0, 0, 0, 0.25);
 }
 </style>
