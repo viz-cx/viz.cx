@@ -14,8 +14,7 @@
 
         <v-app-bar title="VIZ">
             <v-spacer></v-spacer>
-
-            <!-- <v-btn icon="mdi-wizard-hat"/> -->
+            <v-btn icon="mdi-plus-box-outline" to="/posts/new" />
             <v-btn :prepend-icon="theme === 'light' ? 'mdi-weather-sunny' : 'mdi-weather-night'"
                 @click="changeTheme"></v-btn>
             <v-app-bar-nav-icon variant="text" @click.stop="showMenu = !showMenu"></v-app-bar-nav-icon>
@@ -61,6 +60,10 @@ export default {
             {
                 title: "Voice Accounts",
                 value: "/voice/accounts"
+            },
+            {
+                title: "New Posts",
+                value: "/posts"
             }
         ],
     }),

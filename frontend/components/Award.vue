@@ -5,14 +5,15 @@
             required></v-text-field>
         <div class="wrapper">
             <ClientOnly>&nbsp;<span class="text-body-2 helper">~{{ reward.toFixed(2) }} viz</span></ClientOnly>
-            <v-slider class="slider" :color="negative ? 'red-accent-4' :'indigo-accent-4'" :track-color="negative ? 'red-accent-4' :'indigo-accent-4'" thumb-color="white"
-                v-model="energy" :max="max" :step="1" :min="min" thumb-label="always">
+            <v-slider class="slider" :color="negative ? 'red-accent-4' : 'indigo-accent-4'"
+                :track-color="negative ? 'red-accent-4' : 'indigo-accent-4'" thumb-color="white" v-model="energy" :max="max"
+                :step="1" :min="min" thumb-label="always">
                 <template v-slot:thumb-label="{ modelValue }">
                     {{ modelValue }}%
                 </template>
             </v-slider>
-            <v-btn :disabled="isSendDisabled(receiver)" color="green-darken-1" :loading="loading"
-                @click="award()">Award</v-btn>
+            <v-btn :disabled="isSendDisabled(receiver)" :color="negative ? 'red-darken-1' : 'indigo-accent-4'"
+                :loading="loading" @click="award()">Award</v-btn>
         </div>
         <v-text-field v-show="extended" variant="underlined" v-model="memo" label="Memo" required></v-text-field>
         <div class="text-green" v-show="successMessage">{{ successMessage }}</div>
