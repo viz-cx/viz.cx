@@ -102,3 +102,48 @@ export async function makeAward(
     )
   })
 }
+
+export async function sendVoicePost(
+  login: string,
+  wif: string,
+  text: string,
+  link: string | undefined,
+  image: string | undefined
+): Promise<any> {
+  return new Promise((resolve, reject) => {
+    const { $viz } = useNuxtApp()
+    getAccount(login, "V").then(
+      (account) => {
+        let previous = parseInt(account.custom_sequence_block_num)
+        let json: any = {}
+        if (previous > 0) {
+          json.p = previous
+        }
+        let data: any = {}
+        data.t = text
+        if (link && isURL(link)) {
+          data.s = link
+        }
+        if (image) {
+          data.i = image
+        }
+        json.d = data
+        $viz.broadcast.custom(
+          wif,
+          [],
+          [login],
+          "V",
+          JSON.stringify(json),
+          function (err: any, response: any) {
+            if (err) {
+              reject(err)
+              return
+            }
+            resolve(response)
+          }
+        )
+      },
+      (rejected) => reject(rejected)
+    )
+  })
+}

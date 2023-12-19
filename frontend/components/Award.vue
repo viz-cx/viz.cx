@@ -1,6 +1,5 @@
 <template>
-    <!-- <v-card class="award pt-8 px-3 pb-2 text-center"> -->
-    <div class="award pt-8 px-3 pb-2 text-center">
+    <div class="pt-6 text-center">
         <v-text-field v-show="extended" variant="underlined" v-model="receiver" label="Receiver" :rules=[loginValidation]
             required></v-text-field>
         <div class="wrapper">
@@ -19,7 +18,6 @@
         <div class="text-green" v-show="successMessage">{{ successMessage }}</div>
         <div class="text-red" v-show="errorMessage">{{ errorMessage }}</div>
     </div>
-    <!-- </v-card> -->
 </template>
 
 <script setup lang="ts">
@@ -107,13 +105,6 @@ async function award() {
 <style>
 .slider {
     width: 300px;
-}
-
-.award {
-    max-width: 450px;
-    /* margin: 10px auto; */
-    padding: 0 10px;
-    font: 18px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
 }
 
 .wrapper {

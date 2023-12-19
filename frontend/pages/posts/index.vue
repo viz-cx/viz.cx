@@ -19,10 +19,11 @@
                             <span v-show="showDomain(post.d.s)"> from <b>{{ showDomain(post.d.s) }}</b></span>
                         </span>
                         {{ post.d.i ? (post.d.s ? ' and ' : '') + 'image' : '' }}
-                        {{ timeAgo(post.timestamp) }}:
+                        <ClientOnly>{{ timeAgo(post.timestamp + 'Z') }}</ClientOnly>:
                     </v-card-subtitle>
 
-                    <v-card-text @click.stop="post.show = true; spotlightPost = post">
+                    <v-card-text @click.stop="post.show = true; spotlightPost = post"
+                        :class="post.show ? 'text-opened' : ''">
                         {{ post.show ? fullPost(post) : truncatedText(post.d.t) }}
                     </v-card-text>
 
@@ -147,21 +148,24 @@ useAsyncData("fetch metadata",
 </script>
 
 <style>
+.text-opened {
+    min-height: 70px;
+}
+
 .posts {
     max-width: 650px;
-    margin: 40px auto;
+    margin: 20px auto;
     padding: 0 10px;
-    font: 18px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-    color: #444
+    color: #444;
 }
 
 .dark {
     --popper-theme-background-color: #333;
     --popper-theme-background-color-hover: #333;
-    --popper-theme-text-color: #eeeeee;
+    /* --popper-theme-text-color: #eeeeee; */
     --popper-theme-border-width: 0px;
     --popper-theme-border-radius: 6px;
-    /* --popper-theme-padding: 32px; */
+    --popper-theme-padding: 0px;
     --popper-theme-box-shadow: 0 6px 30px -6px rgba(0, 0, 0, 0.25);
 }
 
@@ -173,7 +177,7 @@ useAsyncData("fetch metadata",
     --popper-theme-border-style: solid;
     --popper-theme-border-color: #eeeeee;
     --popper-theme-border-radius: 6px;
-    /* --popper-theme-padding: 32px; */
+    --popper-theme-padding: 0px;
     --popper-theme-box-shadow: 0 6px 30px -6px rgba(0, 0, 0, 0.25);
 }
 </style>
