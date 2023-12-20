@@ -1,13 +1,16 @@
 <template>
-    <div class="d-flex align-center justify-center" style="height: 100vh">
-        <v-sheet width="530" class="mx-auto">
+    <v-container fill-height fluid class="container">
+        <v-sheet>
             <v-form fast-fail @submit.prevent="login">
 
-                <v-text-field variant="underlined" v-model="regularKey" label="Private Regular Key" placeholder="5..."
-                    :error-messages="errors.key" :rules="[rules.keyValidation]" clearable></v-text-field>
+                <div class="wrapper">
+                    <v-text-field variant="underlined" v-model="regularKey" label="Private Regular Key" placeholder="5..."
+                        :error-messages="errors.key" :rules="[rules.keyValidation]" clearable></v-text-field>
+                    <v-btn :icon="!showLogin ? '$expand' : '$collapse'" @click.prevent="showLogin = !showLogin"></v-btn>
+                </div>
 
-                <v-text-field variant="underlined" v-model="user" label="Account" :error-messages="errors.user"
-                    clearable></v-text-field>
+                <v-text-field v-if="showLogin" variant="underlined" v-model="user" label="Account"
+                    :error-messages="errors.user" clearable></v-text-field>
 
                 <v-btn :disabled="!regularKey" type="submit" variant="outlined" color="submit" block class="mt-2">Sign
                     in</v-btn>
@@ -16,13 +19,14 @@
                 <p class="text-body-2">Don't have an account? <a href="#">Sign Up</a></p>
             </div>
         </v-sheet>
-    </div>
+    </v-container>
 </template>
 
 <script setup lang="ts">
 const { $viz } = useNuxtApp()
 const router = useRouter()
 
+let showLogin = ref(false)
 let user = ref("")
 let regularKey = ref("")
 
@@ -85,6 +89,15 @@ async function login() {
     }, (err) => {
         errors.value.user = err.message
     })
-
 }
 </script>
+
+<style>
+.wrapper {
+    display: flex;
+}
+
+.container {
+    max-width: 580px;
+}
+</style>

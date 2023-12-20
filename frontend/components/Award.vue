@@ -3,7 +3,8 @@
         <v-text-field v-show="extended" variant="underlined" v-model="receiver" label="Receiver" :rules=[loginValidation]
             required></v-text-field>
         <div class="wrapper">
-            <ClientOnly>&nbsp;<span class="text-body-2 helper">~{{ reward.toFixed(2) }} viz</span></ClientOnly>
+            <ClientOnly>&nbsp;<span class="text-body-2 helper">~{{ reward.toFixed(reward > 0.01 ? 2 : 3) }} viz</span>
+            </ClientOnly>
             <v-slider class="slider" :color="negative ? 'red-accent-4' : 'indigo-accent-4'"
                 :track-color="negative ? 'red-accent-4' : 'indigo-accent-4'" thumb-color="white" v-model="energy" :max="max"
                 :step="1" :min="min" thumb-label="always">
@@ -79,7 +80,7 @@ const loginValidation = (value: string) => {
 
 function isSendDisabled(receiver: string | undefined) {
     return !receiver || loginValidation(receiver) !== true
-        || !energy || energy.value === 0 || reward.value <= 0.01
+        || !energy || energy.value === 0 || reward.value < 0.01
 }
 
 async function award() {
@@ -88,13 +89,10 @@ async function award() {
     errorMessage.value = ""
     let wif = useCookie('regular').value ?? ""
     try {
-        let result = await makeAward(wif, login, receiver?.value ?? "", energy.value * 100)
+        let result = await makeAward(wif, login, receiver?.value ?? "", energy.value * 100, 0, memo?.value ?? "", [])
         console.log(result)
         successMessage.value = "Success!"
         energy.value = 0
-        if (receiver) {
-            receiver.value = undefined
-        }
     } catch (err: any) {
         errorMessage.value = err.message
     }
