@@ -12,7 +12,8 @@
                 <v-text-field v-if="showLogin" variant="underlined" v-model="user" label="Account"
                     :error-messages="errors.user" clearable></v-text-field>
 
-                <v-btn :disabled="!regularKey" type="submit" variant="outlined" color="submit" block class="mt-2">Sign
+                <v-btn :disabled="!regularKey || rules.keyValidation(regularKey) !== true" type="submit" variant="outlined"
+                    color="submit" block class="mt-2">Sign
                     in</v-btn>
             </v-form>
             <div class="mt-2">
