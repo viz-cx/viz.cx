@@ -1,5 +1,5 @@
 <template>
-    <div class="pt-6 text-center">
+    <div class="pt-6 text-center" v-if="login">
         <v-text-field v-show="extended" variant="underlined" v-model="receiver" label="Receiver" :rules=[loginValidation]
             required></v-text-field>
         <div class="wrapper">
@@ -29,11 +29,16 @@ const props = defineProps({
     negative: Boolean,
 })
 const { receiver, memo } = toRefs(props)
-let login = useCookie('login').value ?? ""
-let account = await getAccount(login)
+let login = useCookie('login').value
+let account: any = undefined
+let lastVoteTime: number = 0
+let currentEnergy: number = 0
+if (login) {
+    account = await getAccount(login)
+    lastVoteTime = Date.parse(account.last_vote_time)
+    currentEnergy = calculateCurrentEnergy(lastVoteTime, account.energy)
+}
 let dgp = await getDgp()
-let lastVoteTime = Date.parse(account.last_vote_time)
-let currentEnergy = calculateCurrentEnergy(lastVoteTime, account.energy)
 let successMessage = ref("")
 let errorMessage = ref("")
 let loading = ref(false)
@@ -46,6 +51,11 @@ watch(
     () => energy.value,
     (value) => { reward.value = calculateReward(value) }
 )
+
+const isSendDisabled = (receiver: string | undefined): boolean => {
+    return !receiver || loginValidation(receiver) !== true
+        || !energy || energy.value === 0 || reward.value < 0.01
+}
 
 const calculateReward = (energy: number): number => {
     const effectiveShares = parseFloat(account['vesting_shares']) - parseFloat(account['delegated_vesting_shares']) + parseFloat(account['received_vesting_shares'])
@@ -78,18 +88,13 @@ const loginValidation = (value: string) => {
     return true
 }
 
-function isSendDisabled(receiver: string | undefined) {
-    return !receiver || loginValidation(receiver) !== true
-        || !energy || energy.value === 0 || reward.value < 0.01
-}
-
 async function award() {
     loading.value = true
     successMessage.value = ""
     errorMessage.value = ""
     let wif = useCookie('regular').value ?? ""
     try {
-        let result = await makeAward(wif, login, receiver?.value ?? "", energy.value * 100, 0, memo?.value ?? "", [])
+        let result = await makeAward(wif, login ?? "", receiver?.value ?? "", energy.value * 100, 0, memo?.value ?? "", [])
         console.log(result)
         successMessage.value = "Success!"
         energy.value = 0

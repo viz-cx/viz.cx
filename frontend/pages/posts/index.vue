@@ -38,9 +38,9 @@
                     <v-card-actions v-show="post.show">
 
                         <Popper :class="theme" arrow placement="top">
-                            <v-btn icon="$plus"></v-btn>
+                            <v-btn icon="$plus" @click="awardClicked()"></v-btn>
                             <template #content>
-                                <LazyAward :extended="false" :receiver="post.author"
+                                <LazyAward :show="isAuthenticated()" :extended="false" :receiver="post.author"
                                     :memo="'viz://@' + post.author + '/' + post.block" :negative="false"></LazyAward>
                             </template>
                         </Popper>
@@ -48,9 +48,9 @@
                         {{ post.shares !== undefined ? post.shares.toFixed(2) : '???' }} VIZ
 
                         <Popper :class="theme" arrow placement="top">
-                            <v-btn icon="$minus"></v-btn>
+                            <v-btn icon="$minus" @click="awardClicked()"></v-btn>
                             <template #content>
-                                <LazyAward :extended="false" receiver="cx.id"
+                                <LazyAward :show="isAuthenticated()" :extended="false" receiver="cx.id"
                                     :memo="'viz://@' + post.author + '/' + post.block" :negative="true"></LazyAward>
                             </template>
                         </Popper>
@@ -95,6 +95,13 @@ const { pending, data: posts } = useAsyncData("/posts/",
         },
     }
 )
+
+function awardClicked() {
+    if (!isAuthenticated()) {
+        const router = useRouter()
+        router.push('/login')
+    }
+}
 
 function showDomain(link: string): string | undefined {
     try {
