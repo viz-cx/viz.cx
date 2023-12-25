@@ -14,12 +14,18 @@ export function changeNode() {
 
 export function getDgp(): Promise<any> {
   return new Promise((resolve, reject) => {
+    const dgpState = useState("dgp") // TODO: reset state every N seconds
+    if (dgpState.value) {
+      resolve(dgpState.value)
+      return
+    }
     const { $viz } = useNuxtApp()
     $viz.api.getDynamicGlobalProperties(function (err: any, dgp: any) {
       if (err) {
         reject(err)
         return
       }
+      dgpState.value = dgp
       resolve(dgp)
     })
   })
@@ -48,12 +54,18 @@ export async function getAccount(
   custom_protocol_id: string = "V"
 ): Promise<any> {
   return new Promise((resolve, reject) => {
+    const state = useState(`account.${custom_protocol_id}.${name}`)
+    if (state.value) {
+      resolve(state.value)
+      return
+    }
     const { $viz } = useNuxtApp()
     $viz.api.getAccount(name, custom_protocol_id, (err: any, response: any) => {
       if (err) {
         reject(err)
         return
       }
+      state.value = response
       resolve(response)
     })
   })
