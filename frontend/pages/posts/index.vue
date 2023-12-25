@@ -8,10 +8,11 @@
             <Spinner />
         </div>
         <div v-else class="posts">
-            <div v-for="post in posts" :key="post.block">
+            Tabs with new, popular posts...
+            <div v-for="post in posts">
                 <v-card variant="outlined" hover>
 
-                    <v-card-subtitle @click.stop="post.show = !post.show; spotlightPost = post">
+                    <v-card-subtitle @click.prevent="post.show = !post.show; spotlightPost = post">
                         <nuxt-link :href="'/@' + post.author">@{{ post.author }}</nuxt-link>
                         posted {{ !(post.d.i || post.d.s) ? 'text' : '' }}
                         <span v-show="post.d.s">
@@ -27,7 +28,7 @@
                         {{ post.show ? fullPost(post) : truncatedText(post.d.t) }}
                     </v-card-text>
 
-                    <v-img v-show="post.show" aspect-ratio="16/9" cover :src="post.d.i">
+                    <v-img v-show="post.show && post.d.i" aspect-ratio="16/9" cover :src="post.d.i">
                         <template v-slot:placeholder>
                             <div class="d-flex align-center justify-center fill-height">
                                 <v-progress-circular color="grey-lighten-4" indeterminate></v-progress-circular>
@@ -41,7 +42,8 @@
                             <v-btn icon="$plus" @click="awardClicked()"></v-btn>
                             <template #content>
                                 <LazyAward :show="isAuthenticated()" :extended="false" :receiver="post.author"
-                                    :memo="'viz://@' + post.author + '/' + post.block" :negative="false"></LazyAward>
+                                    :memo="'viz://@' + post.author + '/' + post.block" :negative="false">
+                                </LazyAward>
                             </template>
                         </Popper>
 
@@ -63,9 +65,9 @@
 
                     </v-card-actions>
                 </v-card>
-                <!-- <nuxt-link :href="'/posts/' + post.block" target="_blank">{{ titleFromText(post.d.t ?? post.d.text ?? "no title") }}</nuxt-link> -->
                 <br />
             </div>
+            <v-btn v-show="showMoreButton" @click.prevent="loadMore()">Show next {{ page + 2 }} page</v-btn>
         </div>
     </div>
 </template>
@@ -83,18 +85,28 @@ defineComponent({
 })
 
 const title = 'Posts'
+const page = ref(0)
+const pending = ref(false)
+const posts: any = ref([])
+const showMoreButton = ref(true)
 
 const config = useRuntimeConfig()
-const { pending, data: posts } = useAsyncData("/posts/",
-    async () => $fetch("/posts/", {
+useAsyncData("/posts/", async (): Promise<void> => {
+    const result: any = await $fetch(`/posts/page/${page.value}`, {
         baseURL: config.public.apiBaseUrl
-    }),
-    {
-        transform: (data: any) => {
-            return data
-        },
+    })
+    if (result.length === 0) {
+        showMoreButton.value = false
+        return
     }
-)
+    posts.value = posts.value.concat(result)
+    pending.value = false
+    return
+}, { watch: [page] })
+
+function loadMore() {
+    page.value += 1
+}
 
 function awardClicked() {
     if (!isAuthenticated()) {
@@ -137,21 +149,19 @@ function timeAgo(date: string): string {
 }
 
 let spotlightPost = ref()
-useAsyncData("fetch metadata",
-    async (): Promise<any> => {
-        let result = await $fetch("voice/post", {
-            baseURL: config.public.apiBaseUrl,
-            params: {
-                link_to_post: `viz://@${spotlightPost.value.author}/${spotlightPost.value.block}`,
-                to_date: (new Date()).toISOString(),
-                from_date: getDateByPeriod('All').toISOString(),
-            },
-            lazy: true,
-        })
-        spotlightPost.value.shares = (result as any).shares
-        return result
-    }, { watch: [spotlightPost] }
-)
+useAsyncData("fetch shares", async (): Promise<any> => {
+    const result = await $fetch("voice/post", {
+        baseURL: config.public.apiBaseUrl,
+        params: {
+            link_to_post: `viz://@${spotlightPost.value.author}/${spotlightPost.value.block}`,
+            to_date: (new Date()).toISOString(),
+            from_date: getDateByPeriod('All').toISOString(),
+        },
+        lazy: true,
+    })
+    spotlightPost.value.shares = (result as any).shares
+    return
+}, { watch: [spotlightPost] })
 </script>
 
 <style>

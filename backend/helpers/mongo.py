@@ -808,7 +808,7 @@ def save_voice_post(post):
     coll_posts.insert_one(post)
 
 
-def get_saved_posts():
+def get_saved_posts(limit=10, page=0):
     cursor = (
         coll_posts.find(  # "t": {"$in": ["p"]}
             {
@@ -819,7 +819,8 @@ def get_saved_posts():
             {"_id": 0},
         )
         .sort("block", pymongo.DESCENDING)
-        .limit(1000)
+        .limit(limit)
+        .skip(limit * page)
     )
     return tuple(cursor)
 

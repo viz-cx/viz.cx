@@ -11,9 +11,13 @@ router = APIRouter(
 )
 
 
-@router.get("/", response_model=List[VoiceProtocol], response_model_exclude_unset=True)
-def list():
-    return get_saved_posts()
+@router.get(
+    "/page/{page}",
+    response_model=List[VoiceProtocol],
+    response_model_exclude_unset=True,
+)
+def list(page: int):
+    return get_saved_posts(limit=10, page=page)
 
 
 @router.get("/{id}", response_model=VoiceProtocol, response_model_exclude_unset=True)
