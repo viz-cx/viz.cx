@@ -39,9 +39,9 @@ def fetch_posts_from_block(block):
             post.block = block["_id"]
             post.timestamp = transaction["timestamp"]
             if post.d.t is None:  # validation
-                print("Skip post: @{}/{}".format(post.author, post.block))
+                print("Skip post: {}/{}".format(post.author, post.block))
             else:
-                print("New post: @{}/{}".format(post.author, post.block))
+                print("New post: {}/{}".format(post.author, post.block))
                 result.append(post.dict(exclude_none=True))
         except Exception as e:
             print("Parse post error: {}".format(str(e)))
@@ -55,10 +55,11 @@ class Benificiary(BaseModel):
 
 
 class ShortPost(BaseModel):
-    t: Optional[str]  # title
+    t: Optional[str]  # text or title
     text: Optional[str]  # backward compatibility, only for parsing
     r: Optional[str]  # reply
     s: Optional[str]  # share
+    i: Optional[str]  # image
     b: Optional[list[Benificiary]]  # benificiaries
 
     def __repr__(self) -> str:
@@ -68,7 +69,6 @@ class ShortPost(BaseModel):
 class ExtendedPost(ShortPost):
     m: str  # markdown
     d: Optional[str]  # description
-    i: Optional[str]  # image
 
     def __repr__(self) -> str:
         return "<ExtendedPost(t={self.t!r})>".format(self=self)
