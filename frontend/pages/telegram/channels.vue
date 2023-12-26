@@ -51,7 +51,7 @@ let select = ref(route.query.by ? capitalize(route.query.by.toString()) : select
 const periods = ['Week', 'Month', 'Year', 'All']
 let period = ref(route.query.period ? capitalize(route.query.period.toString()) : periods[0])
 const limits = [10, 25, 50, 100, 1000]
-let limit = ref(route.query.limit ? route.query.limit : limits[0])
+let limit = ref(route.query.limit ? Number(route.query.limit) : limits[0])
 
 const config = useRuntimeConfig()
 const { pending, data: resp } = useAsyncData(

@@ -14,7 +14,10 @@ parsing_thread.start()
 sorting_thread = Thread(target=start_sorting, daemon=True, name="sorter")
 sorting_thread.start()
 
-app = FastAPI(root_path=os.getenv("ROOT_PATH", "/"))
+app = FastAPI(
+    title="VIZ.cx API",
+    root_path=os.getenv("ROOT_PATH", "/"),
+)
 
 origins = ["https://viz.cx", "http://localhost:8000", "http://localhost:3000"]
 

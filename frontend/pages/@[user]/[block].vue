@@ -15,7 +15,7 @@
             <v-breadcrumbs :items="[
                 { title: 'Home', href: '/' },
                 { title: '@' + $route.params.user, href: '/@' + $route.params.user },
-                { title: $route.params.block, href: '/@' + $route.params.user + '/' + $route.params.block }
+                { title: $route.params.block as string, href: '/@' + $route.params.user + '/' + $route.params.block }
             ]"></v-breadcrumbs>
             <div v-if="data['prev']">
                 Previous post: <nuxt-link :to="voiceLink(data['prev'])">
@@ -45,8 +45,7 @@
                     <Spinner />
                 </v-col>
                 <v-col v-else>
-                    <v-menu transition="slide-x-transition" v-model="menu" :close-on-content-click="false"
-                        location="end">
+                    <v-menu transition="slide-x-transition" v-model="menu" :close-on-content-click="false" location="end">
                         <template v-slot:activator="{ props }">
                             <v-btn icon="mdi-heart" color="primary" v-bind="props"></v-btn>
                         </template>

@@ -3,8 +3,8 @@
 
         <v-navigation-drawer v-model="showMenu" location="end" temporary>
             <v-list dense nav>
-                <v-list-item lines="two" prepend-avatar="https://randomuser.me/api/portraits/women/81.jpg"
-                    title="Jane Smith" subtitle="Logged in"></v-list-item>
+                <v-list-item v-if="isAuthenticated()" lines="two" :prepend-avatar="avatar" :title="login"
+                    subtitle="Logged in" href="/logout"></v-list-item>
                 <v-divider></v-divider>
                 <v-list-item v-for="item in items" :key="item.title" :to="item.value">
                     <v-list-item-title>{{ item.title }}</v-list-item-title>
@@ -14,8 +14,7 @@
 
         <v-app-bar title="VIZ">
             <v-spacer></v-spacer>
-
-            <!-- <v-btn icon="mdi-wizard-hat"/> -->
+            <v-btn icon="mdi-plus-box-outline" to="/posts/new" />
             <v-btn :prepend-icon="theme === 'light' ? 'mdi-weather-sunny' : 'mdi-weather-night'"
                 @click="changeTheme"></v-btn>
             <v-app-bar-nav-icon variant="text" @click.stop="showMenu = !showMenu"></v-app-bar-nav-icon>
@@ -34,40 +33,34 @@ const theme = useState("theme", () => "light")
 function changeTheme() {
     theme.value = theme.value === "light" ? "dark" : "light"
 }
-</script>
 
-<script lang="ts">
-export default {
-    data: () => ({
-        showMenu: false,
-        group: null,
-        items: [
-            {
-                title: "Home",
-                value: "/",
-            },
-            {
-                title: "Telegram Channels",
-                value: "/telegram/channels",
-            },
-            {
-                title: "Telegram Posts",
-                value: "/telegram/posts",
-            },
-            {
-                title: "Voice Posts",
-                value: "/voice/posts",
-            },
-            {
-                title: "Voice Accounts",
-                value: "/voice/accounts"
-            }
-        ],
-    }),
-    watch: {
-        group() {
-            this.showMenu = false
-        },
+let login = useCookie('login').value ?? ""
+let avatar = useCookie('avatar').value ?? "https://info.viz.plus/default-avatar.png"
+let showMenu = ref(false)
+let items = [
+    {
+        title: "Home",
+        value: "/",
     },
-}
+    {
+        title: "Telegram Channels",
+        value: "/telegram/channels",
+    },
+    {
+        title: "Telegram Posts",
+        value: "/telegram/posts",
+    },
+    {
+        title: "Voice Posts",
+        value: "/voice/posts",
+    },
+    {
+        title: "Voice Accounts",
+        value: "/voice/accounts"
+    },
+    {
+        title: "New Posts",
+        value: "/posts"
+    }
+]
 </script>

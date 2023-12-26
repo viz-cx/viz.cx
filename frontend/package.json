@@ -11,15 +11,17 @@
     "test:watch": "vitest --reporter verbose --globals"
   },
   "devDependencies": {
-    "@nuxt/test-utils": "^3.0.0",
-    "nuxt": "3.0.0",
-    "vitest": "^0.26.2"
+    "@nuxt/test-utils": "^3.4.3",
+    "nuxt": "3.8.2",
+    "vitest": "^0.34.6"
   },
   "dependencies": {
-    "@mdi/font": "^7.1.96",
+    "@mdi/font": "^7.2.96",
     "@nuxtjs/dotenv": "^1.4.1",
-    "sass": "^1.56.2",
-    "viz-js-lib": "^0.10.0",
-    "vuetify": "^3.0.4"
+    "@yaireo/relative-time": "^1.0.4",
+    "sass": "^1.62.1",
+    "viz-js-lib": "^0.11.0",
+    "vue3-popper": "^1.5.0",
+    "vuetify": "^3.2.2"
   }
 }

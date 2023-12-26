@@ -7,6 +7,7 @@ from helpers.enums import OpType, ops_custom, ops_shares
 
 db = pymongo.MongoClient(os.getenv("MONGO", ""))[os.getenv("DB_NAME", "")]
 coll = db[os.getenv("COLLECTION", "")]
+coll_posts = db[os.getenv("COLLECTION_POSTS", "posts")]
 coll_ops = db[os.getenv("COLLECTION_OPS", "")]
 coll_custom = coll_ops[OpType.custom]
 count_max_ops_in_block = 100_000
@@ -782,3 +783,56 @@ def get_readdleme_author_awards_and_shares_in_period(
     else:
         result = {"account": readdleme_author_id, "awards": 0, "shares": 0}
     return result
+
+
+def get_last_saved_post_block_id() -> int:
+    try:
+        result = coll_posts.find({}).sort("block", pymongo.DESCENDING).limit(1)
+        post = tuple(result)[0]
+        return int(post["block"])
+    except IndexError:
+        return 17740800  # 17740801 is the first block with voice protocol post
+
+
+def get_voice_posts(from_block, limit=10):
+    result = coll.find(
+        {
+            "_id": {"$gt": from_block},
+            "block": {"$elemMatch": {"op.0": "custom", "op.1.id": "V"}},
+        }
+    ).limit(limit)
+    return tuple(result)
+
+
+def save_voice_post(post):
+    coll_posts.insert_one(post)
+
+
+def get_saved_posts(limit=10, page=0):
+    cursor = (
+        coll_posts.find(  # "t": {"$in": ["p"]}
+            {
+                "d.t": {"$exists": True},
+                "d.r": {"$not": {"$regex": "^viz://"}},
+                "d.s": {"$not": {"$regex": "^viz://"}},
+            },
+            {"_id": 0},
+        )
+        .sort("block", pymongo.DESCENDING)
+        .limit(limit)
+        .skip(limit * page)
+    )
+    return tuple(cursor)
+
+
+def get_saved_post(block: int):
+    post = coll_posts.find_one(
+        {
+            "block": block,
+            "d.t": {"$exists": True},
+            "d.r": {"$not": {"$regex": "^viz://"}},
+            "d.s": {"$not": {"$regex": "^viz://"}},
+        },
+        {"_id": 0},
+    )
+    return post
