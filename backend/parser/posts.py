@@ -32,10 +32,17 @@ def fetch_posts_from_block(block):
             author = op[1]["required_regular_auths"][0]
             js = json.loads(op[1]["json"])
             post = VoiceProtocol(**js)
+            if post.d.t is None and post.d.text is not None:
+                post.d.t = post.d.text
+            post.d.text = None
             post.author = author
             post.block = block["_id"]
             post.timestamp = transaction["timestamp"]
-            result.append(post.dict(exclude_none=True))
+            if post.d.t is None:  # validation
+                print("Skip post: @{}/{}".format(post.author, post.block))
+            else:
+                print("New post: @{}/{}".format(post.author, post.block))
+                result.append(post.dict(exclude_none=True))
         except Exception as e:
             print("Parse post error: {}".format(str(e)))
             continue
@@ -49,7 +56,7 @@ class Benificiary(BaseModel):
 
 class ShortPost(BaseModel):
     t: Optional[str]  # title
-    text: Optional[str]  # backward compatibility
+    text: Optional[str]  # backward compatibility, only for parsing
     r: Optional[str]  # reply
     s: Optional[str]  # share
     b: Optional[list[Benificiary]]  # benificiaries

@@ -7,7 +7,7 @@ from helpers.enums import OpType, ops_custom, ops_shares
 
 db = pymongo.MongoClient(os.getenv("MONGO", ""))[os.getenv("DB_NAME", "")]
 coll = db[os.getenv("COLLECTION", "")]
-coll_posts = db[os.getenv("COLLECTION_POSTS", "")]
+coll_posts = db[os.getenv("COLLECTION_POSTS", "posts")]
 coll_ops = db[os.getenv("COLLECTION_OPS", "")]
 coll_custom = coll_ops[OpType.custom]
 count_max_ops_in_block = 100_000
