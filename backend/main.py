@@ -14,21 +14,7 @@ parsing_thread.start()
 sorting_thread = Thread(target=start_sorting, daemon=True, name="sorter")
 sorting_thread.start()
 
-app = FastAPI(
-    title="VIZ.cx API",
-    root_path=os.getenv("ROOT_PATH", "/"),
-)
-
-origins = ["https://viz.cx", "http://localhost:8000", "http://localhost:3000"]
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
+app = FastAPI(title="VIZ.cx API", root_path=os.getenv("ROOT_PATH", "/"))
 app.include_router(router)
 
 
@@ -39,3 +25,14 @@ async def validation_exception_handler(request, err) -> JSONResponse:
         status_code=400,
         content={"message": f"{base_error_message}. Error: {err}"},
     )
+
+
+origins = ["https://viz.cx", "http://localhost:3000"]
+
+app = CORSMiddleware(
+    app=app,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
