@@ -1,8 +1,6 @@
-from typing import List
 from fastapi import APIRouter
 
 from helpers.mongo import get_saved_posts, get_saved_post
-from parser.posts import VoiceProtocol
 
 router = APIRouter(
     prefix="/posts",

@@ -55,12 +55,12 @@ class Benificiary(BaseModel):
 
 
 class ShortPost(BaseModel):
-    t: Optional[str]  # text or title
-    text: Optional[str]  # backward compatibility, only for parsing
-    r: Optional[str]  # reply
-    s: Optional[str]  # share
-    i: Optional[str]  # image
-    b: Optional[list[Benificiary]]  # benificiaries
+    t: Optional[str] = None  # text or title
+    text: Optional[str] = None  # backward compatibility, only for parsing
+    r: Optional[str] = None  # reply
+    s: Optional[str] = None  # share
+    i: Optional[str] = None  # image
+    b: Optional[list[Benificiary]] = None  # benificiaries
 
     def __repr__(self) -> str:
         return "<ShortPost(t={self.t!r})>".format(self=self)
@@ -68,7 +68,7 @@ class ShortPost(BaseModel):
 
 class ExtendedPost(ShortPost):
     m: str  # markdown
-    d: Optional[str]  # description
+    d: Optional[str] = None  # description
 
     def __repr__(self) -> str:
         return "<ExtendedPost(t={self.t!r})>".format(self=self)
@@ -77,12 +77,12 @@ class ExtendedPost(ShortPost):
 class VoiceProtocol(BaseModel):
     """https://github.com/VIZ-Blockchain/Free-Speech-Project/blob/master/specification.md"""
 
-    p: Optional[int]  # previous
-    t: Optional[Literal["t", "text", "p"]]  # type
+    p: Optional[int] = None  # previous
+    t: Optional[Literal["t", "text", "p"]] = None  # type
     d: ExtendedPost | ShortPost  # data
-    v: Optional[int]  # version
+    v: Optional[int] = None  # version
 
     # additional data
-    author: Optional[str]
-    block: Optional[int]
-    timestamp: Optional[datetime.datetime]
+    author: Optional[str] = None
+    block: Optional[int] = None
+    timestamp: Optional[datetime.datetime] = None
