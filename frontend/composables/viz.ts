@@ -49,12 +49,10 @@ export function calculateCurrentEnergy(
   return minEnergy
 }
 
-export async function getAccount(
-  name: string,
-  custom_protocol_id: string = "V"
-): Promise<any> {
+export async function getAccount(name: string): Promise<any> {
+  const custom_protocol_id: string = "V"
   return new Promise((resolve, reject) => {
-    const state = useState(`account.${custom_protocol_id}.${name}`)
+    const state = useState(`account.${name}`)
     if (state.value) {
       resolve(state.value)
       return
@@ -105,6 +103,7 @@ export async function makeAward(
       memo,
       beneficiaries,
       function (err: any, response: any) {
+        useState(`account.${initiator}`).value = undefined // reset account cache
         if (err) {
           reject(err)
           return
