@@ -51,6 +51,14 @@
                     <v-card-text @click.stop="post.show = true; spotlightPost = post"
                         :class="post.show ? 'text-opened' : ''">
                         {{ post.show ? fullPost(post) : truncatedText(post.d.t) }}
+
+                        <div v-if="post.show && post.t === 'p' && post.d.m">
+                            <br />
+                            We can't show markdown yet. <br />
+                            <NuxtLink target="_blank"
+                                :href="'https://readdle.me/#viz://@' + post.author + '/' + post.p + '/'">Show on readdle.me?
+                            </NuxtLink>
+                        </div>
                     </v-card-text>
 
                     <v-img v-show="post.show && post.d.i" aspect-ratio="16/9" cover :src="post.d.i">
