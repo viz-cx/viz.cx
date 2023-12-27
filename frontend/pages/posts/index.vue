@@ -56,7 +56,8 @@
                             <br />
                             We can't show markdown yet. <br />
                             <NuxtLink target="_blank"
-                                :href="'https://readdle.me/#viz://@' + post.author + '/' + post.p + '/'">Show on readdle.me?
+                                :href="'https://readdle.me/#viz://@' + post.author + '/' + post.block + '/'">Show on
+                                readdle.me?
                             </NuxtLink>
                         </div>
                     </v-card-text>
