@@ -123,7 +123,7 @@ export async function sendVoicePost(
 ): Promise<any> {
   return new Promise((resolve, reject) => {
     const { $viz } = useNuxtApp()
-    getAccount(login, "V").then(
+    getAccount(login).then(
       (account) => {
         let previous = parseInt(account.custom_sequence_block_num)
         let json: any = {}

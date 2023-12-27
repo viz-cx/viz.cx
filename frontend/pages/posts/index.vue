@@ -8,8 +8,33 @@
             <Spinner />
         </div>
         <div v-else class="posts">
-            Tabs with new, popular posts...
-            <div v-for="post in posts">
+
+            <v-card variant="outlined">
+                <v-toolbar color="primary">
+                    <v-toolbar-title>{{ title }}</v-toolbar-title>
+                    <template v-slot:extension>
+                        <v-tabs v-model="tab" align-tabs="title">
+                            <v-tab v-for="item in tabs" :key="item" :value="item">
+                                {{ item }}
+                            </v-tab>
+                        </v-tabs>
+                    </template>
+                </v-toolbar>
+                <!-- <v-window v-model="tab">
+                    <v-window-item v-for="item in tabs" :key="item" :value="item">
+                        <v-card flat>
+                            <v-card-text v-text="text"></v-card-text>
+                        </v-card>
+                    </v-window-item>
+                </v-window> -->
+            </v-card>
+            <br />
+
+            <v-card v-if="tab !== 'newest'" variant="outlined" hover>
+                <v-card-text>This tab isn't implemented yet.</v-card-text>
+            </v-card>
+
+            <div v-if="tab === 'newest'" v-for="post in posts">
                 <v-card variant="outlined" hover>
 
                     <v-card-subtitle @click.prevent="post.show = !post.show; spotlightPost = post">
@@ -67,7 +92,8 @@
                 </v-card>
                 <br />
             </div>
-            <v-btn v-show="showMoreButton" @click.prevent="loadMore()">Show next {{ page + 2 }} page</v-btn>
+            <v-btn v-if="tab === 'newest'" v-show="showMoreButton" @click.prevent="loadMore()">Show next {{ page + 2 }}
+                page</v-btn>
         </div>
     </div>
 </template>
@@ -84,12 +110,14 @@ defineComponent({
     },
 })
 
-const title = 'Posts'
+const title = 'Voice Protocol Posts'
 const page = ref(0)
 const pending = ref(false)
 const posts: any = ref([])
 const showMoreButton = ref(true)
 
+const tab = ref<string>("")
+const tabs = ['newest', 'popular']
 const config = useRuntimeConfig()
 useAsyncData("/posts/", async (): Promise<void> => {
     const result: any = await $fetch(`/posts/page/${page.value}`, {
