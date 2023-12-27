@@ -1,4 +1,4 @@
-FROM node:16-alpine as builder
+FROM node:current-alpine as builder
 
 WORKDIR /app
 
@@ -20,7 +20,7 @@ RUN rm -rf node_modules && \
   --production=true
 
 
-FROM node:16-alpine
+FROM node:current-alpine
 
 ENV NODE_ENV production
 
