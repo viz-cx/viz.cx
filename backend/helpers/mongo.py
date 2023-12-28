@@ -2,6 +2,7 @@
 import datetime as dt
 import os
 import pymongo
+import functools
 import re
 from helpers.enums import OpType, ops_custom, ops_shares
 
@@ -98,6 +99,13 @@ def sort_block_ops_to_subcolls(block_n_num) -> None:
             coll_ops[op_type].insert_one(op_new_json)
         else:
             coll_ops.insert_one(op_new_json)
+
+        clear_cache_if_needed(op)
+
+
+def clear_cache_if_needed(op) -> None:
+    if op["op"][0] in OpType.receive_award and op["op"][1]["memo"].startswith("viz://"):
+        get_readdleme_post_awards_and_shares.cache_clear()
 
 
 # Количество всех блоков в БД.
@@ -576,19 +584,15 @@ def get_top_readdleme_posts_by_shares_in_period(
     return result
 
 
-def get_readdleme_post_awards_and_shares_in_period(
-    link_to_post: str,
-    to_date: dt.datetime,
-    from_date: dt.datetime,
-) -> dict:
-    """Return Voice post awards count and received SHARES in period"""
+@functools.lru_cache(maxsize=None)
+def get_readdleme_post_awards_and_shares(link_to_post: str) -> dict:
+    """Return Voice post awards count and received SHARES"""
     memo_post_link = "viz://" + link_to_post.split("viz://", 1)[-1]
     regex = "^" + re.escape(memo_post_link) + "($|\\/)"
     result = coll_ops[OpType.receive_award].aggregate(
         [
             {
                 "$match": {
-                    "timestamp": {"$gt": from_date, "$lt": to_date},
                     "op.memo": {"$regex": regex},
                 }
             },

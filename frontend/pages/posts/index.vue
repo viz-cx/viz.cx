@@ -190,9 +190,7 @@ useAsyncData("fetch shares", async (): Promise<any> => {
     const result = await $fetch("voice/post", {
         baseURL: config.public.apiBaseUrl,
         params: {
-            link_to_post: `viz://@${spotlightPost.value.author}/${spotlightPost.value.block}`,
-            to_date: (new Date()).toISOString(),
-            from_date: getDateByPeriod('All').toISOString(),
+            link_to_post: `viz://@${spotlightPost.value.author}/${spotlightPost.value.block}`
         },
         lazy: true,
     })
