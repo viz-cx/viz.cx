@@ -603,8 +603,12 @@ def get_readdleme_post_awards_and_shares_in_period(
     )
     result = tuple(result)
     if len(result) != 0:
-        result = result[0]
-        result["post_link"] = result.pop("_id")[0]
+        awards: int = 0
+        shares: float = 0
+        for r in result:
+            awards += r.pop("awards")
+            shares += r.pop("shares")
+        result = {"awards": awards, "shares": shares, "post_link": memo_post_link}
     else:
         result = {"awards": 0, "shares": 0, "post_link": memo_post_link}
     return result
