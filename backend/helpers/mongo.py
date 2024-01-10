@@ -2,7 +2,6 @@
 import datetime as dt
 import os
 import pymongo
-import functools
 import re
 from helpers.enums import OpType, ops_custom, ops_shares
 
@@ -99,13 +98,6 @@ def sort_block_ops_to_subcolls(block_n_num) -> None:
             coll_ops[op_type].insert_one(op_new_json)
         else:
             coll_ops.insert_one(op_new_json)
-
-        clear_cache_if_needed(op)
-
-
-def clear_cache_if_needed(op) -> None:
-    if op["op"][0] in OpType.receive_award and op["op"][1]["memo"].startswith("viz://"):
-        get_readdleme_post_awards_and_shares.cache_clear()
 
 
 # Количество всех блоков в БД.
@@ -584,7 +576,6 @@ def get_top_readdleme_posts_by_shares_in_period(
     return result
 
 
-@functools.lru_cache(maxsize=None)
 def get_readdleme_post_awards_and_shares(link_to_post: str) -> dict:
     """Return Voice post awards count and received SHARES"""
     memo_post_link = "viz://" + link_to_post.split("viz://", 1)[-1]
@@ -816,7 +807,8 @@ def save_voice_post(post):
     coll_posts.insert_one(post)
 
 
-def get_saved_posts(limit=10, page=0):
+def get_saved_posts(limit=10, page=0, popular: bool = False):
+    field = "shares" if popular else "block"
     cursor = (
         coll_posts.find(  # "t": {"$in": ["p"]}
             {
@@ -826,7 +818,7 @@ def get_saved_posts(limit=10, page=0):
             },
             {"_id": 0},
         )
-        .sort("block", pymongo.DESCENDING)
+        .sort(field, pymongo.DESCENDING)
         .limit(limit)
         .skip(limit * page)
     )
