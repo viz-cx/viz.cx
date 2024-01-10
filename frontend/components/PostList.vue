@@ -18,13 +18,11 @@
                     {{ post.show ? fullPost(post) : truncatedText(post.d.t) }}
 
                     <div v-if="post.show && post.t === 'p' && post.d.m">
-                        <br />
-                        We can't show markdown yet. <br />
-                        <NuxtLink target="_blank"
-                            :href="'https://readdle.me/#viz://@' + post.author + '/' + post.block + '/'">
-                            Show on
-                            readdle.me?
-                        </NuxtLink>
+                        <blockquote class="blockquote">We can't show markdown yet.</blockquote>
+                        <v-card class="mx-auto my-8" max-width="300" title="Show on
+                            Readdle.me" append-icon="mdi-open-in-new"
+                            :href="'https://readdle.me/#viz://@' + post.author + '/' + post.block + '/publication/'"
+                            target="_blank" rel="noopener" link></v-card>
                     </div>
                 </v-card-text>
 
