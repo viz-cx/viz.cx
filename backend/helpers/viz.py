@@ -37,3 +37,7 @@ def get_last_block_in_chain() -> int:
     """Return number of last irreversible block from the VIZ blockchain."""
     result = get_dgp()["last_irreversible_block_num"]
     return int(result)
+
+
+def convertShares(shares: str) -> float:
+    return float(shares.split(" ", 1)[0])

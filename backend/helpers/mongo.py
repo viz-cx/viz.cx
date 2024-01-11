@@ -4,6 +4,7 @@ import os
 import pymongo
 import re
 from helpers.enums import OpType, ops_custom, ops_shares
+from helpers.viz import convertShares
 
 db = pymongo.MongoClient(os.getenv("MONGO", ""))[os.getenv("DB_NAME", "")]
 coll = db[os.getenv("COLLECTION", "")]
@@ -85,9 +86,7 @@ def sort_block_ops_to_subcolls(block_n_num) -> None:
         op_number += 1 / count_max_ops_in_block
         op_type = op["op"][0]
         if op_type in ops_shares:
-            shares = (op["op"][1]["shares"]).split(" ", 1)
-            shares = float(shares[0])
-            op["op"][1]["shares"] = shares
+            op["op"][1]["shares"] = convertShares(op["op"][1]["shares"])
         op_new_json = {
             "_id": block_number + op_number,
             "timestamp": op["timestamp"],
