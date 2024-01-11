@@ -11,7 +11,6 @@ coll_posts = db[os.getenv("COLLECTION_POSTS", "posts")]
 coll_ops = db[os.getenv("COLLECTION_OPS", "")]
 coll_custom = coll_ops[OpType.custom]
 count_max_ops_in_block = 100_000
-
 sorted_op_types = ops_custom + ops_shares
 
 
@@ -52,8 +51,7 @@ def get_last_blocknum_and_subcoll() -> dict:
     subcollections."""
     bnum_max = 0
     subcoll_bnum_max = None
-    subcolls = ops_shares + ops_custom
-    for coll_op in subcolls:
+    for coll_op in sorted_op_types:
         result = tuple(
             coll_ops[coll_op]
             .find({}, {"_id": 1})
@@ -82,6 +80,7 @@ def sort_block_ops_to_subcolls(block_n_num) -> None:
     op_number = 0.0
     block_number = block_n_num["_id"]
     block = block_n_num["block"]
+    not_sorted_ops = []
     for op in block:
         op_number += 1 / count_max_ops_in_block
         op_type = op["op"][0]
@@ -94,10 +93,12 @@ def sort_block_ops_to_subcolls(block_n_num) -> None:
             "timestamp": op["timestamp"],
             "op": op["op"],
         }
-        if op_type in ops_shares + ops_custom:
+        if op_type in sorted_op_types:
             coll_ops[op_type].insert_one(op_new_json)
         else:
-            coll_ops.insert_one(op_new_json)
+            not_sorted_ops.append(op_new_json)
+    if not_sorted_ops:
+        coll_ops.insert_many(not_sorted_ops)
 
 
 # Количество всех блоков в БД.
