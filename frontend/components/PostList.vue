@@ -82,6 +82,7 @@ defineComponent({
 
 const props = defineProps({
     tab: String,
+    author: String
 })
 
 const relativeTime = new RelativeTime({ locale: 'en' })
@@ -94,7 +95,13 @@ const showMoreButton = ref(true)
 
 const config = useRuntimeConfig()
 useAsyncData("fetch posts", async (): Promise<void> => {
-    const result: any = await $fetch(`/posts/${props.tab}/${page.value}`, {
+    let url: string
+    if (props.author) {
+        url = `/posts/${props.tab}/${props.author}/${page.value}`
+    } else {
+        url = `/posts/${props.tab}/${page.value}`
+    }
+    const result: any = await $fetch(url, {
         baseURL: config.public.apiBaseUrl
     })
     if (result.length === 0) {

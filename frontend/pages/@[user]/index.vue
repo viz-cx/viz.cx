@@ -10,9 +10,8 @@
         <h1>{{ title }}</h1>
         <v-avatar :image="avatar" size="100" :alt="title"></v-avatar>
         {{ about }}
-        <div v-if="post">
-            Latest post: <nuxt-link :to="voiceLink(post)">{{ voiceLink(post, false) }}</nuxt-link> ({{ total }} total)
-        </div>
+        <br /><br />
+        <PostList tab="newest" :author="user" />
     </div>
 </template>
 
@@ -26,9 +25,10 @@ let about = ref('')
 let post: Ref<string | undefined> = ref(undefined)
 let total = ref(0)
 
+const route = useRoute()
+const user: string = (typeof route.params.user === 'string') ? route.params.user : route.params.user[0]
+
 onBeforeMount(async () => {
-    const route = useRoute()
-    let user: string = (typeof route.params.user === 'string') ? route.params.user : route.params.user[0]
     await getAccount(user).then((account: any) => {
         if (account['json_metadata'] && account['json_metadata'] !== '') {
             let profile = JSON.parse(account['json_metadata'])['profile']

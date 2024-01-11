@@ -9,14 +9,22 @@ router = APIRouter(
 )
 
 
-@router.get("/newest/{page}")
-def newest(page: int):
-    return get_saved_posts(limit=10, page=page)
+@router.get("/{tab}/{page}")
+def posts(tab: str, page: int):
+    return postsHelper(tab=tab, page=page)
 
 
-@router.get("/popular/{page}")
-def popular(page: int):
-    return get_saved_posts(limit=10, page=page, popular=True)
+@router.get("/{tab}/{author}/{page}")
+def authorPosts(tab: str, author: str, page: int):
+    return postsHelper(tab=tab, page=page, author=author)
+
+
+def postsHelper(tab: str, page: int, author: str | None = None):
+    if tab in ["newest", "popular"]:
+        isPopular = tab == "popular"
+        return get_saved_posts(limit=10, page=page, popular=isPopular, author=author)
+    else:
+        return "Incorrect tab"
 
 
 @router.get("/{id}")

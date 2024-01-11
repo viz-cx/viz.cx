@@ -807,15 +807,24 @@ def save_voice_post(post):
     coll_posts.insert_one(post)
 
 
-def get_saved_posts(limit=10, page=0, popular: bool = False):
+def postsQuery(author: str | None = None, block: int | None = None) -> dict:
+    query = {
+        "d.t": {"$exists": True},
+        "d.r": {"$not": {"$regex": "^viz://"}},
+        "d.s": {"$not": {"$regex": "^viz://"}},
+    }
+    if author:
+        query["author"] = author
+    if block:
+        query["block"] = block
+    return query
+
+
+def get_saved_posts(limit=10, page=0, popular: bool = False, author: str | None = None):
     field = "shares" if popular else "block"
     cursor = (
         coll_posts.find(  # "t": {"$in": ["p"]}
-            {
-                "d.t": {"$exists": True},
-                "d.r": {"$not": {"$regex": "^viz://"}},
-                "d.s": {"$not": {"$regex": "^viz://"}},
-            },
+            postsQuery(author=author),
             {"_id": 0},
         )
         .sort(field, pymongo.DESCENDING)
@@ -827,12 +836,7 @@ def get_saved_posts(limit=10, page=0, popular: bool = False):
 
 def get_saved_post(block: int):
     post = coll_posts.find_one(
-        {
-            "block": block,
-            "d.t": {"$exists": True},
-            "d.r": {"$not": {"$regex": "^viz://"}},
-            "d.s": {"$not": {"$regex": "^viz://"}},
-        },
+        postsQuery(block=block),
         {"_id": 0},
     )
     return post
