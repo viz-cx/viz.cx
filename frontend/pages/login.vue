@@ -1,6 +1,9 @@
 <template>
-    <v-container fill-height fluid class="container">
-        <v-sheet>
+    <v-container fill-height fluid>
+        <div v-if="loading">
+            <Spinner />
+        </div>
+        <v-sheet v-else>
             <v-form fast-fail @submit.prevent="login">
 
                 <div class="wrapper">
@@ -25,8 +28,8 @@
 
 <script setup lang="ts">
 const { $viz } = useNuxtApp()
-const router = useRouter()
 
+let loading = ref(false)
 let showLogin = ref(false)
 let user = ref("")
 let regularKey = ref("")
@@ -40,11 +43,13 @@ let errors: Ref<{
 }> = ref({ user: "", key: "" })
 
 async function login() {
+    loading.value = true
     let publicRegularKey: string = ""
     if ($viz.auth.isWif(regularKey.value)) {
         publicRegularKey = $viz.auth.wifToPublic(regularKey.value)
     } else {
         errors.value.key = 'Looks like not a private key'
+        loading.value = false
         return
     }
     let login = user.value
@@ -54,6 +59,7 @@ async function login() {
             login = accounts[0]
         } else {
             errors.value.user = 'Account by key not found'
+            loading.value = false
             return
         }
     }
@@ -83,12 +89,14 @@ async function login() {
                 console.log(e)
             }
 
-            router.push("/")
+            navigateTo({ path: '/' })
         } else {
             errors.value.key = 'The weight of the key is not enough'
+            loading.value = false
         }
     }, (err) => {
         errors.value.user = err.message
+        loading.value = false
     })
 }
 </script>
@@ -96,9 +104,5 @@ async function login() {
 <style>
 .wrapper {
     display: flex;
-}
-
-.container {
-    max-width: 580px;
 }
 </style>

@@ -1,12 +1,11 @@
 <template>
+    <Head>
+        <Title>{{ capitalize(title) }}'s profile</Title>
+    </Head>
     <div v-if="loading">
         <Spinner />
     </div>
     <div v-else>
-
-        <Head>
-            <Title>{{ capitalize(title) }}'s profile</Title>
-        </Head>
         <h1>{{ title }}</h1>
         <v-avatar :image="avatar" size="100" :alt="title"></v-avatar>
         {{ about }}

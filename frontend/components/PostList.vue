@@ -169,3 +169,9 @@ useAsyncData("fetch shares", async (): Promise<any> => {
     return
 }, { watch: [spotlightPost] })
 </script>
+
+<style>
+.text-opened {
+    min-height: 70px;
+}
+</style>

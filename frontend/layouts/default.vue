@@ -21,7 +21,7 @@
         </v-app-bar>
 
         <v-main>
-            <v-container>
+            <v-container class="content">
                 <slot />
             </v-container>
         </v-main>
@@ -64,3 +64,34 @@ let items = [
     }
 ]
 </script>
+
+<style>
+.content {
+    max-width: 650px;
+    margin: 20px auto;
+    padding: 0 10px;
+    color: #444;
+}
+
+.dark {
+    --popper-theme-background-color: #333;
+    --popper-theme-background-color-hover: #333;
+    /* --popper-theme-text-color: #eeeeee; */
+    --popper-theme-border-width: 0px;
+    --popper-theme-border-radius: 6px;
+    --popper-theme-padding: 0px;
+    --popper-theme-box-shadow: 0 6px 30px -6px rgba(0, 0, 0, 0.25);
+}
+
+.light {
+    --popper-theme-background-color: #ffffff;
+    --popper-theme-background-color-hover: #ffffff;
+    --popper-theme-text-color: #333333;
+    --popper-theme-border-width: 1px;
+    --popper-theme-border-style: solid;
+    --popper-theme-border-color: #eeeeee;
+    --popper-theme-border-radius: 6px;
+    --popper-theme-padding: 0px;
+    --popper-theme-box-shadow: 0 6px 30px -6px rgba(0, 0, 0, 0.25);
+}
+</style>
