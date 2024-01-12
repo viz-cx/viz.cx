@@ -1,6 +1,9 @@
 <template>
     <div>
-        <div v-for="post in posts">
+        <div v-if="posts.length === 0">
+            No posts found.
+        </div>
+        <div v-else v-for="post in posts">
             <v-card variant="outlined" hover>
 
                 <v-card-subtitle @click.prevent="post.show = !post.show; spotlightPost = post">
@@ -35,7 +38,6 @@
                 </v-img>
 
                 <v-card-actions v-show="post.show">
-
                     <Popper :class="theme" arrow placement="top">
                         <v-btn icon="$plus" @click="awardClicked()"></v-btn>
                         <template #content>
@@ -158,11 +160,8 @@ function timeAgo(date: string): string {
 
 let spotlightPost = ref()
 useAsyncData("fetch shares", async (): Promise<any> => {
-    const result = await $fetch("voice/post", {
+    const result = await $fetch(`voice/@${spotlightPost.value.author}/${spotlightPost.value.block}`, {
         baseURL: config.public.apiBaseUrl,
-        params: {
-            link_to_post: `viz://@${spotlightPost.value.author}/${spotlightPost.value.block}`
-        },
         lazy: true,
     })
     spotlightPost.value.shares = (result as any).shares

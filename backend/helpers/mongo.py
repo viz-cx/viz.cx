@@ -578,9 +578,9 @@ def get_top_readdleme_posts_by_shares_in_period(
     return result
 
 
-def get_readdleme_post_awards_and_shares(link_to_post: str) -> dict:
+def get_readdleme_post_awards_and_shares(author: str, block: int) -> dict:
     """Return Voice post awards count and received SHARES"""
-    memo_post_link = "viz://" + link_to_post.split("viz://", 1)[-1]
+    memo_post_link = "viz://@{}/{}".format(author, block)
     regex = "^" + re.escape(memo_post_link) + "($|\\/)"
     result = coll_ops[OpType.receive_award].aggregate(
         [
@@ -599,16 +599,18 @@ def get_readdleme_post_awards_and_shares(link_to_post: str) -> dict:
         ]
     )
     result = tuple(result)
-    if len(result) != 0:
-        awards: int = 0
-        shares: float = 0
-        for r in result:
-            awards += r.pop("awards")
-            shares += r.pop("shares")
-        result = {"awards": awards, "shares": shares, "post_link": memo_post_link}
-    else:
-        result = {"awards": 0, "shares": 0, "post_link": memo_post_link}
+    awards: int = 0
+    shares: float = 0
+    for r in result:
+        awards += r.pop("awards")
+        shares += r.pop("shares")
+    update_post_shares_if_needed(author, block, shares)
+    result = {"awards": awards, "shares": shares, "post_link": memo_post_link}
     return result
+
+
+def update_post_shares_if_needed(author: str, block: int, shares: float) -> None:
+    pass
 
 
 def get_top_readdleme_authors_by_shares_in_period(

@@ -38,11 +38,9 @@ def show_top_posts_in_period(
 
 
 # Количество авардов и SHARES полученные постом
-@router.get("/post")
-def show_readdleme_post_awards_and_received_shares(
-    link_to_post: str = "viz://@readdle/22099872",
-) -> dict:
-    result = mongo.get_readdleme_post_awards_and_shares(link_to_post)
+@router.get("/@{author}/{block}")
+def show_readdleme_post_awards_and_received_shares(author: str, block: int) -> dict:
+    result = mongo.get_readdleme_post_awards_and_shares(author, block)
     return result
 
 

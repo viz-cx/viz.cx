@@ -63,13 +63,9 @@ let menu = ref(false)
 const route = useRoute()
 const config = useRuntimeConfig()
 
-let link_to_post = 'viz://@' + route.params.user + '/' + route.params.block
-const { pending: pendingStats, data: stats } = useAsyncData(link_to_post,
-    async (): Promise<any> => $fetch("voice/post", {
+const { pending: pendingStats, data: stats } = useAsyncData(`fetch post metadata`,
+    async (): Promise<any> => $fetch(`voice/@${route.params.user}/${route.params.block}`, {
         baseURL: config.public.apiBaseUrl,
-        params: {
-            link_to_post: link_to_post,
-        }
     })
 )
 
