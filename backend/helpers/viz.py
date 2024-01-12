@@ -1,4 +1,5 @@
 """Helper module to VIZ blockchain."""
+from time import sleep
 import random
 from typing import Any
 from viz import Client as VIZ
@@ -13,6 +14,7 @@ def change_node(selectFirst=False) -> None:
         print("Change node to {}".format(node))
         viz = VIZ(node=node)
     except:
+        sleep(5)
         change_node()
 
 
