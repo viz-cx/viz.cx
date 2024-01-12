@@ -3,7 +3,7 @@
         <div v-if="posts.length === 0">
             No posts found.
         </div>
-        <div v-else v-for="post in posts">
+        <div v-else v-for="post in posts" :id="post.author + '/' + post.block">
             <v-card variant="outlined" hover>
 
                 <v-card-subtitle @click.prevent="post.show = !post.show; spotlightPost = post">

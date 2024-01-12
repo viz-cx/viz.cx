@@ -27,6 +27,6 @@ def postsHelper(tab: str, page: int, author: str | None = None):
         return "Incorrect tab"
 
 
-@router.get("/{id}")
-def post(id: int):
-    return get_saved_post(id)
+@router.get("/@{author}/{block}")
+def post(author: str, block: int):
+    return get_saved_post(author, block)

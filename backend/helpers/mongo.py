@@ -610,7 +610,13 @@ def get_readdleme_post_awards_and_shares(author: str, block: int) -> dict:
 
 
 def update_post_shares_if_needed(author: str, block: int, shares: float) -> None:
-    pass
+    post = get_saved_post(author, block, show_id=True)
+    if isinstance(post, dict) and float(post["shares"]) != shares:
+        coll_posts.find_one_and_update(
+            {"_id": post["_id"]},
+            {"$set": {"shares": shares}},
+        )
+        print("New {} shares for post {}/{}".format(shares, author, block))
 
 
 def get_top_readdleme_authors_by_shares_in_period(
@@ -838,10 +844,10 @@ def get_saved_posts(limit=10, page=0, popular: bool = False, author: str | None 
     return tuple(cursor)
 
 
-def get_saved_post(block: int):
+def get_saved_post(author: str, block: int, show_id=False):
     post = coll_posts.find_one(
-        postsQuery(block=block),
-        {"_id": 0},
+        postsQuery(author=author, block=block),
+        {} if show_id else {"_id": 0},
     )
     return post
 
