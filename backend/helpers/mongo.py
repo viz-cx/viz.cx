@@ -1,6 +1,8 @@
 """Helper module for working with MongoDB"""
 import datetime as dt
+import json
 import os
+from fastapi import HTTPException
 import pymongo
 import re
 from helpers.enums import OpType, ops_custom, ops_shares
@@ -840,3 +842,39 @@ def get_saved_post(block: int):
         {"_id": 0},
     )
     return post
+
+
+def get_user_metadata(user: str):
+    obj = account_metadata(user=user)
+    if not obj:
+        obj = account_creation_metadata(user=user)
+        print(obj)
+    if obj:
+        result = {"account": user, "meta": {}}
+        try:
+            result["meta_timestamp"] = obj[0]["timestamp"]
+            result["meta"] = json.loads(obj[0]["op"][1]["json_metadata"])
+        except Exception as e:
+            print("Parse profile {} error: {}".format(user, str(e)))
+        return result
+    raise HTTPException(status_code=404, detail="Account not found")
+
+
+def account_metadata(user: str):
+    cursor = (
+        coll_ops.find({"op.0": "account_metadata", "op.1.account": user}, {"_id": 0})
+        .sort("_id", pymongo.DESCENDING)
+        .limit(1)
+    )
+    return tuple(cursor)
+
+
+def account_creation_metadata(user: str):
+    cursor = (
+        coll_ops.find(
+            {"op.0": "account_create", "op.1.new_account_name": user}, {"_id": 0}
+        )
+        .sort("_id", pymongo.DESCENDING)
+        .limit(1)
+    )
+    return tuple(cursor)
