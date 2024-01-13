@@ -96,10 +96,24 @@ def sort_block_ops_to_subcolls(block_n_num) -> None:
         }
         if op_type in sorted_op_types:
             coll_ops[op_type].insert_one(op_new_json)
+            recalculate_shares_if_needed(op)
         else:
             not_sorted_ops.append(op_new_json)
     if not_sorted_ops:
         coll_ops.insert_many(not_sorted_ops)
+
+
+def recalculate_shares_if_needed(op) -> None:
+    if op["op"][0] is OpType.receive_award and op["op"][1]["memo"].startswith("viz://"):
+        try:
+            result = re.search(r"viz://@([a-z0-9\-\.]+)/(\d+)", op["op"][1]["memo"])
+            if result is not None and len(result.groups()) == 2:
+                author = result.group(1)
+                block = int(result.group(2))
+                shares = convertShares(op["op"][1]["shares"])
+                update_post_shares_if_needed(author, block, shares)
+        except Exception as e:
+            print("Shares recalculation error: {}".format(str(e)))
 
 
 # Количество всех блоков в БД.

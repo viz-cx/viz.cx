@@ -9,6 +9,11 @@ router = APIRouter(
 )
 
 
+@router.get("/@{author}/{block}")
+def post(author: str, block: int):
+    return get_saved_post(author, block)
+
+
 @router.get("/{tab}/{page}")
 def posts(tab: str, page: int):
     return postsHelper(tab=tab, page=page)
@@ -25,8 +30,3 @@ def postsHelper(tab: str, page: int, author: str | None = None):
         return get_saved_posts(limit=10, page=page, popular=isPopular, author=author)
     else:
         return "Incorrect tab"
-
-
-@router.get("/@{author}/{block}")
-def post(author: str, block: int):
-    return get_saved_post(author, block)

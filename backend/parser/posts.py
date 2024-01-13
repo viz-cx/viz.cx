@@ -5,6 +5,7 @@ from pydantic import BaseModel
 
 from helpers.mongo import (
     get_last_saved_post_block_id,
+    get_readdleme_post_awards_and_shares,
     get_voice_posts,
     save_voice_post,
 )
@@ -38,11 +39,13 @@ def fetch_posts_from_block(block):
             post.author = author
             post.block = block["_id"]
             post.timestamp = transaction["timestamp"]
+            meta = get_readdleme_post_awards_and_shares(post.author, post.block)
+            post.shares = meta["shares"]
             if post.d.t is None:  # validation
                 print("Skip post: {}/{}".format(post.author, post.block))
             else:
                 print("New post: {}/{}".format(post.author, post.block))
-                result.append(post.dict(exclude_none=True))
+                result.append(post.model_dump(exclude_none=True))
         except Exception as e:
             print("Parse post error: {}".format(str(e)))
             continue
@@ -86,3 +89,4 @@ class VoiceProtocol(BaseModel):
     author: Optional[str] = None
     block: Optional[int] = None
     timestamp: Optional[datetime.datetime] = None
+    shares: Optional[float] = None
