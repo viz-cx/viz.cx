@@ -14,7 +14,7 @@
 
         <v-app-bar title="VIZ">
             <v-spacer></v-spacer>
-            <v-btn icon="mdi-plus-box-outline" to="/posts/new" />
+            <v-btn icon="mdi-plus-box-outline" to="/new" />
             <v-btn :prepend-icon="theme === 'light' ? 'mdi-weather-sunny' : 'mdi-weather-night'"
                 @click="changeTheme"></v-btn>
             <v-app-bar-nav-icon variant="text" @click.stop="showMenu = !showMenu"></v-app-bar-nav-icon>
@@ -59,8 +59,8 @@ let items = [
         value: "/voice/accounts"
     },
     {
-        title: "New Posts",
-        value: "/posts"
+        title: "Landing page",
+        value: "/landing"
     }
 ]
 </script>
