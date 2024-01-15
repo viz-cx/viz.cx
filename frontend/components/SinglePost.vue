@@ -9,7 +9,9 @@
                 <span v-show="showDomain(props.post.d.s)"> from <b>{{ showDomain(props.post.d.s) }}</b></span>
             </span>
             {{ props.post.d.i ? (props.post.d.s ? ' and ' : '') + 'image' : '' }}
-            <ClientOnly>{{ timeAgo(props.post.timestamp + 'Z') }}</ClientOnly>:
+            <ClientOnly>
+                <span :title="props.post.timestamp + 'Z'">{{ timeAgo(props.post.timestamp + 'Z') }}</span>
+            </ClientOnly>:
         </v-card-subtitle>
 
         <v-card-text @click.stop="open(true)" :class="props.post.show ? 'single-post text-opened' : 'single-post'">
