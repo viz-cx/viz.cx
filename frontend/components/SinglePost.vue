@@ -42,7 +42,9 @@
                 </template>
             </Popper>
 
-            {{ props.post.shares !== undefined ? props.post.shares.toFixed(2) : '???' }} VIZ
+            <div :title="(props.post.awards ?? 0) + ' award(s)'">{{ props.post.shares !== undefined ?
+                props.post.shares.toFixed(2) : '???'
+            }} VIZ</div>
 
             <Popper :class="theme" arrow placement="top">
                 <v-btn icon="$minus" @click="awardClicked()"></v-btn>
