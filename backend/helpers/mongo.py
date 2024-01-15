@@ -15,6 +15,7 @@ coll_ops = db[os.getenv("COLLECTION_OPS", "")]
 coll_custom = coll_ops[OpType.custom]
 count_max_ops_in_block = 100_000
 sorted_op_types = ops_custom + ops_shares
+site_account = "cx.id"
 
 
 def save_block(block) -> None:
@@ -110,8 +111,10 @@ def recalculate_shares_if_needed(op) -> None:
             if result is not None and len(result.groups()) == 2:
                 author = result.group(1)
                 block = int(result.group(2))
-                shares = convertShares(op["op"][1]["shares"])
-                update_post_shares_if_needed(author, block, shares)
+                meta = get_readdleme_post_awards_and_shares(author, block)
+                awards = meta["awards"]
+                shares = meta["shares"]
+                update_post_meta_if_needed(author, block, awards, shares)
         except Exception as e:
             print("Shares recalculation error: {}".format(str(e)))
 
@@ -605,7 +608,7 @@ def get_readdleme_post_awards_and_shares(author: str, block: int) -> dict:
             },
             {
                 "$group": {
-                    "_id": "$op.memo",
+                    "_id": "$op.receiver",
                     "awards": {"$sum": {"$sum": 1}},
                     "shares": {"$sum": {"$sum": "$op.shares"}},
                 }
@@ -616,21 +619,34 @@ def get_readdleme_post_awards_and_shares(author: str, block: int) -> dict:
     awards: int = 0
     shares: float = 0
     for r in result:
-        awards += r.pop("awards")
-        shares += r.pop("shares")
-    update_post_shares_if_needed(author, block, shares)
+        if r["_id"][0] == site_account:
+            awards += r["awards"]
+            shares -= r["shares"]
+        elif r["_id"][0] == author:
+            awards += r["awards"]
+            shares += r["shares"]
+    update_post_meta_if_needed(author, block, awards, shares)
     result = {"awards": awards, "shares": shares, "post_link": memo_post_link}
     return result
 
 
-def update_post_shares_if_needed(author: str, block: int, shares: float) -> None:
+def update_post_meta_if_needed(
+    author: str, block: int, awards: int, shares: float
+) -> None:
     post = get_saved_post(author, block, show_id=True)
-    if isinstance(post, dict) and float(post["shares"]) != shares:
-        coll_posts.find_one_and_update(
-            {"_id": post["_id"]},
-            {"$set": {"shares": shares}},
-        )
-        print("New {} shares for post {}/{}".format(shares, author, block))
+    if isinstance(post, dict):
+        postAwards: int = post["awards"] if "awards" in post else 0
+        postShares: float = post["shares"] if "shares" in post else 0.0
+        if awards != postAwards or postShares != shares:
+            coll_posts.find_one_and_update(
+                {"_id": post["_id"]},
+                {"$set": {"awards": awards, "shares": shares}},
+            )
+            print(
+                "New {} awards and {} shares for post {}/{}".format(
+                    awards, shares, author, block
+                )
+            )
 
 
 def get_top_readdleme_authors_by_shares_in_period(
