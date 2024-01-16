@@ -1,5 +1,5 @@
 <template>
-    <Award />
+  <LazyAward :extended="true" />
 </template>
 
 <script setup lang="ts">

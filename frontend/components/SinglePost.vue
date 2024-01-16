@@ -37,9 +37,10 @@
         <v-card-actions v-show="props.post.show">
             <Popper :class="theme" arrow placement="top">
                 <v-btn icon="$plus" @click="awardClicked()"></v-btn>
-                <template #content>
+                <template #content="{ close }">
                     <LazyAward :show="isAuthenticated()" :extended="false" :receiver="props.post.author"
-                        :memo="'viz://@' + props.post.author + '/' + props.post.block" :negative="false">
+                        :memo="'viz://@' + props.post.author + '/' + props.post.block" :negative="false"
+                        @success="awardSuccess" @close="close">
                     </LazyAward>
                 </template>
             </Popper>
@@ -50,9 +51,11 @@
 
             <Popper :class="theme" arrow placement="top">
                 <v-btn icon="$minus" @click="awardClicked()"></v-btn>
-                <template #content>
+                <template #content="{ close }">
                     <LazyAward :show="isAuthenticated()" :extended="false" receiver="cx.id"
-                        :memo="'viz://@' + props.post.author + '/' + props.post.block" :negative="true"></LazyAward>
+                        :memo="'viz://@' + props.post.author + '/' + props.post.block" :negative="true"
+                        @sucess="awardSuccess" @close="close">
+                    </LazyAward>
                 </template>
             </Popper>
 
@@ -84,6 +87,10 @@ const props = defineProps({
 const relativeTime = new RelativeTime({ locale: 'en' })
 const theme = useState("theme", () => "light")
 
+
+function awardSuccess(result: any) {
+    console.log(result)
+}
 
 function open(alwaysOpened: boolean) {
     if (props.post) {
