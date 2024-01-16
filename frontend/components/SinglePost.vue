@@ -35,7 +35,7 @@
         </v-img>
 
         <v-card-actions v-show="props.post.show">
-            <ConfettiExplosion v-if="showConfetti" :duration="5000" :particleSize="20" :particleCount="200" />
+            <ConfettiExplosion v-if="showConfetti" :duration="7000" :particleSize="20" :particleCount="200" />
             <Popper :class="theme" arrow placement="top">
                 <v-btn icon="$plus" @click="awardClicked()"></v-btn>
                 <template #content="{ close }">
@@ -96,9 +96,15 @@ const explodeConfetti = async () => {
     showConfetti.value = true
 }
 
-function awardSuccess(result: any) {
-    console.log(result)
+function awardSuccess(reward: number, isNegative: boolean) {
     explodeConfetti()
+    if (props.post) {
+        if (isNegative) {
+            props.post.shares -= reward
+        } else {
+            props.post.shares += reward
+        }
+    }
 }
 
 function open(alwaysOpened: boolean) {

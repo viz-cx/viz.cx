@@ -95,9 +95,12 @@ async function award() {
     errorMessage.value = ""
     let wif = useCookie('regular').value ?? ""
     try {
-        let result = await makeAward(wif, login ?? "", receiver?.value ?? "", energy.value * 100, 0, memo?.value ?? "", [])
+        let recipient: string = receiver?.value ?? ""
+        let result = await makeAward(wif, login ?? "", recipient, energy.value * 100, 0, memo?.value ?? "", [])
+        console.log(result)
         energy.value = 0
-        emits('success', result)
+        const isNegative = recipient === 'cx.id'
+        emits('success', reward.value, isNegative)
         emits('close')
     } catch (err: any) {
         errorMessage.value = err.message
