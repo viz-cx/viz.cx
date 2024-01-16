@@ -35,6 +35,7 @@
         </v-img>
 
         <v-card-actions v-show="props.post.show">
+            <ConfettiExplosion v-if="showConfetti" :duration="5000" :particleSize="20" :particleCount="200" />
             <Popper :class="theme" arrow placement="top">
                 <v-btn icon="$plus" @click="awardClicked()"></v-btn>
                 <template #content="{ close }">
@@ -54,7 +55,7 @@
                 <template #content="{ close }">
                     <LazyAward :show="isAuthenticated()" :extended="false" receiver="cx.id"
                         :memo="'viz://@' + props.post.author + '/' + props.post.block" :negative="true"
-                        @sucess="awardSuccess" @close="close">
+                        @success="awardSuccess" @close="close">
                     </LazyAward>
                 </template>
             </Popper>
@@ -72,6 +73,7 @@
 <script setup lang="ts">
 import RelativeTime from '@yaireo/relative-time'
 import Popper from "vue3-popper"
+import ConfettiExplosion from "vue-confetti-explosion"
 
 defineComponent({
     components: {
@@ -86,10 +88,17 @@ const props = defineProps({
 
 const relativeTime = new RelativeTime({ locale: 'en' })
 const theme = useState("theme", () => "light")
+const showConfetti = ref(false)
 
+const explodeConfetti = async () => {
+    showConfetti.value = false
+    await nextTick()
+    showConfetti.value = true
+}
 
 function awardSuccess(result: any) {
     console.log(result)
+    explodeConfetti()
 }
 
 function open(alwaysOpened: boolean) {
