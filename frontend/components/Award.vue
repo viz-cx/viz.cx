@@ -21,9 +21,7 @@
 </template>
 
 <script setup lang="ts">
-if (!process.client) {
-    console.error('Award only for client')
-}
+if (!process.client) { console.error('Award only for client') }
 const emits = defineEmits(['success', 'close'])
 const props = defineProps({
     extended: Boolean,
@@ -34,20 +32,13 @@ const props = defineProps({
 const receiver = ref(props.receiver)
 const memo = ref(props.memo)
 let login = useCookie('login').value
-let account: any = undefined
+let account: Ref<any> = useState('account_' + login)
+console.log(account.value)
 let lastVoteTime: number = 0
 let currentEnergy: number = 0
-if (typeof login === 'string') {
-    await callOnce(async () => {
-        account = await getAccount(String(login))
-        lastVoteTime = Date.parse(account.last_vote_time)
-        currentEnergy = calculateCurrentEnergy(lastVoteTime, account.energy)
-    })
-}
-let dgp: any = []
-await callOnce(async () => {
-    dgp = await getDgp()
-})
+lastVoteTime = Date.parse(account.value.last_vote_time)
+currentEnergy = calculateCurrentEnergy(lastVoteTime, account.value.energy)
+const dgp: Ref<any> = useState('dgp')
 let errorMessage = ref("")
 let loading = ref(false)
 let min = 0
@@ -66,10 +57,10 @@ const isSendDisabled = (receiver: string | undefined): boolean => {
 }
 
 const calculateReward = (energy: number): number => {
-    const effectiveShares = parseFloat(account['vesting_shares']) - parseFloat(account['delegated_vesting_shares']) + parseFloat(account['received_vesting_shares'])
+    const effectiveShares = parseFloat(account.value['vesting_shares']) - parseFloat(account.value['delegated_vesting_shares']) + parseFloat(account.value['received_vesting_shares'])
     const voteShares = effectiveShares * energy * 10000
-    const totalRewardShares = parseInt(dgp['total_reward_shares']) + voteShares
-    const totalRewardFund = parseInt(dgp['total_reward_fund']) * 1000
+    const totalRewardShares = parseInt(dgp.value['total_reward_shares']) + voteShares
+    const totalRewardFund = parseInt(dgp.value['total_reward_fund']) * 1000
     const reward = totalRewardFund * voteShares / totalRewardShares
     const finalReward = reward * 0.9995 // decrease expectations to 0.005% because final value could be less
     return Math.ceil(finalReward) / 1000

@@ -63,6 +63,15 @@ let items = [
         value: "/landing"
     }
 ]
+
+if (process.client) {
+    if (login) {
+        let account = await getAccount(String(login))
+        useState('account_' + login).value = account
+    }
+    useState('dgp').value = await getDgp()
+}
+
 </script>
 
 <style>

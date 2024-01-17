@@ -111,7 +111,7 @@ export async function sendVoicePost(
 ): Promise<any> {
   return new Promise((resolve, reject) => {
     const { $viz } = useNuxtApp()
-    getVIZAccount(login).then(
+    getAccount(login).then(
       (account) => {
         let previous = parseInt(account.custom_sequence_block_num)
         let json: any = {}
