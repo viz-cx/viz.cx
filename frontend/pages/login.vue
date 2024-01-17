@@ -89,6 +89,7 @@ async function login() {
                 console.log(e)
             }
 
+            useState('account_' + login).value = account
             navigateTo({ path: '/' })
         } else {
             errors.value.key = 'The weight of the key is not enough'
