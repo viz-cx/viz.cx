@@ -33,11 +33,12 @@ const receiver = ref(props.receiver)
 const memo = ref(props.memo)
 let login = useCookie('login').value
 let account: Ref<any> = useState('account_' + login)
-console.log(account.value)
 let lastVoteTime: number = 0
 let currentEnergy: number = 0
-lastVoteTime = Date.parse(account.value.last_vote_time)
-currentEnergy = calculateCurrentEnergy(lastVoteTime, account.value.energy)
+if (account.value) {
+    lastVoteTime = Date.parse(account.value.last_vote_time)
+    currentEnergy = calculateCurrentEnergy(lastVoteTime, account.value.energy)
+}
 const dgp: Ref<any> = useState('dgp')
 let errorMessage = ref("")
 let loading = ref(false)

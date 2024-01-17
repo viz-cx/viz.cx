@@ -40,7 +40,7 @@
                 <Popper :class="theme" arrow placement="top">
                     <v-btn icon="$plus" @click="awardClicked()"></v-btn>
                     <template #content="{ close }">
-                        <LazyAward :show="isAuthenticated()" :extended="false" :receiver="props.post.author"
+                        <LazyAward :v-if="isAuthenticated()" :extended="false" :receiver="props.post.author"
                             :memo="'viz://@' + props.post.author + '/' + props.post.block" :negative="false"
                             @success="awardSuccess" @close="close">
                         </LazyAward>
@@ -54,7 +54,7 @@
                 <Popper :class="theme" arrow placement="top">
                     <v-btn icon="$minus" @click="awardClicked()"></v-btn>
                     <template #content="{ close }">
-                        <LazyAward :show="isAuthenticated()" :extended="false" receiver="cx.id"
+                        <LazyAward :v-if="isAuthenticated()" :extended="false" receiver="cx.id"
                             :memo="'viz://@' + props.post.author + '/' + props.post.block" :negative="true"
                             @success="awardSuccess" @close="close">
                         </LazyAward>
