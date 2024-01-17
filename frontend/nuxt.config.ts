@@ -18,8 +18,13 @@ export default defineNuxtConfig({
       ],
       script: [
         {
-          src: "https://unpkg.com/viz-js-lib@latest/dist/viz.min.js",
+          src: "https://unpkg.com/viz-js-lib@0.11.0/dist/viz.min.js",
           type: "text/javascript",
+          async: false,
+          defer: true,
+          crossorigin: "anonymous",
+          integrity:
+            "sha384-mvWwNvp/W1KRdoZYZXfLKAjSyFgMhWWhyiQ+Th0YXC117s1f9uFNTZMxkDoXhnoj",
         },
       ],
       link: [

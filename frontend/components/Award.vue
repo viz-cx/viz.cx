@@ -1,28 +1,29 @@
 <template>
-    <ClientOnly>
-        <div class="pt-6 text-center" v-if="login">
-            <v-text-field v-show="extended" variant="underlined" v-model="receiver" label="Receiver"
-                :rules=[loginValidation] required></v-text-field>
-            <div class="wrapper">
-                &nbsp;<span class="text-body-2 helper">~{{ reward.toFixed(reward > 0.01 || reward === 0 ? 2 : 3) }}
-                    viz</span>
-                <v-slider class="slider" :color="negative ? 'red-accent-4' : 'indigo-accent-4'"
-                    :track-color="negative ? 'red-accent-4' : 'indigo-accent-4'" thumb-color="white" v-model="energy"
-                    :max="max" :step="1" :min="min" thumb-label="always">
-                    <template v-slot:thumb-label="{ modelValue }">
-                        {{ modelValue }}%
-                    </template>
-                </v-slider>
-                <v-btn :disabled="isSendDisabled(receiver)" :color="negative ? 'red-darken-1' : 'indigo-accent-4'"
-                    :loading="loading" @click="award()">Award</v-btn>
-            </div>
-            <v-text-field v-show="extended" variant="underlined" v-model="memo" label="Memo" required></v-text-field>
-            <div class="text-red" v-show="errorMessage">{{ errorMessage }}</div>
+    <div class="pt-6 text-center" v-if="login">
+        <v-text-field v-show="extended" variant="underlined" v-model="receiver" label="Receiver" :rules=[loginValidation]
+            required></v-text-field>
+        <div class="wrapper">
+            &nbsp;<span class="text-body-2 helper">~{{ reward.toFixed(reward > 0.01 || reward === 0 ? 2 : 3) }}
+                viz</span>
+            <v-slider class="slider" :color="negative ? 'red-accent-4' : 'indigo-accent-4'"
+                :track-color="negative ? 'red-accent-4' : 'indigo-accent-4'" thumb-color="white" v-model="energy" :max="max"
+                :step="1" :min="min" thumb-label="always">
+                <template v-slot:thumb-label="{ modelValue }">
+                    {{ modelValue }}%
+                </template>
+            </v-slider>
+            <v-btn :disabled="isSendDisabled(receiver)" :color="negative ? 'red-darken-1' : 'indigo-accent-4'"
+                :loading="loading" @click="award()">Award</v-btn>
         </div>
-    </ClientOnly>
+        <v-text-field v-show="extended" variant="underlined" v-model="memo" label="Memo" required></v-text-field>
+        <div class="text-red" v-show="errorMessage">{{ errorMessage }}</div>
+    </div>
 </template>
 
 <script setup lang="ts">
+if (!process.client) {
+    console.error('Award only for client')
+}
 const emits = defineEmits(['success', 'close'])
 const props = defineProps({
     extended: Boolean,
@@ -36,12 +37,17 @@ let login = useCookie('login').value
 let account: any = undefined
 let lastVoteTime: number = 0
 let currentEnergy: number = 0
-if (login) {
-    account = await getAccount(login)
-    lastVoteTime = Date.parse(account.last_vote_time)
-    currentEnergy = calculateCurrentEnergy(lastVoteTime, account.energy)
+if (typeof login === 'string') {
+    await callOnce(async () => {
+        account = await getAccount(String(login))
+        lastVoteTime = Date.parse(account.last_vote_time)
+        currentEnergy = calculateCurrentEnergy(lastVoteTime, account.energy)
+    })
 }
-let dgp = await getDgp()
+let dgp: any = []
+await callOnce(async () => {
+    dgp = await getDgp()
+})
 let errorMessage = ref("")
 let loading = ref(false)
 let min = 0

@@ -35,37 +35,39 @@
         </v-img>
 
         <v-card-actions v-show="props.post.show">
-            <ConfettiExplosion v-if="showConfetti" :duration="7000" :particleSize="20" :particleCount="200" />
-            <Popper :class="theme" arrow placement="top">
-                <v-btn icon="$plus" @click="awardClicked()"></v-btn>
-                <template #content="{ close }">
-                    <LazyAward :show="isAuthenticated()" :extended="false" :receiver="props.post.author"
-                        :memo="'viz://@' + props.post.author + '/' + props.post.block" :negative="false"
-                        @success="awardSuccess" @close="close">
-                    </LazyAward>
-                </template>
-            </Popper>
+            <ClientOnly>
+                <ConfettiExplosion v-if="showConfetti" :duration="7000" :particleSize="20" :particleCount="200" />
+                <Popper :class="theme" arrow placement="top">
+                    <v-btn icon="$plus" @click="awardClicked()"></v-btn>
+                    <template #content="{ close }">
+                        <LazyAward :show="isAuthenticated()" :extended="false" :receiver="props.post.author"
+                            :memo="'viz://@' + props.post.author + '/' + props.post.block" :negative="false"
+                            @success="awardSuccess" @close="close">
+                        </LazyAward>
+                    </template>
+                </Popper>
 
-            <div :title="(props.post.awards ?? 0) + ' award(s)'">{{ props.post.shares !== undefined ?
-                props.post.shares.toFixed(2) : '???'
-            }} VIZ</div>
+                <div :title="(props.post.awards ?? 0) + ' award(s)'">{{ props.post.shares !== undefined ?
+                    props.post.shares.toFixed(2) : '???'
+                }} VIZ</div>
 
-            <Popper :class="theme" arrow placement="top">
-                <v-btn icon="$minus" @click="awardClicked()"></v-btn>
-                <template #content="{ close }">
-                    <LazyAward :show="isAuthenticated()" :extended="false" receiver="cx.id"
-                        :memo="'viz://@' + props.post.author + '/' + props.post.block" :negative="true"
-                        @success="awardSuccess" @close="close">
-                    </LazyAward>
-                </template>
-            </Popper>
+                <Popper :class="theme" arrow placement="top">
+                    <v-btn icon="$minus" @click="awardClicked()"></v-btn>
+                    <template #content="{ close }">
+                        <LazyAward :show="isAuthenticated()" :extended="false" receiver="cx.id"
+                            :memo="'viz://@' + props.post.author + '/' + props.post.block" :negative="true"
+                            @success="awardSuccess" @close="close">
+                        </LazyAward>
+                    </template>
+                </Popper>
 
-            <v-spacer></v-spacer>
-            <div v-show="isUserAuthor(props.post.author)">
-                <v-btn icon="$edit"></v-btn>
-                <v-btn icon="$delete"></v-btn>
-            </div>
+                <v-spacer></v-spacer>
+                <div v-show="isUserAuthor(props.post.author)">
+                    <v-btn icon="$edit"></v-btn>
+                    <v-btn icon="$delete"></v-btn>
+                </div>
 
+            </ClientOnly>
         </v-card-actions>
     </v-card>
 </template>
