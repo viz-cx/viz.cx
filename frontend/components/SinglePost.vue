@@ -112,7 +112,6 @@ function awardSuccess(reward: number, isNegative: boolean) {
 function open(alwaysOpened: boolean) {
     if (props.post) {
         props.post.show = alwaysOpened ? true : !props.post.show
-        spotlightPost.value = props.post
     }
 }
 
@@ -155,19 +154,6 @@ function truncatedText(text: string): string {
 function timeAgo(date: string): string {
     return relativeTime.from(new Date(date))
 }
-
-const config = useRuntimeConfig()
-let spotlightPost = ref()
-useAsyncData("fetch shares", async (): Promise<any> => {
-    const result = await $fetch(`voice/@${spotlightPost.value.author}/${spotlightPost.value.block}`, {
-        baseURL: config.public.apiBaseUrl,
-        lazy: true,
-    })
-    if (props.post !== undefined) {
-        props.post.value.shares = (result as any).shares
-    }
-    return
-}, { watch: [spotlightPost] })
 </script>
 
 <style>
