@@ -1,20 +1,20 @@
 <template>
-    <div>
-
-        <Head>
-            <Title>{{ post.author + ': ' + titleFromText(post.d.t) }}</Title>
-        </Head>
-        <div v-if="pending">
-            <Spinner />
-        </div>
-        <div v-else>
-            <SinglePost :post="post" :always-opened="true" />
-        </div>
+    <Head>
+        <Title>{{ post ? post.author + ': ' + titleFromText(post.d.t) : noPostTitle }}</Title>
+    </Head>
+    <div v-if="pending">
+        <Spinner />
+    </div>
+    <div v-else-if="post">
+        <SinglePost :post="post" :always-opened="true" />
+    </div>
+    <div v-else>
+        <h1>{{ noPostTitle }}</h1>
     </div>
 </template>
 
 <script setup lang="ts">
-
+const noPostTitle = 'Post not found'
 const config = useRuntimeConfig()
 const route = useRoute()
 const { pending, data: post } = useAsyncData("find post",
