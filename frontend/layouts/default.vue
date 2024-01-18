@@ -1,6 +1,7 @@
 <template>
     <v-app :theme="theme">
-
+        <div id="newest"></div>
+        <div id="popular"></div>
         <v-navigation-drawer v-model="showMenu" location="end" temporary>
             <v-list dense nav>
                 <v-list-item v-if="isAuthenticated()" lines="two" :prepend-avatar="avatar" :title="login"

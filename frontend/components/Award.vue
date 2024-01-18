@@ -22,6 +22,7 @@
 
 <script setup lang="ts">
 if (!process.client) { console.error('Award only for client') }
+console.log('<Award /> component rendered')
 const emits = defineEmits(['success', 'close'])
 const props = defineProps({
     extended: Boolean,
@@ -31,15 +32,27 @@ const props = defineProps({
 })
 const receiver = ref(props.receiver)
 const memo = ref(props.memo)
-let login = useCookie('login').value
-let account: Ref<any> = useState('account_' + login)
 let lastVoteTime: number = 0
 let currentEnergy: number = 0
-if (account.value) {
-    lastVoteTime = Date.parse(account.value.last_vote_time)
-    currentEnergy = calculateCurrentEnergy(lastVoteTime, account.value.energy)
+
+let login = useCookie('login').value
+let account: Ref<any> = ref()
+if (login) {
+    account = useState('account_' + login)
+    if (!account.value) {
+        account.value = await getAccount(login)
+    }
+    if (account.value) {
+        lastVoteTime = Date.parse(account.value.last_vote_time)
+        currentEnergy = calculateCurrentEnergy(lastVoteTime, account.value.energy)
+    }
 }
+
 const dgp: Ref<any> = useState('dgp')
+if (!dgp.value) {
+    dgp.value = await getDgp()
+}
+
 let errorMessage = ref("")
 let loading = ref(false)
 let min = 0
@@ -58,6 +71,7 @@ const isSendDisabled = (receiver: string | undefined): boolean => {
 }
 
 const calculateReward = (energy: number): number => {
+    if (!account.value || !dgp.value) { return 0 }
     const effectiveShares = parseFloat(account.value['vesting_shares']) - parseFloat(account.value['delegated_vesting_shares']) + parseFloat(account.value['received_vesting_shares'])
     const voteShares = effectiveShares * energy * 10000
     const totalRewardShares = parseInt(dgp.value['total_reward_shares']) + voteShares
