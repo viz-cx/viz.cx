@@ -33,7 +33,7 @@
             </template>
         </v-img>
 
-        <v-card-actions v-show="props.post.show">
+        <v-card-actions v-if="!props.hideButtons" v-show="props.post.show">
             <ClientOnly>
                 <ConfettiExplosion v-if="showConfetti" :duration="7000" :particleSize="20" :particleCount="200" />
                 <Popper :class="theme" arrow placement="top">
@@ -84,7 +84,8 @@ defineComponent({
 
 const props = defineProps({
     post: Object,
-    alwaysOpened: Boolean
+    alwaysOpened: Boolean,
+    hideButtons: Boolean
 })
 
 const relativeTime = new RelativeTime({ locale: 'en' })

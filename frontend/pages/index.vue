@@ -16,6 +16,14 @@
             </v-toolbar>
         </v-card>
         <br />
+        <div v-if="tab == 'newest'">
+            <SimpleEditor @success="newPost" />
+            <br />
+            <div v-for="post in newPosts" :id="post.author + '/' + 0">
+                <SinglePost :post="post" :hide-buttons="true" />
+                <br />
+            </div>
+        </div>
         <PostList v-for="value in tabs" :tab="value" v-show="value === tab" />
     </div>
 </template>
@@ -24,7 +32,7 @@
 const router = useRouter()
 const title = 'Voice Protocol Posts'
 const tab = ref<string | null>(null)
-const tabs = ['newest', 'popular']
+const tabs = ['popular', 'newest']
 const tabFromRouteHash = router.currentRoute.value.hash.replace('#', '')
 if (tabs.includes(tabFromRouteHash)) {
     tab.value = tabFromRouteHash
@@ -32,5 +40,21 @@ if (tabs.includes(tabFromRouteHash)) {
 
 function updateRoute(tab: string | null) {
     router.replace({ 'hash': '#' + tab })
+}
+
+const newPosts: Ref<any[]> = ref([])
+function newPost(content: any) {
+    console.log("New post content: " + content)
+    const timestamp = new Date().toISOString().slice(0, -1) // "2024-01-18T16:05:27"
+    const newPost: any = {
+        "block": 0,
+        "author": useCookie('login').value ?? "",
+        "d": {
+            't': content
+        },
+        "shares": 0,
+        "timestamp": timestamp
+    }
+    newPosts.value.unshift(newPost)
 }
 </script>

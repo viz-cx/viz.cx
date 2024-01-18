@@ -13,7 +13,7 @@
         <div v-if="pending">
             <Spinner />
         </div>
-        <v-btn v-if="!pending" :v-show="showMoreButton" @click.prevent="loadMore()">Show next {{ page + 2 }}
+        <v-btn v-if="!pending" v-show="showMoreButton" @click.prevent="loadMore()">Show next {{ page + 2 }}
             page</v-btn>
     </div>
 </template>

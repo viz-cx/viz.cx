@@ -20,7 +20,8 @@
                     in</v-btn>
             </v-form>
             <div class="mt-2">
-                <p class="text-body-2">Don't have an account? <a href="#">Sign Up</a></p>
+                <p class="text-body-2">Don't have an account? <a href="http://reg.readdle.me/?set_lang=en"
+                        target="_blank">Sign Up</a></p>
             </div>
         </v-sheet>
     </v-container>
