@@ -19,6 +19,10 @@ function checkAuth() {
 
 async function send() {
     if (!checkAuth()) { return }
+    if (text.value.length < 20) {
+        alert('Too small text to post')
+        return
+    }
     loading.value = true
     const login = useCookie('login').value ?? ""
     const wif = useCookie('regular').value ?? ""
