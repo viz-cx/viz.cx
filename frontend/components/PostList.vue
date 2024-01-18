@@ -1,13 +1,19 @@
 <template>
-    <div>
-        <div v-if="posts.length === 0">
-            No posts found.
-        </div>
-        <div v-else v-for="post in posts" :id="post.author + '/' + post.block">
+    <div v-if="posts.length === 0 && pending">
+        <Spinner />
+    </div>
+    <div v-else-if="posts.length === 0">
+        No posts found.
+    </div>
+    <div v-else>
+        <div v-for="post in posts" :id="post.author + '/' + post.block">
             <SinglePost :post="post" />
             <br />
         </div>
-        <v-btn v-show="showMoreButton" @click.prevent="loadMore()">Show next {{ page + 2 }}
+        <div v-if="pending">
+            <Spinner />
+        </div>
+        <v-btn v-if="!pending" :v-show="showMoreButton" @click.prevent="loadMore()">Show next {{ page + 2 }}
             page</v-btn>
     </div>
 </template>
@@ -23,7 +29,8 @@ const posts: any = ref([])
 const showMoreButton = ref(true)
 
 const config = useRuntimeConfig()
-useAsyncData("fetch posts", async (): Promise<void> => {
+const { pending } = useAsyncData("fetch posts", async (): Promise<void> => {
+    showMoreButton.value = false
     let url: string
     if (props.author) {
         url = `/posts/${props.tab}/${props.author}/${page.value}`
@@ -33,12 +40,8 @@ useAsyncData("fetch posts", async (): Promise<void> => {
     const result: any = await $fetch(url, {
         baseURL: config.public.apiBaseUrl
     })
-    if (result.length === 0) {
-        showMoreButton.value = false
-        return
-    }
+    showMoreButton.value = result.length === 10
     posts.value = posts.value.concat(result)
-    return
 }, { watch: [page] })
 
 function loadMore() {

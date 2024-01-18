@@ -1,5 +1,5 @@
 <template>
-    <v-card v-if="props.post != undefined" variant="outlined" hover>
+    <v-card v-if="props.post != undefined" variant="outlined" hover class="post-card">
 
         <v-card-subtitle @click.prevent="open(props.alwaysOpened)">
             <nuxt-link :href="'/@' + props.post.author">@{{ props.post.author }}</nuxt-link>
@@ -16,7 +16,6 @@
 
         <v-card-text @click.stop="open(true)" :class="props.post.show ? 'single-post text-opened' : 'single-post'">
             <div>{{ props.post.show ? fullPost(props.post) : truncatedText(props.post.d.t) }}</div>
-
             <div v-if="props.post.show && props.post.t === 'p' && props.post.d.m">
                 <blockquote class="blockquote">We can't show markdown yet.</blockquote>
                 <v-card class="mx-auto my-8" max-width="300" title="Show on
@@ -157,6 +156,10 @@ function timeAgo(date: string): string {
 </script>
 
 <style>
+.post-card {
+    color: rgba(var(--v-theme-on-surface), var(--v-high-emphasis-opacity));
+}
+
 .single-post {
     white-space: pre-wrap;
 }
