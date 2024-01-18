@@ -1,5 +1,5 @@
 <template>
-    <v-card v-if="props.post != undefined" variant="outlined" hover class="post-card">
+    <v-card v-if="props.post != undefined" variant="outlined" hover>
 
         <v-card-subtitle @click.prevent="open(props.alwaysOpened)">
             <nuxt-link :href="'/@' + props.post.author">@{{ props.post.author }}</nuxt-link>
@@ -157,10 +157,6 @@ function timeAgo(date: string): string {
 </script>
 
 <style>
-.post-card {
-    color: rgba(var(--v-theme-on-surface), var(--v-high-emphasis-opacity));
-}
-
 .single-post {
     white-space: pre-wrap;
 }

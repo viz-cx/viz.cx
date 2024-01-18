@@ -80,7 +80,6 @@ if (process.client) {
     max-width: 650px;
     margin: 20px auto;
     padding: 0 10px;
-    color: #444;
 }
 
 .dark {
