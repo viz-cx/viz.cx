@@ -1,12 +1,21 @@
 export function voiceLink(str: string, leadingSlash: boolean = true): string {
-  if (str.includes("viz://")) {
-    let replacer = ""
-    if (leadingSlash) {
-      replacer = "/"
-    }
-    return str.replace("viz://", replacer).replace(/\/$/, "")
+  const { author, block } = parseVoiceLink(str)
+  if (author && block) {
+    return `${leadingSlash ? "/" : ""}@${author}/${block}`
   }
-  return str
+  return ""
+}
+
+function parseVoiceLink(str: string): {
+  author: string | null
+  block: string | null
+} {
+  const regexp = /viz:\/\/\@([a-z0-9\-\.]+)\/(\d+)/g
+  const result = regexp.exec(str)
+  if (result && result.length >= 2) {
+    return { author: result[1], block: result[2] }
+  }
+  return { author: null, block: null }
 }
 
 export function isURL(str: string): boolean {

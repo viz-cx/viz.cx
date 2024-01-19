@@ -847,12 +847,21 @@ def save_voice_post(post):
     coll_posts.insert_one(post)
 
 
-def postsQuery(author: str | None = None, block: int | None = None) -> dict:
+def postsQuery(
+    author: str | None = None, block: int | None = None, isReplies: bool | None = None
+) -> dict:
+    regex = {"$regex": "^viz://"}
     query = {
         "d.t": {"$exists": True},
-        "d.r": {"$not": {"$regex": "^viz://"}},
-        "d.s": {"$not": {"$regex": "^viz://"}},
+        "d.s": {"$not": regex},
     }
+    if isReplies is None:
+        pass
+    elif isReplies:
+        query["d.r"] = regex
+    elif not isReplies:
+        query["d.r"] = {"$not": regex}
+
     if author:
         query["author"] = author
     if block:
@@ -860,11 +869,17 @@ def postsQuery(author: str | None = None, block: int | None = None) -> dict:
     return query
 
 
-def get_saved_posts(limit=10, page=0, popular: bool = False, author: str | None = None):
+def get_saved_posts(
+    limit=10,
+    page=0,
+    popular: bool = False,
+    author: str | None = None,
+    isReplies: bool = False,
+):
     field = "shares" if popular else "block"
     cursor = (
         coll_posts.find(  # "t": {"$in": ["p"]}
-            postsQuery(author=author),
+            postsQuery(author=author, isReplies=isReplies),
             {"_id": 0},
         )
         .sort(field, pymongo.DESCENDING)

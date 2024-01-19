@@ -25,8 +25,11 @@ def authorPosts(tab: str, author: str, page: int):
 
 
 def postsHelper(tab: str, page: int, author: str | None = None):
-    if tab in ["newest", "popular"]:
+    if tab in ["newest", "popular", "replies"]:
         isPopular = tab == "popular"
-        return get_saved_posts(limit=10, page=page, popular=isPopular, author=author)
+        isReplies = tab == "replies"
+        return get_saved_posts(
+            limit=10, page=page, popular=isPopular, author=author, isReplies=isReplies
+        )
     else:
-        return "Incorrect tab"
+        return {"error": "Incorrect tab"}

@@ -32,7 +32,7 @@
 const router = useRouter()
 const title = 'Voice Protocol Posts'
 const tab = ref<string | null>(null)
-const tabs = ['popular', 'newest']
+const tabs = ['popular', 'newest', 'replies']
 const tabFromRouteHash = router.currentRoute.value.hash.replace('#', '')
 if (tabs.includes(tabFromRouteHash)) {
     tab.value = tabFromRouteHash
@@ -44,7 +44,6 @@ function updateRoute(tab: string | null) {
 
 const newPosts: Ref<any[]> = ref([])
 function newPost(content: any) {
-    console.log("New post content: " + content)
     const timestamp = new Date().toISOString().slice(0, -1) // "2024-01-18T16:05:27"
     const newPost: any = {
         "block": 0,
