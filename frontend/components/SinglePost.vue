@@ -22,7 +22,7 @@
             </ClientOnly>:
         </v-card-subtitle>
 
-        <v-card-text @click.stop="open(true)" :class="props.post.show ? 'single-post text-opened' : 'single-post'">
+        <v-card-text @click.stop="open(true)" :class="props.post.show ? 'article text-opened' : 'article'">
             <div v-if="props.post.t === 'p' && props.post.d.m">
                 <h3 v-html="markdownTitle(props.post.d.t)"></h3><br />
                 <span v-if="props.post.show" v-html=markdown(props.post.d.m)></span>
@@ -166,22 +166,84 @@ function timeAgo(date: string): string {
 </script>
 
 <style>
-.single-post {
+.article {
     white-space: pre-wrap;
 }
 
-.single-post img {
+.article img {
     width: 100%;
 }
 
-.single-post ul {
+.article ul {
     padding-left: 0;
     list-style-position: inside;
 }
 
-.single-post ol {
+.article ol {
     padding-left: 0;
     list-style-position: inside;
+}
+
+.article blockquote {
+    display: block;
+    padding: 20px 15px;
+    border-left: 2px solid #000;
+    padding-right: 0;
+    margin: 0;
+    font-style: normal;
+}
+
+blockquote {
+    display: block;
+    margin-block-start: 1em;
+    margin-block-end: 1em;
+    margin-inline-start: 40px;
+    margin-inline-end: 40px;
+}
+
+.article cite:before {
+    content: "";
+    text-align: center;
+    display: block;
+    width: 100px;
+    position: absolute;
+    border-top: 2px solid #000;
+    left: calc(50% - 50px);
+    margin-top: -10px;
+}
+
+.article cite {
+    display: block;
+    text-align: center;
+    font-style: normal;
+}
+
+.article cite:after {
+    content: "";
+    text-align: center;
+    display: block;
+    width: 100px;
+    position: absolute;
+    border-bottom: 2px solid #000;
+    left: calc(50% - 50px);
+    margin-top: 15px;
+}
+
+.article hr:before {
+    content: "*****";
+    font-size: 28px;
+    text-align: center;
+    display: block;
+}
+
+.article hr {
+    font-weight: 400;
+    height: auto;
+    border: 0;
+    display: block;
+    background: none;
+    margin: 0;
+    clear: both;
 }
 
 .text-opened {
