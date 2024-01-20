@@ -3,12 +3,13 @@
 
         <v-card-subtitle @click.prevent="open(props.alwaysOpened)">
             <nuxt-link :href="'/@' + props.post.author">@{{ props.post.author }}</nuxt-link>
-            posted {{ !(props.post.d.i || props.post.d.s) ? 'text' : '' }}
+            posted {{ (props.post.t === 'p') ? 'text' : 'note' }}
             <span v-show="props.post.d.s">
+                {{ ' with ' }}
                 <nuxt-link :href="props.post.d.s" target="_blank">link</nuxt-link>
                 <span v-show="showDomain(props.post.d.s)"> from <b>{{ showDomain(props.post.d.s) }}</b></span>
             </span>
-            {{ props.post.d.i ? (props.post.d.s ? ' and ' : '') + 'image' : '' }}
+            {{ props.post.d.i ? (props.post.d.s ? ' and ' : ' with ') + 'image' : '' }}
             <span v-if="props.post.d.r">
                 in reply to <nuxt-link :to="voiceLink(props.post.d.r)">{{ voiceLink(props.post.d.r, false)
                 }}</nuxt-link>{{ ' ' }}
@@ -20,7 +21,7 @@
 
         <v-card-text @click.stop="open(true)" :class="props.post.show ? 'single-post text-opened' : 'single-post'">
             <div v-if="props.post.t === 'p' && props.post.d.m">
-                <h1 v-html="markdownTitle(props.post.d.t)"></h1><br />
+                <h3 v-html="markdownTitle(props.post.d.t)"></h3><br />
                 <span v-if="props.post.show" v-html=markdown(props.post.d.m)></span>
                 <span v-else>
                     {{ props.post.d.d ?? '' }}
