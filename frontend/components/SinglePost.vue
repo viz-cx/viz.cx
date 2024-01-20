@@ -3,7 +3,10 @@
 
         <v-card-subtitle @click.prevent="open(props.alwaysOpened)">
             <nuxt-link :href="'/@' + props.post.author">@{{ props.post.author }}</nuxt-link>
-            posted {{ (props.post.t === 'p') ? 'text' : 'note' }}
+            posted <nuxt-link v-if="!props.alwaysOpened" :to="'/@' + props.post.author + '/' + props.post.block">{{
+                (props.post.t === 'p') ? 'text' :
+                'note' }}</nuxt-link><span v-if="props.alwaysOpened">{{ (props.post.t === 'p') ? 'text' :
+        'note' }}</span>
             <span v-show="props.post.d.s">
                 {{ ' with ' }}
                 <nuxt-link :href="props.post.d.s" target="_blank">link</nuxt-link>
@@ -169,6 +172,16 @@ function timeAgo(date: string): string {
 
 .single-post img {
     width: 100%;
+}
+
+.single-post ul {
+    padding-left: 0;
+    list-style-position: inside;
+}
+
+.single-post ol {
+    padding-left: 0;
+    list-style-position: inside;
 }
 
 .text-opened {
