@@ -4,7 +4,7 @@
         </Title>
     </Head>
     <v-card>
-        <v-toolbar color="primary" height="100">
+        <v-toolbar color="primary">
             <Spinner v-show="pending" />
             <v-avatar v-show="!pending" :image="profile?.meta?.profile?.avatar ?? defaultAvatar" size="75" :alt="user"
                 color="grey" style="margin-left:12px;"></v-avatar>

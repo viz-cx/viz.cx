@@ -5,7 +5,7 @@
     <div v-if="pending">
         <Spinner />
     </div>
-    <div v-else-if="post">
+    <div v-else-if="post" :id="post.author + '/' + post.block">
         <SinglePost :post="post" :always-opened="true" />
     </div>
     <div v-else>

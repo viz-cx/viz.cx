@@ -19,23 +19,24 @@
         </v-card-subtitle>
 
         <v-card-text @click.stop="open(true)" :class="props.post.show ? 'single-post text-opened' : 'single-post'">
-            <div>{{ props.post.show ? fullPost(props.post) : truncatedText(props.post.d.t) }}</div>
-            <div v-if="props.post.show && props.post.t === 'p' && props.post.d.m">
-                <blockquote class="blockquote">We can't show markdown yet.</blockquote>
-                <v-card class="mx-auto my-8" max-width="300" title="Show on
-                            Readdle.me" append-icon="mdi-open-in-new"
-                    :href="'https://readdle.me/#viz://@' + props.post.author + '/' + props.post.block + '/publication/'"
-                    target="_blank" rel="noopener" link></v-card>
+            <div v-if="props.post.t === 'p' && props.post.d.m">
+                <h1 v-html="markdownTitle(props.post.d.t)"></h1><br />
+                <span v-if="props.post.show" v-html=markdown(props.post.d.m)></span>
+                <span v-else>
+                    {{ props.post.d.d ?? '' }}
+                </span>
             </div>
+            <div v-else>
+                {{ props.post.show ? fullPost(props.post) : truncatedText(props.post.d.t) }}
+            </div>
+            <v-img v-show="!props.post.show && props.post.d.i" :src="props.post.d.i">
+                <template v-slot:placeholder>
+                    <div class="d-flex align-center justify-center fill-height">
+                        <Spinner />
+                    </div>
+                </template>
+            </v-img>
         </v-card-text>
-
-        <v-img v-show="props.post.show && props.post.d.i" aspect-ratio="16/9" cover :src="props.post.d.i">
-            <template v-slot:placeholder>
-                <div class="d-flex align-center justify-center fill-height">
-                    <v-progress-circular color="grey-lighten-4" indeterminate></v-progress-circular>
-                </div>
-            </template>
-        </v-img>
 
         <v-card-actions v-if="!props.hideButtons" v-show="props.post.show">
             <ClientOnly>
@@ -163,6 +164,10 @@ function timeAgo(date: string): string {
 <style>
 .single-post {
     white-space: pre-wrap;
+}
+
+.single-post img {
+    width: 100%;
 }
 
 .text-opened {

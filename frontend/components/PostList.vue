@@ -1,9 +1,11 @@
 <template>
-    <div v-if="posts.length === 0 && pending">
-        <Spinner />
-    </div>
-    <div v-else-if="posts.length === 0">
-        No posts found.
+    <div v-if="posts.length === 0">
+        <div v-if="pending">
+            <Spinner />
+        </div>
+        <div v-else>
+            No posts found.
+        </div>
     </div>
     <div v-else>
         <div v-for="post in posts" :id="post.author + '/' + post.block">
@@ -13,8 +15,10 @@
         <div v-if="pending">
             <Spinner />
         </div>
-        <v-btn v-if="!pending" v-show="showMoreButton" @click.prevent="loadMore()">Show next {{ page + 2 }}
-            page</v-btn>
+        <div v-else>
+            <v-btn v-show="showMoreButton" @click.prevent="loadMore()">Show next {{ page + 2 }}
+                page</v-btn>
+        </div>
     </div>
 </template>
 
