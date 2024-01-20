@@ -14,7 +14,9 @@
             </v-list>
         </v-navigation-drawer>
 
-        <v-app-bar title="VIZ" style="z-index: 1000;">
+        <v-app-bar app style="z-index: 1000;">
+            <v-toolbar-title>VIZ</v-toolbar-title>
+            <v-spacer></v-spacer>
             <v-btn icon="mdi-plus-box-outline" to="/new" />
             <v-btn :prepend-icon="theme === 'light' ? 'mdi-weather-sunny' : 'mdi-weather-night'"
                 @click="changeTheme"></v-btn>
@@ -78,6 +80,10 @@ if (process.client) {
 <style>
 .content {
     max-width: 768px;
+}
+
+a {
+    color: rgb(var(--v-theme-linkColor))
 }
 
 .dark {
