@@ -77,9 +77,7 @@ if (process.client) {
 
 <style>
 .content {
-    max-width: 650px;
-    margin: 20px auto;
-    padding: 0 10px;
+    max-width: 768px;
 }
 
 .dark {

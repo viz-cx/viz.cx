@@ -3,16 +3,25 @@
         <Title>{{ (capitalize(user) + "'s profile") }}
         </Title>
     </Head>
-    <v-card>
-        <v-toolbar color="primary">
-            <Spinner v-show="pending" />
-            <v-avatar v-show="!pending" :image="profile?.meta?.profile?.avatar ?? defaultAvatar" size="75" :alt="user"
-                color="grey" style="margin-left:12px;"></v-avatar>
-            <v-list-item v-show="!pending" :title="profile?.meta?.profile?.nickname ?? user"
-                :subtitle="profile?.meta?.profile?.about ?? ''"></v-list-item>
-        </v-toolbar>
-    </v-card>
-    <br />
+    <div v-if="pending">
+        <Spinner />
+    </div>
+    <div v-else>
+        <v-card>
+            <v-toolbar color="primary" height="100">
+                <v-avatar v-show="!pending" :image="profile?.meta?.profile?.avatar ?? defaultAvatar" size="75" :alt="user"
+                    color="grey" style="margin-left:12px;"></v-avatar>
+                <v-list-item v-show="!pending">
+                    <v-list-item-content>
+                        <v-list-item-title v-text="profile?.meta?.profile?.nickname ?? user"></v-list-item-title>
+                        <v-spacer></v-spacer>
+                        <v-list-item-subtitle class="text-wrap"
+                            v-text="profile?.meta?.profile?.about ?? ''"></v-list-item-subtitle>
+                    </v-list-item-content></v-list-item>
+            </v-toolbar>
+        </v-card>
+        <br />
+    </div>
     <PostList tab="newest" :author="user" />
 </template>
 
