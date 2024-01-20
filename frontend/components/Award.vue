@@ -123,7 +123,7 @@ async function award() {
 
 <style>
 .slider {
-    width: 300px;
+    min-width: 120px;
 }
 
 .wrapper {
