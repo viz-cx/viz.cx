@@ -3,7 +3,6 @@ from typing import NoReturn
 from time import sleep
 from helpers.mongo import get_last_blocknum, save_block
 from helpers.viz import get_last_block_in_chain, get_ops_in_block
-from parser.posts import fetch_new_updates
 
 
 def start_parsing() -> NoReturn:
@@ -24,7 +23,6 @@ def start_parsing() -> NoReturn:
                     if last_blocknum_in_bd % 100 == 0:
                         print("Saved block {}".format(last_blocknum_in_bd))
             else:
-                fetch_new_updates()
                 sleep(3)
         except Exception as e:
             print("Parsing error: {}. Restart in 10 seconds.".format(str(e)))

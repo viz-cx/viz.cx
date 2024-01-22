@@ -1,5 +1,6 @@
 import datetime
 import json
+from time import sleep
 from typing import Literal, Optional
 from pydantic import BaseModel
 
@@ -11,16 +12,18 @@ from helpers.mongo import (
 )
 
 
-def fetch_new_updates():
-    try:
-        last_block_id = get_last_saved_post_block_id()
-        blocks_with_new_posts = get_voice_posts(from_block=last_block_id)
-        for block in blocks_with_new_posts:
-            posts = fetch_posts_from_block(block)
-            for post in posts:
-                save_voice_post(post)
-    except Exception as e:
-        print("Posts error: {}".format(str(e)))
+def start_posts_parsing():
+    while True:
+        try:
+            last_block_id = get_last_saved_post_block_id()
+            blocks_with_new_posts = get_voice_posts(from_block=last_block_id)
+            for block in blocks_with_new_posts:
+                posts = fetch_posts_from_block(block)
+                for post in posts:
+                    save_voice_post(post)
+        except Exception as e:
+            print("Posts parsing error: {}".format(str(e)))
+            sleep(3)
 
 
 def fetch_posts_from_block(block):

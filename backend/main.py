@@ -5,6 +5,7 @@ from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from parser.parser import start_parsing
+from parser.posts import start_posts_parsing
 from sorter.sorter import start_sorting
 from helpers.router import router
 
@@ -13,6 +14,9 @@ parsing_thread.start()
 
 sorting_thread = Thread(target=start_sorting, daemon=True, name="sorter")
 sorting_thread.start()
+
+posts_thread = Thread(target=start_posts_parsing, daemon=True, name="posts")
+posts_thread.start()
 
 app = FastAPI(title="VIZ.cx API", root_path=os.getenv("ROOT_PATH", "/"))
 app.include_router(router)
