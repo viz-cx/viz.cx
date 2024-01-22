@@ -20,7 +20,7 @@
             <SimpleEditor @success="newPost" />
             <br />
             <div v-for="post in newPosts" :id="post.author + '/' + 0">
-                <SinglePost :post="post" :hide-buttons="true" />
+                <SinglePost :post="post" :fake-post="true" />
                 <br />
             </div>
         </div>

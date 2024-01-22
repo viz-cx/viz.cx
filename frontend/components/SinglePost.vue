@@ -1,12 +1,14 @@
 <template>
-    <v-card v-if="props.post != undefined" variant="outlined" hover>
+    <v-card v-if="props.post != undefined" variant="outlined" hover :loading="props.fakePost">
 
         <v-card-subtitle @click.prevent="open(props.alwaysOpened)">
             <nuxt-link :href="'/@' + props.post.author">@{{ props.post.author }}</nuxt-link>
-            posted <nuxt-link v-if="!props.alwaysOpened" :to="'/@' + props.post.author + '/' + props.post.block">{{
-                (props.post.t === 'p') ? 'text' :
-                'note' }}</nuxt-link><span v-if="props.alwaysOpened">{{ (props.post.t === 'p') ? 'text' :
-        'note' }}</span>
+            posted
+            <nuxt-link v-if="!props.alwaysOpened && !props.fakePost"
+                :to="'/@' + props.post.author + '/' + props.post.block">
+                {{ (props.post.t === 'p') ? 'text' : 'note' }}</nuxt-link>
+            <span v-if="props.alwaysOpened || props.fakePost">{{ (props.post.t === 'p') ? 'text' :
+                'note' }}</span>
             <span v-show="props.post.d.s">
                 {{ ' with ' }}
                 <nuxt-link :href="props.post.d.s" target="_blank">link</nuxt-link>
@@ -41,7 +43,7 @@
             </v-img>
         </v-card-text>
 
-        <v-card-actions v-if="!props.hideButtons" v-show="props.post.show">
+        <v-card-actions v-if="!props.fakePost" v-show="props.post.show">
             <ClientOnly>
                 <ConfettiExplosion v-if="showConfetti" :duration="7000" :particleSize="20" :particleCount="200" />
                 <Popper :class="theme" arrow placement="top">
@@ -93,7 +95,7 @@ defineComponent({
 const props = defineProps({
     post: Object,
     alwaysOpened: Boolean,
-    hideButtons: Boolean
+    fakePost: Boolean
 })
 
 const relativeTime = new RelativeTime({ locale: 'en' })
@@ -200,39 +202,32 @@ blockquote {
     margin-inline-end: 40px;
 }
 
-.article cite:before {
-    content: "";
-    text-align: center;
-    display: block;
-    width: 100px;
-    position: absolute;
-    border-top: 2px solid #000;
-    left: calc(50% - 50px);
-    margin-top: -10px;
-}
-
 .article cite {
+    &:before {
+        content: "";
+        text-align: center;
+        display: block;
+        width: 100px;
+        position: absolute;
+        border-top: 2px solid #000;
+        left: calc(50% - 50px);
+        margin-top: -10px;
+    }
+
     display: block;
     text-align: center;
     font-style: normal;
-}
 
-.article cite:after {
-    content: "";
-    text-align: center;
-    display: block;
-    width: 100px;
-    position: absolute;
-    border-bottom: 2px solid #000;
-    left: calc(50% - 50px);
-    margin-top: 15px;
-}
-
-.article hr:before {
-    content: "*****";
-    font-size: 28px;
-    text-align: center;
-    display: block;
+    &:after {
+        content: "";
+        text-align: center;
+        display: block;
+        width: 100px;
+        position: absolute;
+        border-bottom: 2px solid #000;
+        left: calc(50% - 50px);
+        margin-top: 15px;
+    }
 }
 
 .article hr {
@@ -243,9 +238,20 @@ blockquote {
     background: none;
     margin: 0;
     clear: both;
+
+    &:before {
+        content: "*****";
+        font-size: 28px;
+        text-align: center;
+        display: block;
+    }
 }
 
 .text-opened {
     min-height: 70px;
+}
+
+.fake {
+    background-color: #fcfcfc;
 }
 </style>
