@@ -12,16 +12,16 @@ export function markdownTitle(str: string): string {
 }
 
 function markdown_decode_text(text: string) {
-  text = fast_str_replace("&#x23", "#", text)
-  text = fast_str_replace("&#x26", "&", text)
-  text = fast_str_replace("&#x7e", "~", text)
-  text = fast_str_replace("&#x60", "`", text)
-  text = fast_str_replace("&#x5b", "[", text)
-  text = fast_str_replace("&#x5d", "]", text)
-  text = fast_str_replace("&#x28", "(", text)
-  text = fast_str_replace("&#x29", ")", text)
-  text = fast_str_replace("&#x5f", "_", text)
-  text = fast_str_replace("&#x2a", "*", text)
+  text = fast_str_replace("&#x23;", "#", text)
+  text = fast_str_replace("&#x26;", "&", text)
+  text = fast_str_replace("&#x7e;", "~", text)
+  text = fast_str_replace("&#x60;", "`", text)
+  text = fast_str_replace("&#x5b;", "[", text)
+  text = fast_str_replace("&#x5d;", "]", text)
+  text = fast_str_replace("&#x28;", "(", text)
+  text = fast_str_replace("&#x29;", ")", text)
+  text = fast_str_replace("&#x5f;", "_", text)
+  text = fast_str_replace("&#x2a;", "*", text)
   return text
 }
 
@@ -307,35 +307,25 @@ function highlight_links(text: string, is_html: boolean) {
     let new_text = change_text
     if ("#" == change_text.substring(0, 1)) {
       new_text =
-        '<a tabindex="0" data-href="dapp:hashtags/' +
+        '<a href="/tag/' +
         change_text.substring(1).toLowerCase() +
         '/">' +
         change_text +
         "</a>"
     } else if ("@" == change_text.substring(0, 1)) {
-      new_text =
-        '<a tabindex="0" data-href="viz://' +
-        change_text +
-        '/">' +
-        change_text +
-        "</a>"
+      new_text = '<a href="viz://' + change_text + '/">' + change_text + "</a>"
     } else if ("viz://" == change_text.substring(0, 6)) {
-      new_text =
-        '<a tabindex="0" data-href="' +
-        change_text +
-        '">' +
-        change_text +
-        "</a>"
+      new_text = '<a href="' + change_text + '">' + change_text + "</a>"
     } else if ("sia://" == change_text.substring(0, 6)) {
       new_text =
-        '<a tabindex="0" href="' +
+        '<a href="' +
         sia_link(change_text.substring(6)) +
         '" target="_blank">' +
         change_text +
         "</a>"
     } else if ("ipfs://" == change_text.substring(0, 7)) {
       new_text =
-        '<a tabindex="0" href="' +
+        '<a href="' +
         ipfs_link(change_text.substring(7)) +
         '" target="_blank">' +
         change_text +
@@ -364,10 +354,7 @@ function highlight_links(text: string, is_html: boolean) {
   return text
 }
 
-function markdown_code(text: string | boolean) {
-  if (typeof text === "boolean") {
-    return
-  }
+function markdown_code(text: string): string {
   let bold_pattern = /\*\*(.[\s\S]*?)\*\*/gm
   text = text.replace(bold_pattern, "<b>$1</b>")
   let italic_pattern = /\_\_(.[\s\S]*?)\_\_/gm
@@ -470,10 +457,9 @@ function markdown_decode_list(text: string, type: string) {
   return result
 }
 
-function safe_image(link: string) {
+function safe_image(link: string): string | false {
   let result = ""
   let error = false
-  //console.log(typeof avatar,avatar)
   if (0 == link.indexOf("https://")) {
     result = link
   } else if (0 == link.indexOf("ipfs://")) {

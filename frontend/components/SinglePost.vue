@@ -10,7 +10,7 @@
             <span v-if="props.alwaysOpened || props.fakePost">{{ (props.post.t === 'p') ? 'text' :
                 'note' }}</span>
             <span v-show="props.post.d.s">
-                {{ ' with ' }}
+                {{ ' about ' }}
                 <nuxt-link :href="props.post.d.s" target="_blank">link</nuxt-link>
             </span>
             {{ ' ' }}
