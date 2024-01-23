@@ -1,9 +1,8 @@
 <template>
+    <Head>
+        <Title>{{ title }}</Title>
+    </Head>
     <div>
-
-        <Head>
-            <Title>{{ title }}</Title>
-        </Head>
         <h1>{{ title }}</h1>
         <v-container fluid>
             <v-row align="center">
