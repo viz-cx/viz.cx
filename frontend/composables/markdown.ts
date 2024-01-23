@@ -313,7 +313,7 @@ function highlight_links(text: string, is_html: boolean) {
         change_text +
         "</a>"
     } else if ("@" == change_text.substring(0, 1)) {
-      new_text = '<a href="viz://' + change_text + '/">' + change_text + "</a>"
+      new_text = '<a href="/' + change_text + '">' + change_text + "</a>"
     } else if ("viz://" == change_text.substring(0, 6)) {
       new_text = '<a href="' + change_text + '">' + change_text + "</a>"
     } else if ("sia://" == change_text.substring(0, 6)) {
