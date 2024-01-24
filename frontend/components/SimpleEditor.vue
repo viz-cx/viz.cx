@@ -6,6 +6,9 @@
 
 <script setup lang="ts">
 const emits = defineEmits(['success'])
+const props = defineProps({
+    reply: String
+})
 const loading = ref(false)
 const text = ref("")
 
@@ -26,7 +29,7 @@ async function send() {
     loading.value = true
     const login = useCookie('login').value ?? ""
     const wif = useCookie('regular').value ?? ""
-    await sendVoicePost(login, wif, text.value, undefined, undefined)
+    await sendVoicePost(login, wif, text.value, undefined, undefined, props.reply)
         .then(success => {
             console.log(success)
             emits('success', text.value)

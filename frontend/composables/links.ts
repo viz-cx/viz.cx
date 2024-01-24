@@ -18,6 +18,11 @@ function parseVoiceLink(str: string): {
   return { author: null, block: null }
 }
 
+export function isCorrectVoiceLink(str: string): boolean {
+  const result = parseVoiceLink(str)
+  return result.author !== null && result.block !== null
+}
+
 export function isURL(str: string): boolean {
   let url
   try {

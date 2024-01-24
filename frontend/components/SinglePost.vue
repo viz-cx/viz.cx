@@ -1,5 +1,5 @@
 <template>
-    <v-card v-if="props.post != undefined" variant="outlined" hover :loading="props.fakePost">
+    <v-card v-if="props.post !== undefined" variant="outlined" hover :loading="props.fakePost">
 
         <v-card-subtitle @click.prevent="open(props.alwaysOpened)">
             <nuxt-link :href="'/@' + props.post.author">@{{ props.post.author }}</nuxt-link>
@@ -75,16 +75,21 @@
                     <v-btn icon="$edit"></v-btn>
                     <v-btn icon="$delete"></v-btn>
                 </div>
-                <div v-else><!-- <div v-else-if="!props.alwaysOpened"> -->
-                    <v-badge :content="0">
-                        <v-btn :href="'/@' + props.post.author + '/' + props.post.block + '#comments'"
-                            icon="mdi-message-reply-text-outline"></v-btn>
-                    </v-badge>
-                </div>
+                <v-badge :content="0">
+                    <v-btn :href="'/@' + props.post.author + '/' + props.post.block + '#comments'"
+                        icon="mdi-message-reply-text-outline"></v-btn>
+                </v-badge>
             </ClientOnly>
         </v-card-actions>
     </v-card>
-    <div v-if="props.alwaysOpened" id="comments">
+    <div v-if="props.alwaysOpened && props.post !== undefined" id="comments">
+        <br />
+        <SimpleEditor @success="newComment" :reply="'viz://@' + props.post.author + '/' + props.post.block" />
+        <br />
+        <div v-for="comment in newComments" :id="comment.author + '/' + 0">
+            <SinglePost :post="comment" :fake-post="true" />
+            <br />
+        </div>
     </div>
 </template>
 
@@ -108,6 +113,21 @@ const props = defineProps({
 const relativeTime = new RelativeTime({ locale: 'en' })
 const theme = useState("theme", () => "light")
 const showConfetti = ref(false)
+
+const newComments: Ref<any[]> = ref([])
+function newComment(content: any) {
+    const timestamp = new Date().toISOString().slice(0, -1) // "2024-01-18T16:05:27"
+    const comment: any = {
+        "block": 0,
+        "author": useCookie('login').value ?? "",
+        "d": {
+            't': content,
+        },
+        "shares": 0,
+        "timestamp": timestamp
+    }
+    newComments.value.unshift(comment)
+}
 
 const explodeConfetti = async () => {
     showConfetti.value = false

@@ -38,7 +38,7 @@ async function send() {
     loading.value = true
     let login = useCookie('login').value ?? ""
     let wif = useCookie('regular').value ?? ""
-    await sendVoicePost(login, wif, text.value, link.value, image.value)
+    await sendVoicePost(login, wif, text.value, link.value, image.value, undefined)
         .then(sucess => {
             console.log(sucess)
             text.value = ""

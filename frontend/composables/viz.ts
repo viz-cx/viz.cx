@@ -107,7 +107,8 @@ export async function sendVoicePost(
   wif: string,
   text: string,
   link: string | undefined,
-  image: string | undefined
+  image: string | undefined,
+  reply: string | undefined
 ): Promise<any> {
   return new Promise((resolve, reject) => {
     const { $viz } = useNuxtApp()
@@ -125,6 +126,9 @@ export async function sendVoicePost(
         }
         if (image) {
           data.i = image
+        }
+        if (reply && isCorrectVoiceLink(reply)) {
+          data.r = reply
         }
         json.d = data
         $viz.broadcast.custom(
