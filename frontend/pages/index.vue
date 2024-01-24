@@ -1,7 +1,4 @@
 <template>
-    <Head>
-        <Title>{{ title }}</Title>
-    </Head>
     <div>
         <v-card variant="outlined">
             <v-toolbar color="primary">

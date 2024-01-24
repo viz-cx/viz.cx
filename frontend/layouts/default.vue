@@ -8,14 +8,14 @@
                 <v-list-item v-if="isAuthenticated()" lines="two" :prepend-avatar="avatar" :title="login"
                     subtitle="Logged in" href="/logout"></v-list-item>
                 <v-divider></v-divider>
-                <v-list-item v-for="item in items" :key="item.title" :to="item.value">
+                <v-list-item v-for="item in menuItems" :key="item.title" :to="item.value">
                     <v-list-item-title>{{ item.title }}</v-list-item-title>
                 </v-list-item>
             </v-list>
         </v-navigation-drawer>
 
         <v-app-bar app style="z-index: 1000;">
-            <v-toolbar-title>VIZ</v-toolbar-title>
+            <v-toolbar-title>VIZ.cx</v-toolbar-title>
             <v-spacer></v-spacer>
             <v-btn icon="mdi-plus-box-outline" to="/new" />
             <v-btn :prepend-icon="theme === 'light' ? 'mdi-weather-sunny' : 'mdi-weather-night'"
@@ -40,32 +40,7 @@ function changeTheme() {
 let login = useCookie('login').value ?? ""
 let avatar = useCookie('avatar').value ?? "https://info.viz.plus/default-avatar.png"
 let showMenu = ref(false)
-let items = [
-    {
-        title: "Home",
-        value: "/",
-    },
-    {
-        title: "Telegram Channels",
-        value: "/telegram/channels",
-    },
-    {
-        title: "Telegram Posts",
-        value: "/telegram/posts",
-    },
-    {
-        title: "Voice Posts",
-        value: "/voice/posts",
-    },
-    {
-        title: "Voice Accounts",
-        value: "/voice/accounts"
-    },
-    {
-        title: "Landing page",
-        value: "/landing"
-    }
-]
+
 
 if (process.client) {
     if (login) {
@@ -83,7 +58,7 @@ if (process.client) {
 }
 
 a {
-    color: rgb(var(--v-theme-linkColor))
+    color: rgb(var(--v-theme-linkColor));
 }
 
 .dark {
