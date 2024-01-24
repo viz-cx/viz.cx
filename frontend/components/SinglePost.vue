@@ -47,7 +47,7 @@
             <ClientOnly>
                 <ConfettiExplosion v-if="showConfetti" :duration="7000" :particleSize="20" :particleCount="200" />
                 <Popper :class="theme" arrow placement="top">
-                    <v-btn icon="$plus" @click="awardClicked()"></v-btn>
+                    <v-btn variant="text" icon="mdi-thumb-up" color="blue-accent-2" @click="awardClicked()"></v-btn>
                     <template #content="{ close, isOpen }">
                         <LazyAward v-if="isOpen" :extended="false" :receiver="props.post.author"
                             :memo="'viz://@' + props.post.author + '/' + props.post.block" :negative="false"
@@ -61,7 +61,7 @@
                 }} VIZ</div>
 
                 <Popper :class="theme" arrow placement="top">
-                    <v-btn icon="$minus" @click="awardClicked()"></v-btn>
+                    <v-btn variant="text" icon="mdi-thumb-down" color="red-accent-2" @click="awardClicked()"></v-btn>
                     <template #content="{ close, isOpen }">
                         <LazyAward v-if="isOpen" :extended="false" receiver="cx.id"
                             :memo="'viz://@' + props.post.author + '/' + props.post.block" :negative="true"
