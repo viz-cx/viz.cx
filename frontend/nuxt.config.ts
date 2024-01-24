@@ -7,6 +7,9 @@ export default defineNuxtConfig({
     "vuetify/lib/styles/main.sass",
     "@mdi/font/css/materialdesignicons.min.css",
   ],
+  site: {
+    url: "https://viz.cx",
+  },
   app: {
     head: {
       title: "DAO VIZ",
@@ -73,5 +76,13 @@ export default defineNuxtConfig({
   routeRules: {
     "/": { prerender: true },
     "/login": { ssr: false },
+  },
+  modules: ["@nuxtjs/robots", "@nuxtjs/sitemap"], // sitemap should be in the end,
+  sitemap: {
+    sources: [
+      (process.env.API_BASE_URL || "http://localhost:8000") + "/sitemap/posts",
+    ],
+    exclude: ["/login", "/logout", "/new"],
+    sitemaps: false,
   },
 })

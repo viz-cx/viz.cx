@@ -1,6 +1,7 @@
 <template>
     <Head>
         <Title>{{ post ? post.author + ': ' + titleFromText(post.d.t) : noPostTitle }}</Title>
+        <Link v-if="post" rel="canonical" :href="'https://viz.cx/@' + post.author + '/' + post.block" />
     </Head>
     <div v-if="pending">
         <Spinner />

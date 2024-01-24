@@ -874,7 +874,7 @@ def get_saved_posts(
     page=0,
     popular: bool = False,
     author: str | None = None,
-    isReplies: bool = False,
+    isReplies: bool | None = False,
 ):
     field = "shares" if popular else "block"
     cursor = (
