@@ -13,7 +13,7 @@
             <br />
         </div>
         <div v-if="pending">
-            <Spinner />
+            <v-skeleton-loader boilerplate v-for="_ in 10" type="card"></v-skeleton-loader>
         </div>
         <div v-else>
             <v-btn v-show="showMoreButton" @click.prevent="loadMore()">Show next {{ page + 2 }}

@@ -71,14 +71,21 @@
                 </Popper>
 
                 <v-spacer></v-spacer>
-                <div v-show="isUserAuthor(props.post.author)">
+                <div v-if="isUserAuthor(props.post.author)">
                     <v-btn icon="$edit"></v-btn>
                     <v-btn icon="$delete"></v-btn>
                 </div>
-
+                <div v-else><!-- <div v-else-if="!props.alwaysOpened"> -->
+                    <v-badge :content="0">
+                        <v-btn :href="'/@' + props.post.author + '/' + props.post.block + '#comments'"
+                            icon="mdi-message-reply-text-outline"></v-btn>
+                    </v-badge>
+                </div>
             </ClientOnly>
         </v-card-actions>
     </v-card>
+    <div v-if="props.alwaysOpened" id="comments">
+    </div>
 </template>
 
 <script setup lang="ts">
@@ -249,9 +256,5 @@ blockquote {
 
 .text-opened {
     min-height: 70px;
-}
-
-.fake {
-    background-color: #fcfcfc;
 }
 </style>
