@@ -5,7 +5,7 @@
         <div id="replies"></div>
         <v-navigation-drawer v-model="showMenu" location="end" temporary>
             <v-list dense nav>
-                <v-list-item v-if="isAuthenticated()" lines="two" :prepend-avatar="avatar" :title="login"
+                <v-list-item v-if="login" lines="two" :prepend-avatar="avatar ?? defaultAvatar" :title="login"
                     subtitle="Logged in" href="/logout"></v-list-item>
                 <v-divider></v-divider>
                 <v-list-item v-for="item in menuItems" :key="item.title" :to="item.value">
@@ -37,19 +37,18 @@ function changeTheme() {
     theme.value = theme.value === "light" ? "dark" : "light"
 }
 
-let login = useCookie('login').value ?? ""
-let avatar = useCookie('avatar').value ?? "https://info.viz.plus/default-avatar.png"
-let showMenu = ref(false)
-
+const login = useCookie('login')
+const avatar = useCookie('avatar')
+const defaultAvatar = 'https://info.viz.plus/default-avatar.png'
+const showMenu = ref(false)
 
 if (process.client) {
-    if (login) {
-        let account = await getAccount(String(login))
+    if (login.value) {
+        let account = await getAccount(login.value)
         useState('account_' + login).value = account
     }
     useState('dgp').value = await getDgp()
 }
-
 </script>
 
 <style>
