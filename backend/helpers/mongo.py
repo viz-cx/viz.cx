@@ -889,6 +889,15 @@ def get_saved_posts(
     return tuple(cursor)
 
 
+def get_post_comments(author: str, block: int):
+    replyRegex = {"$regex": "^viz://@{}/{}".format(author, block)}
+    cursor = coll_posts.find(
+        {"d.r": replyRegex},
+        {"_id": 0},
+    ).sort("block", pymongo.DESCENDING)
+    return tuple(cursor)
+
+
 def get_saved_post(author: str, block: int, show_id=False):
     post = coll_posts.find_one(
         postsQuery(author=author, block=block),

@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from helpers.mongo import get_saved_posts, get_saved_post
+from helpers.mongo import get_post_comments, get_saved_posts, get_saved_post
 
 router = APIRouter(
     prefix="/posts",
@@ -12,6 +12,12 @@ router = APIRouter(
 @router.get("/@{author}/{block}")
 def post(author: str, block: int):
     return get_saved_post(author, block)
+
+
+@router.get("/comments/@{author}/{block}")
+def comments(author: str, block: int):
+    comments = get_post_comments(author=author, block=block)
+    return comments
 
 
 @router.get("/{tab}/{page}")

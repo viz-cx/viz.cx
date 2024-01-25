@@ -7,7 +7,21 @@
         <Spinner />
     </div>
     <div v-else-if="post" :id="post.author + '/' + post.block">
-        <SinglePost :post="post" :always-opened="true" />
+        <SinglePost :post="post" :always-opened="true" :show-editor="true" />
+
+        <div v-if="pendingComments">
+            <PostsSkeleton />
+        </div>
+        <div v-else>
+            <div v-for="comment in comments">
+                <br />
+                <SinglePost :post="comment" />
+            </div>
+            <div id="comments">
+                <br />
+                <SimpleEditor @success="newComment" :reply="'viz://@' + post.author + '/' + post.block" />
+            </div>
+        </div>
     </div>
     <div v-else>
         <h1>{{ noPostTitle }}</h1>
@@ -29,4 +43,30 @@ const { pending, data: post } = useAsyncData("find post",
         },
     }
 )
+
+const { pending: pendingComments, data: comments } = useAsyncData("find comments",
+    async () => $fetch(`/posts/comments/@${route.params.user}/${route.params.block}`, {
+        baseURL: config.public.apiBaseUrl
+    }),
+    {
+        transform: (data: any) => {
+            return data
+        },
+    }
+)
+
+const newComments: Ref<any[]> = ref([])
+function newComment(content: any) {
+    const timestamp = new Date().toISOString().slice(0, -1) // "2024-01-18T16:05:27"
+    const comment: any = {
+        "block": 0,
+        "author": useCookie('login').value ?? "",
+        "d": {
+            't': content,
+        },
+        "shares": 0,
+        "timestamp": timestamp
+    }
+    newComments.value.unshift(comment)
+}
 </script>

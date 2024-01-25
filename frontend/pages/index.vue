@@ -1,4 +1,7 @@
 <template>
+    <Head>
+        <Title>{{ title }}</Title>
+    </Head>
     <div>
         <v-card variant="outlined">
             <v-toolbar color="primary">
@@ -27,7 +30,7 @@
 
 <script setup lang="ts">
 const router = useRouter()
-const title = 'Voice Protocol Posts'
+const title = 'VIZ Blockchain Community'
 const tab = ref<string | null>(null)
 const tabs = ['popular', 'newest', 'replies']
 const tabFromRouteHash = router.currentRoute.value.hash.replace('#', '')

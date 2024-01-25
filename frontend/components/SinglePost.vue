@@ -82,15 +82,6 @@
             </ClientOnly>
         </v-card-actions>
     </v-card>
-    <div v-if="props.alwaysOpened && props.post !== undefined" id="comments">
-        <br />
-        <SimpleEditor @success="newComment" :reply="'viz://@' + props.post.author + '/' + props.post.block" />
-        <br />
-        <div v-for="comment in newComments" :id="comment.author + '/' + 0">
-            <SinglePost :post="comment" :fake-post="true" />
-            <br />
-        </div>
-    </div>
 </template>
 
 <script setup lang="ts">
@@ -107,27 +98,15 @@ defineComponent({
 const props = defineProps({
     post: Object,
     alwaysOpened: Boolean,
-    fakePost: Boolean
+    fakePost: Boolean,
+    showEditor: Boolean
 })
 
 const relativeTime = new RelativeTime({ locale: 'en' })
 const theme = useState("theme", () => "light")
 const showConfetti = ref(false)
 
-const newComments: Ref<any[]> = ref([])
-function newComment(content: any) {
-    const timestamp = new Date().toISOString().slice(0, -1) // "2024-01-18T16:05:27"
-    const comment: any = {
-        "block": 0,
-        "author": useCookie('login').value ?? "",
-        "d": {
-            't': content,
-        },
-        "shares": 0,
-        "timestamp": timestamp
-    }
-    newComments.value.unshift(comment)
-}
+
 
 const explodeConfetti = async () => {
     showConfetti.value = false
@@ -156,14 +135,6 @@ function awardClicked() {
     if (!isAuthenticated()) {
         const router = useRouter()
         router.push('/login')
-    }
-}
-
-function showDomain(link: string): string | undefined {
-    try {
-        return (new URL(link)).hostname.replace('www.', '')
-    } catch (_) {
-        return undefined
     }
 }
 

@@ -1,6 +1,7 @@
 import { createVuetify } from "vuetify"
 import * as components from "vuetify/components"
 import * as directives from "vuetify/directives"
+import * as colors from "vuetify/util/colors"
 
 // https://codybontecou.com/how-to-use-vuetify-with-nuxt-3.html
 export default defineNuxtPlugin((nuxtApp) => {
@@ -12,12 +13,12 @@ export default defineNuxtPlugin((nuxtApp) => {
       themes: {
         light: {
           colors: {
-            linkColor: "#0000EE",
+            linkColor: colors.grey.darken4,
           },
         },
         dark: {
           colors: {
-            linkColor: "#FFFFFF",
+            linkColor: colors.grey.lighten5,
           },
         },
       },
