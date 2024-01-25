@@ -7,6 +7,7 @@
             <v-list dense nav>
                 <v-list-item v-if="login" lines="two" :prepend-avatar="avatar ?? defaultAvatar" :title="login"
                     subtitle="Logged in" href="/logout"></v-list-item>
+                <v-list-item v-else lines="two" href="/login" title="Log In / Sign Up"></v-list-item>
                 <v-divider></v-divider>
                 <v-list-item v-for="item in menuItems" :key="item.title" :to="item.value">
                     <v-list-item-title>{{ item.title }}</v-list-item-title>
