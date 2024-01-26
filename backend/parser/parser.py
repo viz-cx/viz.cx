@@ -16,12 +16,12 @@ def start_parsing() -> NoReturn:
     while True:
         try:
             last_blocknum_in_bkchn = get_last_block_in_chain()
-            if last_blocknum_in_bkchn - last_blocknum_in_bd > 1:
-                for _ in range(last_blocknum_in_bd + 1, last_blocknum_in_bkchn):
+            if last_blocknum_in_bkchn - last_blocknum_in_bd > 0:
+                for _ in range(last_blocknum_in_bd + 1, last_blocknum_in_bkchn + 1):
                     save_block(get_ops_in_block(_, False))
                     last_blocknum_in_bd = _
                     if last_blocknum_in_bd % 100 == 0:
-                        print("Saved block {}".format(last_blocknum_in_bd))
+                        print("Saved block {} ({})".format(_, last_blocknum_in_bkchn))
             else:
                 sleep(3)
         except Exception as e:

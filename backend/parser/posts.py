@@ -1,18 +1,22 @@
 import datetime
 import json
 from time import sleep
-from typing import Literal, Optional
+from typing import Literal, NoReturn, Optional
 from pydantic import BaseModel
 
 from helpers.mongo import (
     get_last_saved_post_block_id,
+    get_post_comments,
     get_readdleme_post_awards_and_shares,
+    get_saved_posts,
     get_voice_posts,
     save_voice_post,
+    update_post_comments,
 )
 
 
-def start_posts_parsing():
+def start_posts_parsing() -> NoReturn:
+    update_posts_comments_count()
     while True:
         try:
             last_block_id = get_last_saved_post_block_id()
@@ -26,7 +30,25 @@ def start_posts_parsing():
             sleep(3)
 
 
-def fetch_posts_from_block(block):
+def update_posts_comments_count() -> None:
+    page = 0
+    while True:
+        posts = get_saved_posts(page=page, limit=1000, isReplies=None, showId=True)
+        page += 1
+        if not posts:
+            break
+        for post in posts:
+            author = post["author"]
+            block = post["block"]
+            comments = get_post_comments(author=author, block=block)
+            commentCount = len(comments)
+            postCommentsCount = post["comments"] if "comments" in post else 0
+            if commentCount != postCommentsCount:
+                update_post_comments(postId=post["_id"], comments=commentCount)
+    print("Post comments updated successfully")
+
+
+def fetch_posts_from_block(block) -> list:
     result = []
     for transaction in block["block"]:
         try:
@@ -44,6 +66,7 @@ def fetch_posts_from_block(block):
             post.timestamp = transaction["timestamp"]
             meta = get_readdleme_post_awards_and_shares(post.author, post.block)
             post.shares = meta["shares"]
+            post.comments = 0
             if post.d.t is None:  # validation
                 print("Skip post: {}/{}".format(post.author, post.block))
             else:
@@ -93,3 +116,4 @@ class VoiceProtocol(BaseModel):
     block: Optional[int] = None
     timestamp: Optional[datetime.datetime] = None
     shares: Optional[float] = None
+    comments: Optional[int] = None

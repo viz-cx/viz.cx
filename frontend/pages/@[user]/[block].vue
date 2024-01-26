@@ -7,20 +7,18 @@
         <Spinner />
     </div>
     <div v-else-if="post" :id="post.author + '/' + post.block">
-        <SinglePost :post="post" :always-opened="true" :show-editor="true" />
+        <SinglePost :post="post" :always-opened="true" />
 
         <div v-if="pendingComments">
             <PostsSkeleton />
         </div>
-        <div v-else>
-            <div v-for="comment in comments">
+        <div v-else id="comments">
+            <div v-for="comment in newComments.concat(comments)">
                 <br />
-                <SinglePost :post="comment" />
+                <SinglePost :post="comment" :fake-post="comment.isFake" />
             </div>
-            <div id="comments">
-                <br />
-                <SimpleEditor @success="newComment" :reply="'viz://@' + post.author + '/' + post.block" />
-            </div>
+            <br />
+            <SimpleEditor @success="newComment" :reply="'viz://@' + post.author + '/' + post.block" />
         </div>
     </div>
     <div v-else>
@@ -57,6 +55,9 @@ const { pending: pendingComments, data: comments } = useAsyncData("find comments
 
 const newComments: Ref<any[]> = ref([])
 function newComment(content: any) {
+    if (post.value) {
+        post.value.comments += 1
+    }
     const timestamp = new Date().toISOString().slice(0, -1) // "2024-01-18T16:05:27"
     const comment: any = {
         "block": 0,
@@ -65,7 +66,8 @@ function newComment(content: any) {
             't': content,
         },
         "shares": 0,
-        "timestamp": timestamp
+        "timestamp": timestamp,
+        "isFake": true
     }
     newComments.value.unshift(comment)
 }

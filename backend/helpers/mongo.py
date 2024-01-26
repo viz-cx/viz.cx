@@ -2,6 +2,7 @@
 import datetime as dt
 import json
 import os
+from bson import ObjectId
 from fastapi import HTTPException
 import pymongo
 import re
@@ -97,15 +98,17 @@ def sort_block_ops_to_subcolls(block_n_num) -> None:
         }
         if op_type in sorted_op_types:
             coll_ops[op_type].insert_one(op_new_json)
-            recalculate_shares_if_needed(op)
+            recalculate_meta_if_needed(op)
         else:
             not_sorted_ops.append(op_new_json)
     if not_sorted_ops:
         coll_ops.insert_many(not_sorted_ops)
 
 
-def recalculate_shares_if_needed(op) -> None:
-    if op["op"][0] is OpType.receive_award and op["op"][1]["memo"].startswith("viz://"):
+def recalculate_meta_if_needed(op) -> None:
+    if op["op"][0] == "witness_reward":
+        return
+    if op["op"][0] in OpType.receive_award and op["op"][1]["memo"].startswith("viz://"):
         try:
             result = re.search(r"viz://@([a-z0-9\-\.]+)/(\d+)", op["op"][1]["memo"])
             if result is not None and len(result.groups()) == 2:
@@ -117,6 +120,22 @@ def recalculate_shares_if_needed(op) -> None:
                 update_post_meta_if_needed(author, block, awards, shares)
         except Exception as e:
             print("Shares recalculation error: {}".format(str(e)))
+
+    if op["op"][0] in OpType.custom and op["op"][1]["id"] == "V":
+        try:
+            js = json.loads(op["op"][1]["json"])
+            if "d" in js and "r" in js["d"]:
+                result = re.search(r"viz://@([a-z0-9\-\.]+)/(\d+)", js["d"]["r"])
+                if result is not None and len(result.groups()) == 2:
+                    author = result.group(1)
+                    block = int(result.group(2))
+                    post = get_saved_post(author, block, show_id=True)
+                    if isinstance(post, dict):
+                        comments = get_post_comments(author=author, block=block)
+                        commentsCount = len(comments)
+                        update_post_comments(post["_id"], comments=commentsCount)
+        except Exception as e:
+            print("Replies recalculation error {}".format(str(e)))
 
 
 # Количество всех блоков в БД.
@@ -875,12 +894,13 @@ def get_saved_posts(
     popular: bool = False,
     author: str | None = None,
     isReplies: bool | None = False,
+    showId: bool = False,
 ):
     field = "shares" if popular else "block"
     cursor = (
         coll_posts.find(  # "t": {"$in": ["p"]}
             postsQuery(author=author, isReplies=isReplies),
-            {"_id": 0},
+            {} if showId else {"_id": 0},
         )
         .sort(field, pymongo.DESCENDING)
         .limit(limit)
@@ -940,3 +960,11 @@ def account_creation_metadata(user: str):
         .limit(1)
     )
     return tuple(cursor)
+
+
+def update_post_comments(postId: ObjectId, comments: int):
+    coll_posts.find_one_and_update(
+        {"_id": postId},
+        {"$set": {"comments": comments}},
+    )
+    print("Update post {} to {} comments".format(str(postId), comments))

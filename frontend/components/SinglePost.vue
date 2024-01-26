@@ -75,7 +75,7 @@
                     <v-btn icon="$edit"></v-btn>
                     <v-btn icon="$delete"></v-btn>
                 </div>
-                <v-badge :content="0">
+                <v-badge :content="props.post.comments ?? 0">
                     <v-btn :href="'/@' + props.post.author + '/' + props.post.block + '#comments'"
                         icon="mdi-message-reply-text-outline"></v-btn>
                 </v-badge>
@@ -98,8 +98,7 @@ defineComponent({
 const props = defineProps({
     post: Object,
     alwaysOpened: Boolean,
-    fakePost: Boolean,
-    showEditor: Boolean
+    fakePost: Boolean
 })
 
 const relativeTime = new RelativeTime({ locale: 'en' })
