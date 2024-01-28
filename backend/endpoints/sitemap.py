@@ -15,7 +15,7 @@ def show_posts_urls():
     page = 0
     result = []
     while True:
-        newPosts = get_saved_posts(page=page, limit=1000, isReplies=None)
+        newPosts = get_saved_posts(page=page, limit=1000, isReplies=False)
         page += 1
         if not newPosts:
             break
