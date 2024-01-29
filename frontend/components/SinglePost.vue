@@ -1,5 +1,5 @@
 <template>
-    <v-card v-if="props.post !== undefined" variant="outlined" hover :loading="props.fakePost">
+    <v-card v-if="props.post !== undefined" variant="outlined" :hover="!props.alwaysOpened" :loading="props.fakePost">
 
         <v-card-subtitle @click.prevent="open(props.alwaysOpened)">
             <nuxt-link :href="'/@' + props.post.author">@{{ props.post.author }}</nuxt-link>

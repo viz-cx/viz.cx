@@ -16,7 +16,19 @@ def post(author: str, block: int):
 
 @router.get("/comments/@{author}/{block}")
 def comments(author: str, block: int):
+    comments = addReplies(author=author, block=block)
+    return comments
+
+
+def addReplies(author: str, block: int):
     comments = get_post_comments(author=author, block=block)
+    for comment in comments:
+        if isinstance(comment, dict):
+            repliesCount = comment["comments"] if "comments" in comment else 0
+            if repliesCount > 0:
+                comment["replies"] = addReplies(
+                    author=comment["author"], block=comment["block"]
+                )
     return comments
 
 

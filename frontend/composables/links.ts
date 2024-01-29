@@ -32,3 +32,10 @@ export function isURL(str: string): boolean {
   }
   return url.protocol === "http:" || url.protocol === "https:"
 }
+
+export function postId(post: any): string {
+  if (!post) {
+    return ""
+  }
+  return `@${post.author}/${post.block}`
+}

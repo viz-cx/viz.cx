@@ -13,12 +13,17 @@
             <PostsSkeleton />
         </div>
         <div v-else id="comments">
+            <h2 class=" mt-4 ">
+                <v-icon icon="mdi-message-text-outline" />
+                <span class="ml-1">Comments</span>
+            </h2>
+            <CommentEditor />
             <div v-for="comment in newComments.concat(comments)">
                 <br />
-                <SinglePost :post="comment" :fake-post="comment.isFake" />
+                <Comment @change-active-reply="updateActiveReply" :comment="comment" :fake="comment.isFake"
+                    :active-reply="activeReply" />
             </div>
             <br />
-            <SimpleEditor @success="newComment" :reply="'viz://@' + post.author + '/' + post.block" />
         </div>
     </div>
     <div v-else>
@@ -52,6 +57,13 @@ const { pending: pendingComments, data: comments } = useAsyncData("find comments
         },
     }
 )
+
+const activeReply = ref('')
+function updateActiveReply(commentId: string) {
+    if (activeReply.value !== commentId) {
+        activeReply.value = commentId
+    }
+}
 
 const newComments: Ref<any[]> = ref([])
 function newComment(content: any) {
