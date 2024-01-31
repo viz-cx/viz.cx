@@ -7,8 +7,9 @@
             <v-form fast-fail @submit.prevent="login">
 
                 <div class="wrapper">
-                    <v-text-field variant="underlined" v-model="regularKey" label="Private Regular Key" placeholder="5..."
-                        :error-messages="errors.key" :rules="[rules.keyValidation]" clearable></v-text-field>
+                    <v-text-field type="text" variant="underlined" v-model="regularKey" label="Private Regular Key"
+                        placeholder="5..." :error-messages="errors.key" :rules="[rules.keyValidation]"
+                        clearable></v-text-field>
                     <v-btn :icon="!showLogin ? '$expand' : '$collapse'" @click.prevent="showLogin = !showLogin"></v-btn>
                 </div>
 

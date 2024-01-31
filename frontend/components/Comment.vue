@@ -1,12 +1,19 @@
 <template>
     <div class="comment-details">
         <span wrap align-baseline v-if="props.comment !== undefined">
-            <v-col xs12 class="comment-details__comment">
+            <v-col class="comment-details__comment">
                 <span class="comment__metadata">
-                    <strong>{{ props.comment?.author }}</strong> &bull;
+                    <b><nuxt-link :href="'/@' + props.comment.author">{{ props.comment.author }}</nuxt-link></b>
+                    &nbsp;&bull;&nbsp;
                     <ClientOnly>
                         <span :title="props.comment.timestamp + 'Z'">{{ timeAgo(props.comment.timestamp + 'Z') }}</span>
                     </ClientOnly>
+
+                    <v-spacer></v-spacer>
+
+                    <RateButtons :author="props.comment.author"
+                        :memo="'viz://@' + props.comment.author + '/' + props.comment.block" :awards="props.comment.awards"
+                        :shares="props.comment.shares" />
                 </span>
 
                 <span class="comment-details__comment">{{ props.comment.d.t }}</span>
@@ -18,12 +25,10 @@
                     class="comment-details__reply" />
             </v-col>
 
-
             <ul v-if="props.comment.replies && props.comment.replies.length > 0" class="comment-details__children">
                 <Comment v-for="reply in props.comment.replies" v-bind="{ comment: reply }"
                     @change-active-reply="handleReplyChange" :active-reply="props.activeReply" />
             </ul>
-
         </span>
     </div>
 </template>
@@ -61,13 +66,15 @@ function timeAgo(date: string): string {
     padding-left: 10px;
     list-style: none;
     border-left: 2px solid #eee;
+    /* font-size: 15px; */
 }
 
 .comment__metadata {
-    display: block;
-    color: gray;
+    display: flex;
+    /* color: gray; */
     margin-bottom: 5px;
     font-size: 12px;
+    align-items: center;
 }
 
 .comment-details__children,

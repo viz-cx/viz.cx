@@ -3,7 +3,7 @@
         <div id="newest"></div>
         <div id="popular"></div>
         <div id="replies"></div>
-        <v-navigation-drawer v-model="showMenu" location="end" temporary>
+        <v-navigation-drawer v-model="showMenu" location="start" temporary>
             <v-list dense nav>
                 <v-list-item v-if="login" lines="two" :prepend-avatar="avatar ?? defaultAvatar" :title="login"
                     subtitle="Logged in" href="/logout"></v-list-item>
@@ -16,18 +16,25 @@
         </v-navigation-drawer>
 
         <v-app-bar app style="z-index: 1000;">
+            <v-app-bar-nav-icon variant="text" @click.stop="showMenu = !showMenu"></v-app-bar-nav-icon>
             <v-toolbar-title>VIZ.cx</v-toolbar-title>
-            <v-spacer></v-spacer>
             <v-btn icon="mdi-plus-box-outline" to="/new" />
             <v-btn :prepend-icon="theme === 'light' ? 'mdi-weather-sunny' : 'mdi-weather-night'"
                 @click="changeTheme"></v-btn>
-            <v-app-bar-nav-icon variant="text" @click.stop="showMenu = !showMenu"></v-app-bar-nav-icon>
         </v-app-bar>
 
         <v-main>
             <v-container class="content">
                 <slot />
             </v-container>
+
+            <v-footer height="36" class="bg-primary mt-2">
+                <v-layout class="justify-center">
+                    &copy; 2018 — {{ new Date().getFullYear() }}<strong>&nbsp;&bull; VIZ.cx</strong>
+                    &nbsp;&bull;&nbsp;<nuxt-link target="_blank" href="https://github.com/viz-cx/viz.cx">github</nuxt-link>
+                    &nbsp;&bull;&nbsp;<nuxt-link target="_blank" href="https://t.me/viz_cx">telegram</nuxt-link>
+                </v-layout>
+            </v-footer>
         </v-main>
     </v-app>
 </template>
@@ -53,6 +60,14 @@ if (process.client) {
 </script>
 
 <style>
+.v-footer a {
+    color: white;
+}
+
+.v-toolbar-title {
+    font-size: 1.5rem !important;
+}
+
 .content {
     max-width: 768px;
 }

@@ -1,10 +1,10 @@
 # [VIZ.cx](https://viz.cx/)
 
-VIZ is a Graphene-family blockchain with a Fair-DPOS consensus algorithm (vote weight splitted to selected witnesses, witness gets a penalty for missing a block). This site is just yet another entrypoint to show posts inside blockchain that posted via [Voice protocol](https://github.com/VIZ-Blockchain/Free-Speech-Project/blob/master/specification.md).
+This site is just yet another entrypoint to show posts inside [VIZ blockchain](https://github.com/VIZ-Blockchain/viz-cpp-node?tab=readme-ov-file#introducing-viz) that posted via [Voice protocol](https://github.com/VIZ-Blockchain/Free-Speech-Project/blob/master/specification.md).
 
 ## Frontend
 
-Frontend is created on top of [Nuxt.js framework](https://nuxt.com) and [Vuetify.js](https://vuetifyjs.com/en/) and [viz-js-lib](https://github.com/VIZ-Blockchain/viz-js-lib) to interact with VIZ blockchain on client-side.
+Frontend is created on top of [Nuxt.js framework](https://nuxt.com) with [Vuetify.js](https://vuetifyjs.com/en/) and [viz-js-lib](https://github.com/VIZ-Blockchain/viz-js-lib) to interact with VIZ blockchain on client-side.
 
 ## Backend
 

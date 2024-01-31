@@ -2,14 +2,14 @@
     <v-card v-if="props.post !== undefined" variant="outlined" :hover="!props.alwaysOpened" :loading="props.fakePost">
 
         <v-card-subtitle @click.prevent="open(props.alwaysOpened)">
-            <nuxt-link :href="'/@' + props.post.author">@{{ props.post.author }}</nuxt-link>
+            <b><nuxt-link :href="'/@' + props.post.author">{{ props.post.author }}</nuxt-link></b>
             posted
             <nuxt-link v-if="!props.alwaysOpened && !props.fakePost"
                 :to="'/@' + props.post.author + '/' + props.post.block">
                 {{ (props.post.t === 'p') ? 'text' : 'note' }}</nuxt-link>
             <span v-if="props.alwaysOpened || props.fakePost">{{ (props.post.t === 'p') ? 'text' :
                 'note' }}</span>
-            <span v-show="props.post.d.s">
+            <span v-if="props.post.d.s">
                 {{ ' about ' }}
                 <nuxt-link :href="props.post.d.s" target="_blank">link</nuxt-link>
             </span>
@@ -34,7 +34,7 @@
             <div v-else>
                 {{ props.post.show ? fullPost(props.post) : truncatedText(props.post.d.t) }}
             </div>
-            <v-img v-show="!props.post.show && props.post.d.i" :src="props.post.d.i">
+            <v-img v-if="!props.post.show && props.post.d.i" :src="props.post.d.i">
                 <template v-slot:placeholder>
                     <div class="d-flex align-center justify-center fill-height">
                         <Spinner />
@@ -45,40 +45,19 @@
 
         <v-card-actions v-if="!props.fakePost" v-show="props.post.show">
             <ClientOnly>
-                <ConfettiExplosion v-if="showConfetti" :duration="7000" :particleSize="20" :particleCount="200" />
-                <Popper :class="theme" arrow placement="top">
-                    <v-btn variant="text" icon="mdi-thumb-up" color="blue-accent-2" @click="awardClicked()"></v-btn>
-                    <template #content="{ close, isOpen }">
-                        <LazyAward v-if="isOpen" :extended="false" :receiver="props.post.author"
-                            :memo="'viz://@' + props.post.author + '/' + props.post.block" :negative="false"
-                            @success="awardSuccess" @close="close">
-                        </LazyAward>
-                    </template>
-                </Popper>
-
-                <div :title="(props.post.awards ?? 0) + ' award(s)'">{{ props.post.shares !== undefined ?
-                    props.post.shares.toFixed(2) : '???'
-                }} VIZ</div>
-
-                <Popper :class="theme" arrow placement="top">
-                    <v-btn variant="text" icon="mdi-thumb-down" color="red-accent-2" @click="awardClicked()"></v-btn>
-                    <template #content="{ close, isOpen }">
-                        <LazyAward v-if="isOpen" :extended="false" receiver="cx.id"
-                            :memo="'viz://@' + props.post.author + '/' + props.post.block" :negative="true"
-                            @success="awardSuccess" @close="close">
-                        </LazyAward>
-                    </template>
-                </Popper>
-
+                <RateButtons :author="props.post.author" :memo="'viz://@' + props.post.author + '/' + props.post.block"
+                    :awards="props.post.awards" :shares="props.post.shares" />
                 <v-spacer></v-spacer>
-                <div v-if="isUserAuthor(props.post.author)">
+                <!-- <div v-if="isUserAuthor(props.post.author)">
                     <v-btn icon="$edit"></v-btn>
                     <v-btn icon="$delete"></v-btn>
+                </div> -->
+                <div class="mr-2">
+                    <v-badge :content="props.post.comments ?? 0">
+                        <v-btn :href="'/@' + props.post.author + '/' + props.post.block + '#comments'"
+                            icon="mdi-message-reply-text-outline"></v-btn>
+                    </v-badge>
                 </div>
-                <v-badge :content="props.post.comments ?? 0">
-                    <v-btn :href="'/@' + props.post.author + '/' + props.post.block + '#comments'"
-                        icon="mdi-message-reply-text-outline"></v-btn>
-                </v-badge>
             </ClientOnly>
         </v-card-actions>
     </v-card>
@@ -87,7 +66,6 @@
 <script setup lang="ts">
 import RelativeTime from '@yaireo/relative-time'
 import Popper from "vue3-popper"
-import ConfettiExplosion from "vue-confetti-explosion"
 
 defineComponent({
     components: {
@@ -101,39 +79,9 @@ const props = defineProps({
     fakePost: Boolean
 })
 
-const relativeTime = new RelativeTime({ locale: 'en' })
-const theme = useState("theme", () => "light")
-const showConfetti = ref(false)
-
-
-
-const explodeConfetti = async () => {
-    showConfetti.value = false
-    await nextTick()
-    showConfetti.value = true
-}
-
-function awardSuccess(reward: number, isNegative: boolean) {
-    explodeConfetti()
-    if (props.post) {
-        if (isNegative) {
-            props.post.shares -= reward
-        } else {
-            props.post.shares += reward
-        }
-    }
-}
-
 function open(alwaysOpened: boolean) {
     if (props.post) {
         props.post.show = alwaysOpened ? true : !props.post.show
-    }
-}
-
-function awardClicked() {
-    if (!isAuthenticated()) {
-        const router = useRouter()
-        router.push('/login')
     }
 }
 
@@ -158,6 +106,7 @@ function truncatedText(text: string): string {
     return newText + '...'
 }
 
+const relativeTime = new RelativeTime({ locale: 'en' })
 function timeAgo(date: string): string {
     return relativeTime.from(new Date(date))
 }

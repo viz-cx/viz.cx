@@ -12,8 +12,8 @@
                     {{ modelValue }}%
                 </template>
             </v-slider>
-            <v-btn :disabled="isSendDisabled(receiver)" :color="negative ? 'red-accent-2' : 'blue-accent-2'"
-                :loading="loading" @click="award()">Award</v-btn>
+            <v-btn class='award-button' :disabled="isSendDisabled(receiver)"
+                :color="negative ? 'red-accent-2' : 'blue-accent-2'" :loading="loading" @click="award()">Award</v-btn>
         </div>
         <v-text-field v-show="extended" variant="underlined" v-model="memo" label="Memo" required></v-text-field>
         <div class="text-red" v-show="errorMessage">{{ errorMessage }}</div>
@@ -122,8 +122,12 @@ async function award() {
 </script>
 
 <style>
+.award-button {
+    margin-inline: 12px;
+}
+
 .slider {
-    min-width: 120px;
+    min-width: 140px;
 }
 
 .wrapper {
@@ -132,7 +136,7 @@ async function award() {
 }
 
 .helper {
-    min-width: 90px;
+    min-width: 75px;
     margin-top: 5px;
     white-space: nowrap;
     overflow: hidden;

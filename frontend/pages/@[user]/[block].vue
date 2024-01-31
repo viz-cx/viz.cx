@@ -13,10 +13,10 @@
             <PostsSkeleton />
         </div>
         <div v-else id="comments">
-            <h2 class=" mt-4 ">
+            <h3 class="mt-4">
                 <v-icon icon="mdi-message-text-outline" />
                 <span class="ml-1">Comments</span>
-            </h2>
+            </h3>
             <CommentEditor />
             <div v-for="comment in newComments.concat(comments)">
                 <br />
