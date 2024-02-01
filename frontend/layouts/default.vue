@@ -40,9 +40,11 @@
 </template>
 
 <script setup lang="ts">
-const theme = useState("theme", () => "light")
+const cookieTheme = useCookie('theme')
+const theme = useState("theme", () => cookieTheme.value ?? "light")
 function changeTheme() {
     theme.value = theme.value === "light" ? "dark" : "light"
+    cookieTheme.value = theme.value
 }
 
 const login = useCookie('login')
