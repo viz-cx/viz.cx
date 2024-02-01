@@ -27,7 +27,7 @@
             </v-col>
             <ul class="comment-details__children">
                 <Comment v-if="fakeComment !== undefined" :comment="fakeComment" :fake="true" />
-                <Comment v-for="reply in props.comment.replies" v-bind="{ comment: reply }"
+                <Comment v-if="props.comment.replies" v-for="reply in props.comment.replies" v-bind="{ comment: reply }"
                     @change-active-reply="handleReplyChange" :active-reply="props.activeReply" />
             </ul>
         </span>
