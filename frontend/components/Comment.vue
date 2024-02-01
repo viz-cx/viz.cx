@@ -7,13 +7,13 @@
                     &nbsp;&bull;&nbsp;
                     <ClientOnly>
                         <span :title="props.comment.timestamp + 'Z'">{{ timeAgo(props.comment.timestamp + 'Z') }}</span>
+
+                        <v-spacer></v-spacer>
+
+                        <RateButtons :author="props.comment.author"
+                            :memo="'viz://@' + props.comment.author + '/' + props.comment.block"
+                            :awards="props.comment.awards" :shares="props.comment.shares" />
                     </ClientOnly>
-
-                    <v-spacer></v-spacer>
-
-                    <RateButtons :author="props.comment.author"
-                        :memo="'viz://@' + props.comment.author + '/' + props.comment.block" :awards="props.comment.awards"
-                        :shares="props.comment.shares" />
                 </span>
 
                 <span class="comment-details__comment">{{ props.comment.d.t }}</span>
