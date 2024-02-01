@@ -39,3 +39,10 @@ export function postId(post: any): string {
   }
   return `@${post.author}/${post.block}`
 }
+
+export function toVoiceLink(post: any): string {
+  if (!post) {
+    return ""
+  }
+  return `viz://@${post.author}/${post.block}`
+}

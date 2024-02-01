@@ -18,14 +18,15 @@
 
                 <span class="comment-details__comment">{{ props.comment.d.t }}</span>
 
-                <button v-if="props.activeReply !== postId(props.comment)"
+                <button v-if="props.activeReply !== postId(props.comment) && fakeComment === undefined"
                     @click.stop="handleReplyChange(postId(props.comment))" class="comment-details__button"
                     type="button">Reply</button>
-                <CommentEditor :parent="props.comment" v-if="props.activeReply === postId(props.comment)"
+                <CommentEditor @success="newComment" :isReply="true" :reply="toVoiceLink(props.comment)"
+                    v-if="props.activeReply === postId(props.comment) && fakeComment === undefined"
                     class="comment-details__reply" />
             </v-col>
-
-            <ul v-if="props.comment.replies && props.comment.replies.length > 0" class="comment-details__children">
+            <ul class="comment-details__children">
+                <Comment v-if="fakeComment !== undefined" :comment="fakeComment" :fake="true" />
                 <Comment v-for="reply in props.comment.replies" v-bind="{ comment: reply }"
                     @change-active-reply="handleReplyChange" :active-reply="props.activeReply" />
             </ul>
@@ -59,6 +60,22 @@ const relativeTime = new RelativeTime({ locale: 'en' })
 function timeAgo(date: string): string {
     return relativeTime.from(new Date(date))
 }
+
+const fakeComment: Ref<any> = ref(undefined)
+function newComment(content: any) {
+    const timestamp = new Date().toISOString().slice(0, -1) // "2024-01-18T16:05:27"
+    const comment: any = {
+        "block": 0,
+        "author": useCookie('login').value ?? "",
+        "d": {
+            't': content,
+        },
+        "shares": 0,
+        "timestamp": timestamp,
+        "isFake": true
+    }
+    fakeComment.value = comment
+}
 </script>
 
 <style scoped>
@@ -66,7 +83,7 @@ function timeAgo(date: string): string {
     padding-left: 10px;
     list-style: none;
     border-left: 2px solid #eee;
-    /* font-size: 15px; */
+    font-size: 15px;
 }
 
 .comment__metadata {
