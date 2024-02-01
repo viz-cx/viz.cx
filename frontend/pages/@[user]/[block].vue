@@ -17,7 +17,7 @@
                 <v-icon icon="mdi-message-text-outline" />
                 <span class="ml-1">Comments</span>
             </h3>
-            <CommentEditor @success="newComment" :reply="toVoiceLink(post)" />
+            <CommentEditor @success="newComment" :isReply="false" :reply="toVoiceLink(post)" />
             <div v-for="comment in newComments.concat(comments)">
                 <br />
                 <Comment @change-active-reply="updateActiveReply" :comment="comment" :fake="comment.isFake"
