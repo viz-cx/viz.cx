@@ -31,9 +31,8 @@
                     {{ props.post.d.d ?? '' }}
                 </span>
             </div>
-            <div v-else>
-                {{ props.post.show ? fullPost(props.post) : truncatedText(props.post.d.t) }}
-            </div>
+            <div v-else-if="props.post.show" v-html="highlight_links(fullPost(props.post), false)"></div>
+            <div v-else>{{ truncatedText(props.post.d.t) }} </div>
             <v-img v-if="!props.post.show && props.post.d.i" :src="props.post.d.i">
                 <template v-slot:placeholder>
                     <div class="d-flex align-center justify-center fill-height">

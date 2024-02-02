@@ -143,7 +143,7 @@ function html_safe_images(html: string) {
   return html
 }
 
-function highlight_links(text: string, is_html: boolean) {
+export function highlight_links(text: string, is_html: boolean): string {
   let summary_html: string[] = []
   let html_num = 0
 
