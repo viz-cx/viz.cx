@@ -1,16 +1,21 @@
 <template>
     <v-textarea counter auto-grow variant="outlined" autocomplete="on" label="New post" v-model="text"
         @click="checkAuth()"></v-textarea>
+    <v-text-field v-if="props.showShareLink" density="compact" variant="outlined" v-model="link"
+        placeholder="Share link (optional)" :rules="[urlRule]"></v-text-field>
+    <!-- <v-combobox clearable chips multiple label="Beneficiaries" variant="underlined"></v-combobox> -->
     <v-btn :loading="loading" type="submit" color="success" class="mt-4" block text="Submit" @click="send()"></v-btn>
 </template>
 
 <script setup lang="ts">
 const emits = defineEmits(['success'])
 const props = defineProps({
+    showShareLink: Boolean,
     reply: String
 })
 const loading = ref(false)
 const text = ref("")
+const link: Ref<string | undefined> = ref(undefined)
 
 function checkAuth() {
     if (!isAuthenticated()) {
@@ -29,7 +34,7 @@ async function send() {
     loading.value = true
     const login = useCookie('login').value ?? ""
     const wif = useCookie('regular').value ?? ""
-    await sendVoicePost(login, wif, text.value, undefined, undefined, props.reply)
+    await sendVoicePost(login, wif, text.value, link.value, undefined, props.reply)
         .then(success => {
             console.log(success)
             emits('success', text.value)
@@ -40,5 +45,12 @@ async function send() {
             console.log(failure)
             loading.value = false
         })
+}
+
+const urlRule = (value: string): boolean | string => {
+    if (value) {
+        return isURL(value) || "URL is not valid"
+    }
+    return true
 }
 </script>
