@@ -4,7 +4,8 @@
     <v-text-field v-if="props.showShareLink" density="compact" variant="outlined" v-model="link"
         placeholder="Share link (optional)" :rules="[urlRule]"></v-text-field>
     <!-- <v-combobox clearable chips multiple label="Beneficiaries" variant="underlined"></v-combobox> -->
-    <v-btn :loading="loading" type="submit" color="success" class="mt-4" block text="Submit" @click="send()"></v-btn>
+    <v-btn :loading="loading" type="submit" color="success" class="mt-4" block text="Submit" @click="send()"
+        :disabled="link !== undefined && urlRule(link) !== true"></v-btn>
 </template>
 
 <script setup lang="ts">
