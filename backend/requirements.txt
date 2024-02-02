@@ -29,6 +29,7 @@ ecdsa==0.18.0
 exceptiongroup==1.2.0
 expiringdict==1.2.2
 fastapi==0.108.0
+fastapi-cache2==0.2.1
 fastjsonschema==2.19.0
 filelock==3.13.1
 Flask==3.0.0
@@ -59,6 +60,7 @@ mypy-extensions==1.0.0
 nh3==0.2.15
 packaging==23.2
 pathspec==0.12.1
+pendulum==3.0.0
 pexpect==4.9.0
 pipupgrade==1.12.0
 pkginfo==1.9.6
@@ -80,6 +82,7 @@ pylibscrypt==1.8.0
 pymongo==4.6.1
 pyproject_hooks==1.0.0
 pyTelegramBotAPI==4.14.1
+python-dateutil==2.8.2
 python-dotenv==1.0.0
 rapidfuzz==3.6.0
 readme-renderer==42.0
@@ -98,6 +101,7 @@ soupsieve==2.5
 starlette==0.32.0.post1
 tabulate==0.9.0
 telebot==0.0.5
+time-machine==2.13.0
 tomli==2.0.1
 tomlkit==0.12.3
 toolz==0.12.0
@@ -106,6 +110,7 @@ twine==4.0.2
 typeguard==4.1.5
 typing-inspect==0.9.0
 typing_extensions==4.9.0
+tzdata==2023.4
 urllib3==2.1.0
 uvicorn==0.25.0
 virtualenv==20.25.0

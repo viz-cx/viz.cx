@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, Response
 from helpers.avatar import generateAvatar
 from helpers.viz import viz
 from viz.account import Account, AccountDoesNotExistsException
+from fastapi_cache.decorator import cache
 
 
 router = APIRouter(
@@ -12,7 +13,8 @@ router = APIRouter(
 
 
 @router.get("/{user}")
-def profile(user: str):
+@cache(expire=60)
+async def profile(user: str):
     try:
         acc = Account(user, viz)
         if not isinstance(acc["json_metadata"], dict):
@@ -29,5 +31,6 @@ def profile(user: str):
 
 
 @router.get("/avatar/{user}")
-def avatar(user: str) -> Response:
+@cache()
+async def avatar(user: str) -> Response:
     return Response(content=generateAvatar(user), media_type="image/svg+xml")

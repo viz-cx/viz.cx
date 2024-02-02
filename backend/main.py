@@ -1,7 +1,10 @@
 import os
 from env import *
 from threading import Thread
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
+from fastapi_cache import FastAPICache
+from fastapi_cache.backends.inmemory import InMemoryBackend
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from parser.parser import start_parsing
@@ -18,7 +21,16 @@ sorting_thread.start()
 posts_thread = Thread(target=start_posts_parsing, daemon=True, name="posts")
 posts_thread.start()
 
-app = FastAPI(title="VIZ.cx API", root_path=os.getenv("ROOT_PATH", "/"))
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    FastAPICache.init(InMemoryBackend(), prefix="fastapi-cache")
+    yield
+
+
+app = FastAPI(
+    title="VIZ.cx API", root_path=os.getenv("ROOT_PATH", "/"), lifespan=lifespan
+)
 app.include_router(router)
 
 
