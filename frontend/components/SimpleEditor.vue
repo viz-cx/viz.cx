@@ -15,7 +15,7 @@ const props = defineProps({
     reply: String
 })
 const loading = ref(false)
-const text = ref("")
+const text: Ref<string> = useState("simple-editor-text", () => "")
 const link: Ref<string | undefined> = ref(undefined)
 
 function checkAuth() {
@@ -54,4 +54,31 @@ const urlRule = (value: string): boolean | string => {
     }
     return true
 }
+
+const showUnsavedChanges = (): boolean => text.value.length > 20
+
+const unsavedChangesWarning = "You have unsaved changes. Are you sure you wish to leave?"
+
+const confirmLeaving = (event: any) => {
+    if (showUnsavedChanges()) {
+        event.returnValue = unsavedChangesWarning
+        return unsavedChangesWarning
+    }
+}
+
+onBeforeMount(() => {
+    window.onbeforeunload = confirmLeaving
+})
+
+onUnmounted(() => {
+    window.onbeforeunload = null
+})
+
+onBeforeRouteLeave((to, from, next) => {
+    if (showUnsavedChanges()) {
+        const answer = window.confirm(unsavedChangesWarning)
+        if (!answer) return false // return false cancel the route change
+    }
+    next()
+})
 </script>
