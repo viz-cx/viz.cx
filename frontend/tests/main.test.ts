@@ -5,7 +5,7 @@ describe("My test", async () => {
     // test context options
   })
   test("my test", async () => {
-    const html = await $fetch('/analytics')
+    const html = await $fetch("/analytics")
     // console.log(html)
     expect(html.length).greaterThan(1000)
   })

@@ -426,7 +426,6 @@ function markdown_decode_list(text: string, type: string) {
   let result = ""
   result += "<li>"
   let text_arr = text.split("\n")
-  console.log("markdown_decode_list", text, text_arr)
   for (let i in text_arr) {
     let context = text_arr[i]
     let first: boolean | string = false
