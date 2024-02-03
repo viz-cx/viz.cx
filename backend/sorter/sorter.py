@@ -1,4 +1,5 @@
 """VIZ Blockchain MongoDB operations sorter."""
+
 from typing import NoReturn
 import pymongo
 import os
@@ -28,29 +29,28 @@ def del_last_sorted_ops(blocknum) -> None:
 
 def start_sorting() -> NoReturn:
     """Sort VIZ blockchain MongoDB blocks to subcolls by operation type."""
-    last_bnum_in_scoll = get_last_blocknum_and_subcoll()["last_block_num"]
-    if last_bnum_in_scoll != 0:
-        del_last_sorted_ops(last_bnum_in_scoll)
-        print("Sorted ops from block {} deleted.".format(last_bnum_in_scoll))
-        last_bnum_in_scoll -= 1
+    last_sorted_block = get_last_blocknum_and_subcoll()["last_block_num"]
+    if last_sorted_block != 0:
+        del_last_sorted_ops(last_sorted_block)
+        print("Sorted ops from block {} deleted.".format(last_sorted_block))
+        last_sorted_block -= 1
     else:
         print("Blocks not found in subcolls.")
-        last_bnum_in_scoll = 0
+        last_sorted_block = 0
     while True:
         try:
-            last_blocknum_in_db = get_last_blocknum()
-            if last_blocknum_in_db - last_bnum_in_scoll > 1:
-                sort_start_blocknum = last_bnum_in_scoll + 1
-                print("Sorting start from {}.".format(sort_start_blocknum))
-                for blocknum in range(sort_start_blocknum, last_blocknum_in_db + 1):
+            last_db_block = get_last_blocknum()
+            if last_db_block - last_sorted_block > 0:
+                for blocknum in range(last_sorted_block + 1, last_db_block + 1):
                     block = coll.find_one({"_id": blocknum})
                     sort_block_ops_to_subcolls(block)
-                    if blocknum % 10000 == 0:
-                        print("Sorted block {}.".format(blocknum))
-                    last_bnum_in_scoll = blocknum
+                    if blocknum % 100 == 0:
+                        print(
+                            "Sorted block {} (db: {})".format(blocknum, last_db_block)
+                        )
+                    last_sorted_block = blocknum
             else:
-                print("Last block from DB was sorted up. Will contnue in 15 seconds.")
-                sleep(15)
+                sleep(3)
         except Exception as e:
             print("Sorting error: {}. Restart in 10 seconds.".format(str(e)))
             sleep(10)

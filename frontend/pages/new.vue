@@ -18,7 +18,7 @@ const loading = ref(false)
 
 function newPost(content: any) {
     loading.value = true
-    setTimeout(() => navigateTo('/#newest'), 30000) // TODO: change to listen new post from database
+    setTimeout(() => navigateTo('/#newest'), 12000) // TODO: change to listen new post from database
 }
 </script>
 

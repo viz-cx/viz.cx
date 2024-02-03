@@ -1,4 +1,5 @@
 """Helper module for working with MongoDB"""
+
 import datetime as dt
 import json
 import os
@@ -108,6 +109,7 @@ def sort_block_ops_to_subcolls(block_n_num) -> None:
 def recalculate_meta_if_needed(op) -> None:
     if op["op"][0] == "witness_reward":
         return
+
     if op["op"][0] in OpType.receive_award and op["op"][1]["memo"].startswith("viz://"):
         try:
             result = re.search(r"viz://@([a-z0-9\-\.]+)/(\d+)", op["op"][1]["memo"])
