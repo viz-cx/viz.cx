@@ -66,7 +66,8 @@ def fetch_posts_from_block(block) -> list:
             post.timestamp = transaction["timestamp"]
             meta = get_readdleme_post_awards_and_shares(post.author, post.block)
             post.shares = meta["shares"]
-            post.comments = 0
+            comments = get_post_comments(author=post.author, block=post.block)
+            post.comments = len(comments)
             if post.d.t is None:  # validation
                 print("Skip post: {}/{}".format(post.author, post.block))
             else:
