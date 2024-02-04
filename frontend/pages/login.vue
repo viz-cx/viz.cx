@@ -10,15 +10,15 @@
                     <v-text-field type="text" variant="underlined" v-model="regularKey" label="Private Regular Key"
                         placeholder="5..." :error-messages="errors.key" :rules="[rules.keyValidation]"
                         clearable></v-text-field>
-                    <v-btn :icon="!showLogin ? '$expand' : '$collapse'" @click.prevent="showLogin = !showLogin"></v-btn>
+                    <v-btn aria-label="show login field" :icon="!showLogin ? '$expand' : '$collapse'"
+                        @click.prevent="showLogin = !showLogin"></v-btn>
                 </div>
 
                 <v-text-field v-if="showLogin" variant="underlined" v-model="user" label="Account"
                     :error-messages="errors.user" clearable></v-text-field>
 
                 <v-btn :disabled="!regularKey || rules.keyValidation(regularKey) !== true" type="submit" variant="outlined"
-                    color="submit" block class="mt-2">Sign
-                    in</v-btn>
+                    color="submit" block class="mt-2">Sign in</v-btn>
             </v-form>
             <div class="mt-2">
                 <p class="text-body-2">Don't have an account? <a href="http://reg.readdle.me/?set_lang=en"

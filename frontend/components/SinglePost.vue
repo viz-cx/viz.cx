@@ -48,12 +48,13 @@
                     :awards="props.post.awards" :shares="props.post.shares" />
                 <v-spacer></v-spacer>
                 <!-- <div v-if="isUserAuthor(props.post.author)">
-                    <v-btn icon="$edit"></v-btn>
-                    <v-btn icon="$delete"></v-btn>
+                    <v-btn aria-label="Edit post" icon="$edit"></v-btn>
+                    <v-btn aria-lable="Delete post" icon="$delete"></v-btn>
                 </div> -->
                 <div class="mr-2">
                     <v-badge :content="props.post.comments ?? 0">
-                        <v-btn :href="'/@' + props.post.author + '/' + props.post.block + '#comments'"
+                        <v-btn aria-label="to comments"
+                            :href="'/@' + props.post.author + '/' + props.post.block + '#comments'"
                             icon="mdi-message-reply-text-outline"></v-btn>
                     </v-badge>
                 </div>

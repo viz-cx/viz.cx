@@ -18,8 +18,8 @@
         <v-app-bar app style="z-index: 1000;">
             <v-app-bar-nav-icon variant="text" @click.stop="showMenu = !showMenu"></v-app-bar-nav-icon>
             <v-toolbar-title>VIZ.cx</v-toolbar-title>
-            <v-btn icon="mdi-plus-box-outline" to="/new" />
-            <v-btn :prepend-icon="theme === 'light' ? 'mdi-weather-sunny' : 'mdi-weather-night'"
+            <v-btn aria-label="make new post" icon="mdi-plus-box-outline" to="/new" />
+            <v-btn aria-label="change theme" :prepend-icon="theme === 'light' ? 'mdi-weather-sunny' : 'mdi-weather-night'"
                 @click="changeTheme"></v-btn>
         </v-app-bar>
 
