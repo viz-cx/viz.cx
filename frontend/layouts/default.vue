@@ -18,7 +18,7 @@
         <v-app-bar app style="z-index: 1000;">
             <v-app-bar-nav-icon aria-label='menu' variant="text" @click.stop="showMenu = !showMenu"></v-app-bar-nav-icon>
             <v-toolbar-title>VIZ.cx</v-toolbar-title>
-            <v-btn aria-label="make new post" icon="mdi-plus-box-outline" to="/new" />
+            <v-btn aria-label="write new post" icon="mdi-plus-box-outline" to="/new" />
             <v-btn aria-label="change theme" :prepend-icon="theme === 'light' ? 'mdi-weather-sunny' : 'mdi-weather-night'"
                 @click="changeTheme"></v-btn>
         </v-app-bar>
@@ -47,15 +47,15 @@ function changeTheme() {
     cookieTheme.value = theme.value
 }
 
-const login = useCookie('login')
-const avatar = useCookie('avatar')
+const login = useCookie('login', { readonly: true })
+const avatar = useCookie('avatar', { readonly: true })
 const defaultAvatar = 'https://info.viz.plus/default-avatar.png'
 const showMenu = ref(false)
 
 if (process.client) {
     if (login.value) {
         let account = await getAccount(login.value)
-        useState('account_' + login).value = account
+        useState('account_' + login.value).value = account
     }
     useState('dgp').value = await getDgp()
 }
@@ -63,12 +63,12 @@ if (process.client) {
 
 <style>
 .v-main {
-  display: flex;
-  flex-direction: column;
+    display: flex;
+    flex-direction: column;
 }
 
 .v-container {
-  height: 100%;
+    height: 100%;
 }
 
 .v-footer a {

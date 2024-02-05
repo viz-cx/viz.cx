@@ -29,6 +29,8 @@
 </template>
 
 <script setup lang="ts">
+import type { CookieOptions } from '#app/composables/cookie'
+
 const { $viz } = useNuxtApp()
 
 let loading = ref(false)
@@ -75,21 +77,23 @@ async function login() {
             }
         }
         if (key_weight >= regular_authority.weight_threshold, key_weight >= regular_authority.weight_threshold) {
-            // TODO: make cookies more secure
-            useCookie('login').value = login
-            useCookie('regular').value = regularKey.value
+            const maxAge = 60 * 60 * 24 * 365 * 3
+            let cookieSettings: CookieOptions & { readonly?: false | undefined } = { maxAge: maxAge }
+            if (location.origin === 'https:') {
+                cookieSettings.secure = true
+                cookieSettings.sameSite = 'strict'
+            }
+            useCookie('login', cookieSettings).value = login
+            useCookie('regular', cookieSettings).value = regularKey.value
 
+            let avatar: string | undefined = undefined
             try {
                 let json = JSON.parse(account['json_metadata'])
-                let avatar = json['profile']['avatar']
-                if (avatar) {
-                    useCookie('avatar').value = avatar
-                } else {
-                    useCookie('avatar').value = undefined
-                }
+                avatar = json['profile']['avatar']
             } catch (e) {
                 console.log(e)
             }
+            useCookie('avatar', cookieSettings).value = avatar
 
             useState('account_' + login).value = account
             navigateTo({ path: '/' })
