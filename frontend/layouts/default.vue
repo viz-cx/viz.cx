@@ -62,6 +62,15 @@ if (process.client) {
 </script>
 
 <style>
+.v-main {
+  display: flex;
+  flex-direction: column;
+}
+
+.v-container {
+  height: 100%;
+}
+
 .v-footer a {
     color: white;
 }
