@@ -94,6 +94,10 @@ function newComment(content: any) {
     align-items: center;
 }
 
+.comment-details__comment {
+    white-space: pre-wrap;
+}
+
 .comment-details__children,
 .comment-details__reply {
     margin-left: 25px !important;
