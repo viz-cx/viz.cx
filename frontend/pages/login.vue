@@ -79,7 +79,7 @@ async function login() {
         if (key_weight >= regular_authority.weight_threshold, key_weight >= regular_authority.weight_threshold) {
             const maxAge = 60 * 60 * 24 * 365 * 3
             let cookieSettings: CookieOptions & { readonly?: false | undefined } = { maxAge: maxAge }
-            if (location.origin === 'https:') {
+            if (location.protocol === 'https:') {
                 cookieSettings.secure = true
                 cookieSettings.sameSite = 'strict'
             }
