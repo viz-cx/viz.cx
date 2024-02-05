@@ -1,7 +1,7 @@
 <template>
     <div class="comment-details">
         <span wrap align-baseline v-if="props.comment !== undefined">
-            <v-col class="comment-details__comment">
+            <v-col>
                 <span class="comment__metadata">
                     <b><nuxt-link :href="'/@' + props.comment.author">{{ props.comment.author }}</nuxt-link></b>
                     &nbsp;&bull;&nbsp;
