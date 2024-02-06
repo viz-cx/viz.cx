@@ -25,7 +25,7 @@ function markdown_decode_text(text: string) {
   return text
 }
 
-function fast_str_replace(
+export function fast_str_replace(
   search: string,
   replace: string,
   str: string
@@ -307,9 +307,9 @@ export function highlight_links(text: string, is_html: boolean): string {
     let new_text = change_text
     if ("#" == change_text.substring(0, 1)) {
       new_text =
-        '<a href="/tag/' +
+        '<a rel="noopener noreferrer" href="/tag/' +
         change_text.substring(1).toLowerCase() +
-        '/">' +
+        '">' +
         change_text +
         "</a>"
     } else if ("@" == change_text.substring(0, 1)) {
@@ -317,12 +317,7 @@ export function highlight_links(text: string, is_html: boolean): string {
     } else if ("viz://" == change_text.substring(0, 6)) {
       new_text = '<a href="' + change_text + '">' + change_text + "</a>"
     } else if ("sia://" == change_text.substring(0, 6)) {
-      new_text =
-        '<a href="' +
-        sia_link(change_text.substring(6)) +
-        '" target="_blank">' +
-        change_text +
-        "</a>"
+      new_text = "" // sia was deprecated
     } else if ("ipfs://" == change_text.substring(0, 7)) {
       new_text =
         '<a href="' +
@@ -332,7 +327,11 @@ export function highlight_links(text: string, is_html: boolean): string {
         "</a>"
     } else {
       new_text =
-        '<a href="' + change_text + '" target="_blank">' + change_text + "</a>"
+        '<a rel="noopener noreferrer" href="' +
+        change_text +
+        '" target="_blank">' +
+        change_text +
+        "</a>"
     }
     text = fast_str_replace("<REPLACE_LINK_" + i + ">", new_text, text)
   }
@@ -389,7 +388,7 @@ function markdown_code(text: string): string {
           } else {
             text = text.replaceAll(
               link,
-              '<a href="' +
+              '<a rel="noopener noreferrer" href="' +
                 link_arr[2] +
                 '" target="_blank">' +
                 link_arr[1] +
