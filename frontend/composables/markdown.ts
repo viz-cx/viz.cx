@@ -463,7 +463,7 @@ function safe_image(link: string): string | false {
   } else if (0 == link.indexOf("ipfs://")) {
     result = ipfs_link(link.substring(7))
   } else if (0 == link.indexOf("sia://")) {
-    result = sia_link(link.substring(6))
+    error = true // sia is deprecated
   } else if (0 == link.indexOf("http://")) {
     error = true //no http
   } else if (0 == link.indexOf("data:")) {
@@ -479,7 +479,4 @@ function safe_image(link: string): string | false {
 
 function ipfs_link(cid: string) {
   return "https://cloudflare-ipfs.com/ipfs/" + cid
-}
-function sia_link(skylink: string) {
-  return "https://siasky.net/" + skylink
 }
