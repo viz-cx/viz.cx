@@ -1,6 +1,11 @@
 from fastapi import APIRouter
 
-from helpers.mongo import get_post_comments, get_saved_posts, get_saved_post
+from helpers.mongo import (
+    get_post_comments,
+    get_posts_by_tag,
+    get_saved_posts,
+    get_saved_post,
+)
 
 router = APIRouter(
     prefix="/posts",
@@ -18,6 +23,11 @@ def post(author: str, block: int):
 def comments(author: str, block: int):
     comments = addReplies(author=author, block=block)
     return comments
+
+
+@router.get("/tags/{tag}")
+def tags(tag: str):
+    return get_posts_by_tag(tag=tag)
 
 
 def addReplies(author: str, block: int):

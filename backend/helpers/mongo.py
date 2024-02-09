@@ -4,8 +4,9 @@ import datetime as dt
 import json
 import os
 from bson import ObjectId
-from fastapi import HTTPException
 import pymongo
+
+# from pymongo import TEXT
 import re
 from helpers.enums import OpType, ops_custom, ops_shares
 from helpers.viz import convertShares
@@ -13,6 +14,7 @@ from helpers.viz import convertShares
 db = pymongo.MongoClient(os.getenv("MONGO", ""))[os.getenv("DB_NAME", "")]
 coll = db[os.getenv("COLLECTION", "")]
 coll_posts = db[os.getenv("COLLECTION_POSTS", "posts")]
+# coll_posts.create_index([("d.t", TEXT), ("d.m", TEXT)])
 coll_ops = db[os.getenv("COLLECTION_OPS", "")]
 coll_custom = coll_ops[OpType.custom]
 count_max_ops_in_block = 100_000
@@ -909,6 +911,18 @@ def get_saved_posts(
         .skip(limit * page)
     )
     return tuple(cursor)
+
+
+def get_posts_by_tag(tag: str, limit=10, page=0):
+    # query = {"$text": {"$search": '"#{} "'.format(tag)}}
+    # cursor = (
+    #     coll_posts.find(query, {"_id": 0})
+    #     .sort("block", pymongo.DESCENDING)
+    #     .limit(limit)
+    #     .skip(limit * page)
+    # )
+    # return tuple(cursor)
+    return tuple()
 
 
 def get_post_comments(author: str, block: int):
