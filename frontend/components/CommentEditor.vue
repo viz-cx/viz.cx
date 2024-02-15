@@ -2,7 +2,7 @@
     <textarea :placeholder="`Write a ${props.isReply ? 'reply' : 'comment'}...`" :autofocus="props.isReply"
         autocomplete="on" v-model="text" @click="checkAuth()"></textarea>
     <button accesskey="c" :loading="loading" @click.stop="submit" type="button">
-        {{ props.isReply ? 'Reply' : 'Comment' }}
+        Submit
     </button>
 </template>
 

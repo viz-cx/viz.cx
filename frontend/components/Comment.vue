@@ -19,45 +19,20 @@
         <div class="comment comment-details__comment">
             {{ props.comment?.d.t }}
         </div>
+
+        <button v-if="props.activeReply !== postId(props.comment) && fakeComment === undefined"
+            @click.stop="handleReplyChange(postId(props.comment))" class="comment-details__button"
+            type="button">Reply</button>
+        <CommentEditor @success="newComment" :isReply="true" :reply="toVoiceLink(props.comment)"
+            v-if="props.activeReply === postId(props.comment) && fakeComment === undefined"
+            class="comment-details__reply" />
+
         <ul class="comment-details__children">
             <Comment v-if="fakeComment !== undefined" :comment="fakeComment" :fake="true" />
             <Comment v-if="props.comment?.replies" v-for="reply in props.comment.replies" v-bind="{ comment: reply }"
                 @change-active-reply="handleReplyChange" :active-reply="props.activeReply" />
         </ul>
     </article>
-
-
-    <!-- <div class="comment-details">
-        <span wrap align-baseline v-if="props.comment !== undefined">
-            <v-col>
-                <span class="comment__metadata">
-                    <b><nuxt-link :href="'/@' + props.comment.author">{{ props.comment.author }}</nuxt-link></b>
-                    &nbsp;&bull;&nbsp;
-                    <ClientOnly>
-                        <span :title="props.comment.timestamp + 'Z'">{{ timeAgo(props.comment.timestamp + 'Z') }}</span>
-
-                        <RateButtons :author="props.comment.author"
-                            :memo="'viz://@' + props.comment.author + '/' + props.comment.block"
-                            :awards="props.comment.awards" :shares="props.comment.shares" />
-                    </ClientOnly>
-                </span>
-
-                <span class="comment-details__comment">{{ props.comment.d.t }}</span>
-
-                <button v-if="props.activeReply !== postId(props.comment) && fakeComment === undefined"
-                    @click.stop="handleReplyChange(postId(props.comment))" class="comment-details__button"
-                    type="button">Reply</button>
-                <CommentEditor @success="newComment" :isReply="true" :reply="toVoiceLink(props.comment)"
-                    v-if="props.activeReply === postId(props.comment) && fakeComment === undefined"
-                    class="comment-details__reply" />
-            </v-col>
-            <ul class="comment-details__children">
-                <Comment v-if="fakeComment !== undefined" :comment="fakeComment" :fake="true" />
-                <Comment v-if="props.comment.replies" v-for="reply in props.comment.replies" v-bind="{ comment: reply }"
-                    @change-active-reply="handleReplyChange" :active-reply="props.activeReply" />
-            </ul>
-        </span>
-    </div> -->
 </template>
 
 <script setup lang="ts">
@@ -132,7 +107,7 @@ function newComment(content: any) {
 .comment-details__button {
     display: block;
     /* color: #1976d2; */
-    /* font-size: 12px; */
+    font-size: 16px;
     margin: 5px 0;
     padding: 0;
     border: 0;
