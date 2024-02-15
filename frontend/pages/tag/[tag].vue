@@ -10,7 +10,7 @@
     </div>
     <div v-else>
         <div v-for="post in posts" :id="post.author + '/' + post.block">
-            <SinglePost :post="post" />
+            <PostPreview :post="post" />
             <br />
         </div>
     </div>

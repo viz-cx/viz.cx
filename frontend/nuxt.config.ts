@@ -3,14 +3,12 @@ import { defineNuxtConfig } from "nuxt/config"
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   ssr: true,
-  css: [
-    "vuetify/lib/styles/main.sass",
-    "@mdi/font/css/materialdesignicons.min.css",
-  ],
+  css: ["~/styles/style.css"],
   site: {
     url: "https://viz.cx",
   },
   app: {
+    rootId: "body",
     head: {
       title: "DAO VIZ",
       meta: [

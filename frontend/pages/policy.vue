@@ -1,0 +1,3 @@
+<template>
+    Policy
+</template>

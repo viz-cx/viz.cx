@@ -1,59 +1,61 @@
 <template>
-    <Head>
-        <Title>{{ title }}</Title>
-    </Head>
-    <div>
-        <v-card variant="outlined">
-            <v-toolbar color="primary">
-                <v-toolbar-title>{{ title }}</v-toolbar-title>
-                <template v-slot:extension>
-                    <v-tabs v-model="tab" align-tabs="title">
-                        <v-tab v-for="item in tabs" :key="item" :value="item" @click="updateRoute(item)">
-                            {{ item }}
-                        </v-tab>
-                    </v-tabs>
-                </template>
-            </v-toolbar>
-        </v-card>
-        <br />
-        <div v-if="tab == 'newest'">
-            <SimpleEditor @success="newPost" />
-            <br />
-            <div v-for="post in newPosts" :id="post.author + '/' + 0">
-                <SinglePost :post="post" :fake-post="true" />
-                <br />
-            </div>
-        </div>
-        <PostList v-for="value in tabs" :tab="value" v-show="value === tab" />
-    </div>
+  <article>
+    <section>
+      <h2>Launched more than {{ getFullYearsFromLaunched() }} years ago</h2>
+      <p>
+        VIZ blockchain was launched in <a target="_blank" href="https://info.viz.plus/explorer/block/1/">September
+          2018</a>.
+      </p>
+
+      <h2>Usage</h2>
+      <p>
+        VIZ blockchain processed {{ ops ? ops.toLocaleString() : 'many' }} operations in {{
+          block ? block.toLocaleString() : 'many' }} blocks.
+      </p>
+
+      <h2>Libraries</h2>
+      <p>
+        VIZ has libraries for <a target="_blank" href="https://github.com/VIZ-Blockchain/viz-js-lib">JavaScript</a>,
+        <a target="_blank" href="https://github.com/VIZ-Blockchain/viz-php-lib">PHP</a>, <a target="_blank"
+          href="https://github.com/VIZ-Blockchain/viz-python-lib">Python</a>, <a target="_blank"
+          href="https://github.com/VIZ-Blockchain/viz-go-lib">Go</a>, <a target="_blank"
+          href="https://github.com/VIZ-Blockchain/viz-swift-lib">Swift</a>, <a target="_blank"
+          href="https://github.com/VizTower/viz-transaction">Dart</a>, <a target="_blank"
+          href="https://github.com/lososeg/Graphene.Viz">C#</a> and so on.
+      </p>
+    </section>
+  </article>
 </template>
 
 <script setup lang="ts">
-const router = useRouter()
-const title = 'VIZ Blockchain Community'
-const tab = ref<string | null>(null)
-const tabs = ['popular', 'newest', 'replies']
-const tabFromRouteHash = router.currentRoute.value.hash.replace('#', '')
-if (tabs.includes(tabFromRouteHash)) {
-    tab.value = tabFromRouteHash
+function getFullYearsFromLaunched() {
+  let ageDifMs = Date.now() - Date.parse("2018-09-29T10:23:27.000Z")
+  let ageDate = new Date(ageDifMs)
+  return Math.abs(ageDate.getUTCFullYear() - 1970)
 }
 
-function updateRoute(tab: string | null) {
-    router.replace({ 'hash': '#' + tab })
+let needsUpdate = ref(0)
+if (process.client) {
+  setInterval(() => needsUpdate.value++, 3000)
 }
 
-const newPosts: Ref<any[]> = ref([])
-function newPost(content: any) {
-    const timestamp = new Date().toISOString().slice(0, -1) // "2024-01-18T16:05:27"
-    const newPost: any = {
-        "block": 0,
-        "author": useCookie('login').value ?? "",
-        "d": {
-            't': content
-        },
-        "shares": 0,
-        "timestamp": timestamp
-    }
-    newPosts.value.unshift(newPost)
-}
+
+const config = useRuntimeConfig()
+const { data: ops } = await useAsyncData("/count_ops/all",
+  () => $fetch("/count_ops/all", {
+    baseURL: config.public.apiBaseUrl
+  }), {
+  transform: (data: any) => {
+    return data['operations']
+  }, watch: [needsUpdate]
+})
+const { data: block } = await useAsyncData("/blocks/latest",
+  () => $fetch("/blocks/latest", {
+    baseURL: config.public.apiBaseUrl
+  }), {
+  transform: (data: any) => {
+    return data['_id']
+  }, watch: [needsUpdate]
+})
+
 </script>

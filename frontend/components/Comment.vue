@@ -1,5 +1,33 @@
 <template>
-    <div class="comment-details">
+    <article :id="`comment${props.comment?.block}`" class="comment-details">
+        <header>
+            <!-- <img align="left" class="u-square micro" src="/ava.png" /> -->
+            <p>
+                <b><nuxt-link :href="'/@' + props.comment?.author + '/' + props.comment?.block">{{ props.comment?.author
+                }}</nuxt-link></b>&nbsp;&nbsp;&nbsp;<nuxt-link
+                    :href="`#comment${props.comment?.block}`">#</nuxt-link>
+                <span :title="props.comment?.timestamp + 'Z'">{{ timeAgo(props.comment?.timestamp + 'Z') }}</span>
+                <span class="navright">
+                    <ClientOnly>
+                        <RateButtons :author="props.comment?.author"
+                            :memo="'viz://@' + props.comment?.author + '/' + props.comment?.block"
+                            :awards="props.comment?.awards" :shares="props.comment?.shares" />
+                    </ClientOnly>
+                </span>
+            </p>
+        </header>
+        <div class="comment comment-details__comment">
+            {{ props.comment?.d.t }}
+        </div>
+        <ul class="comment-details__children">
+            <Comment v-if="fakeComment !== undefined" :comment="fakeComment" :fake="true" />
+            <Comment v-if="props.comment?.replies" v-for="reply in props.comment.replies" v-bind="{ comment: reply }"
+                @change-active-reply="handleReplyChange" :active-reply="props.activeReply" />
+        </ul>
+    </article>
+
+
+    <!-- <div class="comment-details">
         <span wrap align-baseline v-if="props.comment !== undefined">
             <v-col>
                 <span class="comment__metadata">
@@ -7,8 +35,6 @@
                     &nbsp;&bull;&nbsp;
                     <ClientOnly>
                         <span :title="props.comment.timestamp + 'Z'">{{ timeAgo(props.comment.timestamp + 'Z') }}</span>
-
-                        <v-spacer></v-spacer>
 
                         <RateButtons :author="props.comment.author"
                             :memo="'viz://@' + props.comment.author + '/' + props.comment.block"
@@ -31,7 +57,7 @@
                     @change-active-reply="handleReplyChange" :active-reply="props.activeReply" />
             </ul>
         </span>
-    </div>
+    </div> -->
 </template>
 
 <script setup lang="ts">
@@ -83,14 +109,14 @@ function newComment(content: any) {
     padding-left: 10px;
     list-style: none;
     border-left: 2px solid #eee;
-    font-size: 15px;
+    padding-top: 15px;
 }
 
 .comment__metadata {
     display: flex;
     /* color: gray; */
     margin-bottom: 5px;
-    font-size: 12px;
+    /* font-size: 12px; */
     align-items: center;
 }
 
@@ -100,13 +126,13 @@ function newComment(content: any) {
 
 .comment-details__children,
 .comment-details__reply {
-    margin-left: 25px !important;
+    margin-left: 10px !important;
 }
 
 .comment-details__button {
     display: block;
     /* color: #1976d2; */
-    font-size: 12px;
+    /* font-size: 12px; */
     margin: 5px 0;
     padding: 0;
     border: 0;

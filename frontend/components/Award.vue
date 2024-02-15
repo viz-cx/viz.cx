@@ -1,21 +1,15 @@
 <template>
     <div class="pt-6 text-center" v-if="login">
-        <v-text-field v-show="extended" variant="underlined" v-model="receiver" label="Receiver" :rules=[loginValidation]
-            required></v-text-field>
+        <input v-show="extended" variant="underlined" v-model="receiver" label="Receiver" :rules=[loginValidation]
+            :required="true" />
         <div class="wrapper">
-            &nbsp;<span class="text-body-2 helper">~{{ reward.toFixed(reward > 0.01 || reward === 0 ? 2 : 3) }}
-                viz</span>
-            <v-slider class="slider" :color="negative ? 'red-accent-2' : 'blue-accent-2'"
-                :track-color="negative ? 'red-accent-2' : 'blue-accent-2'" thumb-color="white" v-model="energy" :max="max"
-                :step="1" :min="min" thumb-label="always">
-                <template v-slot:thumb-label="{ modelValue }">
-                    {{ modelValue }}%
-                </template>
-            </v-slider>
-            <v-btn class='award-button' :disabled="isSendDisabled(receiver)"
-                :color="negative ? 'red-accent-2' : 'blue-accent-2'" :loading="loading" @click="award()">Award</v-btn>
+            <input v-model="energy" :min="min" :max="max" step="0.1" class="slider" type="range" />
+            <div>{{ negative ? "-" : '' }}{{ energy }}% (~{{ reward.toFixed(reward > 0.01 || reward
+                === 0 ? 2 : 3) }} viz)</div>
+            <button class='award-button' :disabled="isSendDisabled(receiver)" :color="negative ? 'red' : 'blue'"
+                :loading="loading" @click="award()">Award</button>
         </div>
-        <v-text-field v-show="extended" variant="underlined" v-model="memo" label="Memo" required></v-text-field>
+        <input v-show="extended" variant="underlined" v-model="memo" label="Memo" required />
         <div class="text-red" v-show="errorMessage">{{ errorMessage }}</div>
     </div>
 </template>
@@ -123,22 +117,16 @@ async function award() {
 
 <style>
 .award-button {
-    margin-inline: 12px;
+    margin: 12px;
+    width: 85%;
 }
 
 .slider {
-    min-width: 140px;
+    margin: 12px;
+    width: 200px;
 }
 
 .wrapper {
-    display: flex;
-    align-items: flex-start;
-}
-
-.helper {
-    min-width: 75px;
-    margin-top: 5px;
-    white-space: nowrap;
-    overflow: hidden;
+    text-align: center;
 }
 </style>

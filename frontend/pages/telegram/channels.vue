@@ -4,13 +4,11 @@
   </Head>
   <div>
     <h1>{{ title }}</h1>
-    <v-container fluid>
-      <v-row align="center">
-        <v-select label="By" v-model="select" :items="selects" variant="underlined"></v-select>
-        <v-select label="Period" v-model="period" :items="periods" variant="underlined"></v-select>
-        <v-select label="Limit" v-model="limit" :items="limits" variant="underlined"></v-select>
-      </v-row>
-    </v-container>
+    <v-row align="center">
+      <v-select label="By" v-model="select" :items="selects" variant="underlined"></v-select>
+      <v-select label="Period" v-model="period" :items="periods" variant="underlined"></v-select>
+      <v-select label="Limit" v-model="limit" :items="limits" variant="underlined"></v-select>
+    </v-row>
     <div v-if="pending">
       <Spinner />
     </div>

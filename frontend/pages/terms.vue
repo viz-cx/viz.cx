@@ -1,0 +1,3 @@
+<template>
+    terms
+</template>

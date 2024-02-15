@@ -8,16 +8,15 @@
         </div>
     </div>
     <div v-else>
-        <div v-for="post in posts" :id="post.author + '/' + post.block">
-            <SinglePost :post="post" />
-            <br />
-        </div>
         <div v-if="pending">
             <PostsSkeleton />
         </div>
-        <div v-else>
-            <v-btn v-show="showMoreButton" @click.prevent="loadMore()">Show next {{ page + 2 }}
-                page</v-btn>
+        <div v-if="!pending" v-for="post in posts" :id="post.author + '/' + post.block">
+            <PostPreview :post="post" />
+        </div>
+        <div v-if="!pending">
+            <button v-show="showMoreButton" @click.stop="loadMore()">Show next {{ page + 2 }}
+                page</button>
         </div>
     </div>
 </template>

@@ -1,13 +1,9 @@
 <template>
-    <v-row no-gutters class="mr-4">
-        <v-textarea class='textarea' rows="1" auto-grow :autofocus="props.isReply" hide-details variant="underlined"
-            autocomplete="on" :label="`Add ${props.isReply ? 'reply' : 'comment'}`" v-model="text"
-            @click="checkAuth()"></v-textarea>
-        <v-btn :loading="loading" class="text-none" variant="flat" color="green-darken-2" @click.stop="submit"
-            type="button">
-            {{ props.isReply ? 'Reply' : 'Comment' }}
-        </v-btn>
-    </v-row>
+    <textarea :placeholder="`Write a ${props.isReply ? 'reply' : 'comment'}...`" :autofocus="props.isReply"
+        autocomplete="on" v-model="text" @click="checkAuth()"></textarea>
+    <button accesskey="c" :loading="loading" @click.stop="submit" type="button">
+        {{ props.isReply ? 'Reply' : 'Comment' }}
+    </button>
 </template>
 
 <script setup lang="ts">
@@ -52,7 +48,7 @@ async function submit() {
 </script>
 
 <style>
-.v-textarea .v-field--active textarea {
+.textarea .v-field--active textarea {
     font-size: 15px;
 }
 </style>

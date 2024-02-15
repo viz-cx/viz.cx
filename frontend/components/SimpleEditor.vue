@@ -1,11 +1,11 @@
 <template>
-    <v-textarea counter auto-grow variant="outlined" autocomplete="on" label="New post" v-model="text"
-        @click="checkAuth()"></v-textarea>
+    <textarea counter auto-grow variant="outlined" autocomplete="on" label="New post" v-model="text"
+        @click="checkAuth()"></textarea>
     <v-text-field v-if="props.showShareLink" density="compact" variant="outlined" v-model="link"
         placeholder="Share link (optional)" :rules="[urlRule]"></v-text-field>
     <!-- <v-combobox clearable chips multiple label="Beneficiaries" variant="underlined"></v-combobox> -->
-    <v-btn :loading="loading" type="submit" color="success" class="mt-4" block text="Submit" @click="send()"
-        :disabled="link !== undefined && urlRule(link) !== true"></v-btn>
+    <button :loading="loading" type="submit" color="success" class="mt-4" block text="Submit" @click="send()"
+        :disabled="link !== undefined && urlRule(link) !== true"></button>
 </template>
 
 <script setup lang="ts">

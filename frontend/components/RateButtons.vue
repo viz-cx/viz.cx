@@ -1,31 +1,27 @@
 <template>
-    <div class="rate-buttons-wrapper">
-        <ConfettiExplosion v-if="showConfetti" :duration="7000" :particleSize="20" :particleCount="200" />
-        <Popper :class="theme" arrow placement="top">
-            <v-btn aria-label="like" :size="size" variant="text" icon="mdi-thumb-up" color="blue-accent-2"
-                @click="awardClicked()"></v-btn>
-            <template #content="{ close, isOpen }">
-                <LazyAward v-if="isOpen" :extended="false" :receiver="props.author" :memo="props.memo" :negative="false"
-                    @success="awardSuccess" @close="close">
-                </LazyAward>
-            </template>
-        </Popper>
+    <ConfettiExplosion v-if="showConfetti" :duration="7000" :particleSize="20" :particleCount="200" />
 
-        <div :title="(awards ?? 0) + ' award(s)'">{{ shares !== undefined ?
-            shares.toFixed(2) : '???'
-        }} VIZ</div>
+    <Popper :class="theme" arrow placement="top">
+        <a @click.prevent="awardClicked()" accesskey="u" title="upvote" class="vote">+</a>
+        <template #content="{ close, isOpen }">
+            <LazyAward v-if="isOpen" :extended="false" :receiver="props.author" :memo="props.memo" :negative="false"
+                @success="awardSuccess" @close="close">
+            </LazyAward>
+        </template>
+    </Popper>
 
-        <Popper :class="theme" arrow placement="top">
-            <v-btn aria-label="dislike" :size="size" variant="text" icon="mdi-thumb-down" color="red-accent-2"
-                @click="awardClicked()"></v-btn>
-            <template #content="{ close, isOpen }">
-                <LazyAward v-if="isOpen" :extended="false" receiver="cx.id" :memo="props.memo" :negative="true"
-                    @success="awardSuccess" @close="close">
-                </LazyAward>
-            </template>
-        </Popper>
+    <span :title="(awards ?? 0) + ' award(s)'">
+        &nbsp;<b>{{ shares !== undefined ? shares.toFixed(2) : '???' }} VIZ</b>&nbsp;
+    </span>
 
-    </div>
+    <Popper :class="theme" arrow placement="top">
+        <a @click.prevent="awardClicked()" accesskey="d" title="downvote" class="vote">-</a>
+        <template #content="{ close, isOpen }">
+            <LazyAward v-if="isOpen" :extended="false" receiver="cx.id" :memo="props.memo" :negative="true"
+                @success="awardSuccess" @close="close">
+            </LazyAward>
+        </template>
+    </Popper>
 </template>
 
 <script setup lang="ts">
@@ -45,11 +41,9 @@ const props = defineProps({
     memo: String,
     awards: Number,
     shares: Number,
-    size: String
 })
 const awards = ref(props.awards)
 const shares = ref(props.shares)
-const size = props.size ?? 'medium'
 
 function awardClicked() {
     if (!isAuthenticated()) {
@@ -80,13 +74,12 @@ function awardSuccess(reward: number, isNegative: boolean) {
 </script>
 
 <style>
-.rate-buttons-wrapper {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-
-.rate-buttons-wrapper>div {
-    margin-inline: 4px;
+.vote {
+    display: inline-block;
+    position: relative;
+    z-index: 1;
+    padding: 1em;
+    margin: -1em;
+    cursor: pointer;
 }
 </style>
