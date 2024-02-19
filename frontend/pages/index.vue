@@ -35,9 +35,18 @@ function getFullYearsFromLaunched() {
 }
 
 let needsUpdate = ref(0)
-if (process.client) {
-  setInterval(() => needsUpdate.value++, 3000)
-}
+
+let interval: any
+onMounted(() => {
+  interval = setInterval(() => needsUpdate.value++, 3000)
+  console.log('mounted')
+})
+onUnmounted(() => {
+  if (process.client) {
+    clearInterval(interval)
+    console.log('cleared')
+  }
+})
 
 
 const config = useRuntimeConfig()

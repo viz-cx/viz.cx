@@ -46,3 +46,4 @@ __pycache__
 backend/test.py
 backend/backend.7z
 *.7z
+backend/ava/*

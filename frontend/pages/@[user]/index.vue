@@ -9,19 +9,13 @@
         <h3>{{ error }}</h3>
     </div>
     <div v-else>
-        <v-card>
-            <v-toolbar color="primary" height="100">
-                <v-avatar v-show="!pending" :image="profile?.json_metadata?.profile?.avatar" size="75" :alt="user"
-                    color="grey" style="margin-left:12px;"></v-avatar>
-                <v-list-item v-show="!pending">
-                    <v-list-item-title v-text="profileName(profile)"></v-list-item-title>
-                    <v-spacer></v-spacer>
-                    <v-list-item-subtitle class="text-wrap"
-                        v-text="profile?.json_metadata?.profile?.about ?? ''"></v-list-item-subtitle>
-                </v-list-item>
-            </v-toolbar>
-        </v-card>
-        <br />
+        <section>
+            <img align="left" style="margin-right:20px" class="u-square medium"
+                :src="`${config.public.apiBaseUrl}/profile/avatar/${user}`">
+            {{ profileName(profile) }}
+            <br>{{ profile?.json_metadata?.profile?.about ?? '' }}
+        </section>
+        <hr />
         <PostList tab="newest" :author="user" />
     </div>
 </template>
@@ -45,7 +39,7 @@ const profileName = (profile: any) => {
     if (!profile) { return user }
     if (profile?.json_metadata?.profile?.nickname) {
         if (profile?.json_metadata?.profile?.nickname !== user) {
-            return `${profile?.json_metadata?.profile?.nickname} (${user})`
+            return `${profile?.json_metadata?.profile?.nickname} (@${user})`
         }
         return profile?.json_metadata?.profile?.nickname
     }

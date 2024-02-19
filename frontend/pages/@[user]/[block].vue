@@ -7,7 +7,7 @@
         <Spinner />
     </div>
     <div v-else-if="post" :id="post.author + '/' + post.block">
-        <SinglePost :post="post" :always-opened="true" />
+        <SinglePost :post="post" />
     </div>
     <div v-else>
         <h1>{{ noPostTitle }}</h1>

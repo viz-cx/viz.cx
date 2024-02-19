@@ -1,13 +1,15 @@
 <template>
     <article v-if="props.post">
         <header>
-            <!-- <img align="left" class="u-square small" src="/a/author.png" /> -->
+            <img align="left" class="u-square small"
+                :src="`${config.public.apiBaseUrl}/profile/avatar/${props.post?.author}`" />
             <p>
                 <nuxt-link :href="'/@' + props.post.author">@{{ props.post.author }}</nuxt-link>&nbsp;&nbsp;&nbsp;
 
                 <span :title="props.post.timestamp + 'Z'">{{ timeAgo(props.post.timestamp + 'Z') }}</span>
 
-                <span class="navright">{{ 'there will be buttons' }}
+                <span class="navright">
+                    {{ 'there will be buttons' }}
                 </span>
             </p>
         </header>
@@ -18,33 +20,7 @@
             <nav>
                 <RateButtons :author="props.post.author" :memo="'viz://@' + props.post.author + '/' + props.post.block"
                     :awards="props.post.awards" :shares="props.post.shares" />
-                <ul id="comments" class="right">
-                    <li>
-                        <nuxt-link :href="`https://t.me/share/url?url=${link}`" rel="nofollow" target="_blank">
-                            tg
-                        </nuxt-link>
-                    </li>
-                    <li>
-                        <nuxt-link :href="`http://vk.com/share.php?url=${link}`" rel="nofollow" target="_blank">
-                            vk
-                        </nuxt-link>
-                    </li>
-                    <li>
-                        <nuxt-link :href="`https://x.com/share?url=${link}`" rel="nofollow" target="_blank">
-                            x
-                        </nuxt-link>
-                    </li>
-                    <li>
-                        <nuxt-link :href="`http://www.facebook.com/sharer.php?u=${link}`" rel="nofollow" target="_blank">
-                            fb
-                        </nuxt-link>
-                    </li>
-                    <li>
-                        <a href="mailto:?Body={{link}}" rel="nofollow" target="_blank">
-                            mail
-                        </a>
-                    </li>
-                </ul>
+                <ShareButtons :link="link" />
             </nav>
         </footer>
         <hr />
@@ -77,7 +53,6 @@ const link = 'https://viz.cx' + route.fullPath
 
 const props = defineProps({
     post: Object,
-    alwaysOpened: Boolean,
     fakePost: Boolean
 })
 

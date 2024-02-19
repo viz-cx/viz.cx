@@ -36,8 +36,6 @@ function changeTheme() {
 
 const login = useCookie('login', { readonly: true })
 const avatar = useCookie('avatar', { readonly: true })
-const defaultAvatar = 'https://info.viz.plus/default-avatar.png'
-const showMenu = ref(false)
 
 if (process.client) {
     if (login.value) {

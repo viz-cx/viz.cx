@@ -1,7 +1,8 @@
 <template>
     <article :id="`comment${props.comment?.block}`" class="comment-details">
         <header>
-            <!-- <img align="left" class="u-square micro" src="/ava.png" /> -->
+            <img align="left" class="u-square micro"
+                :src="`${config.public.apiBaseUrl}/profile/avatar/${props.comment?.author}`" />
             <p>
                 <b><nuxt-link :href="'/@' + props.comment?.author + '/' + props.comment?.block">{{ props.comment?.author
                 }}</nuxt-link></b>&nbsp;&nbsp;&nbsp;<nuxt-link
@@ -39,15 +40,18 @@
 import RelativeTime from '@yaireo/relative-time'
 import Popper from "vue3-popper"
 
-function handleReplyChange(commentId: any) {
-    emits('changeActiveReply', commentId)
-}
-
 defineComponent({
     components: {
         Popper,
     },
 })
+
+const config = useRuntimeConfig()
+
+function handleReplyChange(commentId: any) {
+    emits('changeActiveReply', commentId)
+}
+
 
 const emits = defineEmits(['changeActiveReply'])
 
