@@ -35,6 +35,7 @@ pydantic_core==2.23.3
 pylibscrypt==1.8.0
 pymongo==4.8.0
 python-dateutil==2.9.0.post0
+python-dotenv==1.0.1
 requests==2.32.3
 scrypt==0.8.24
 six==1.16.0
