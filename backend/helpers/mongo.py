@@ -859,10 +859,7 @@ def get_last_saved_post_block_id() -> int:
 
 def get_voice_posts(from_block, limit=10):
     result = coll.find(
-        {
-            "_id": {"$gt": from_block},
-            "block": {"$elemMatch": {"op.0": "custom", "op.1.id": "V"}},
-        }
+        {"_id": {"$gt": from_block}, "block.op.0": "custom", "block.op.1.id": "V"}
     ).limit(limit)
     return tuple(result)
 
