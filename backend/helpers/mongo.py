@@ -13,6 +13,7 @@ from helpers.viz import convertShares
 
 db = pymongo.MongoClient(os.getenv("MONGO", ""))[os.getenv("DB_NAME", "")]
 coll = db[os.getenv("COLLECTION", "")]
+coll.create_index({"_id": 1, "block.op.0": 1, "block.op.1.id": 1})
 coll_posts = db[os.getenv("COLLECTION_POSTS", "posts")]
 # coll_posts.create_index([("d.t", TEXT), ("d.m", TEXT)])
 coll_ops = db[os.getenv("COLLECTION_OPS", "")]
