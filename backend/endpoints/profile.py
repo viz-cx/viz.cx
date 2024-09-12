@@ -1,13 +1,14 @@
 import os
+import io
+import requests
 from fastapi import APIRouter, HTTPException, Response
 from fastapi.responses import FileResponse
-import requests
+from PIL import Image
 from helpers.avatar import generateAvatar
 from helpers.viz import viz
 from viz.account import Account, AccountDoesNotExistsException
 from fastapi_cache.decorator import cache
 from pathlib import Path
-import tempfile
 
 
 router = APIRouter(
@@ -33,10 +34,11 @@ async def avatar(user: str) -> Response:
             return FileResponse(path=file_path)
         acc = vizAccount(user=user)
         ava = acc["json_metadata"]["profile"]["avatar"]
-        response = requests.get(ava)
-        with open(file_path, "wb") as file:
-            file.write(response.content)
-        return Response(response.content)
+        r = requests.get(ava, stream=True)
+        if r.status_code == 200:
+            img = Image.open(io.BytesIO(r.content))
+            img.save(file_path)
+        return Response(r.content)
     except Exception as e:
         print("Avatar error: {}".format(str(e)))
     return Response(content=generateAvatar(user), media_type="image/svg+xml")
