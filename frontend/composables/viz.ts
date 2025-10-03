@@ -2,8 +2,6 @@ export function changeNode() {
   const { $viz } = useNuxtApp()
   let nodes = [
     "https://node.viz.cx/",
-    "https://viz.lexai.host/",
-    "https://api.viz.world/",
   ]
   const oldNode = $viz.config.get("websocket") ?? ""
   nodes = nodes.filter((e) => e !== oldNode)
