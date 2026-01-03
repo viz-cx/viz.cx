@@ -61,6 +61,8 @@ def fetch_posts_from_block(block) -> list:
             if post.d.t is None and post.d.text is not None:
                 post.d.t = post.d.text
             post.d.text = None
+            assert isinstance(author, str), "author must be a string"
+            assert isinstance(block["_id"], int), "block ID must be an integer"
             post.author = author
             post.block = block["_id"]
             post.timestamp = transaction["timestamp"]
