@@ -946,3 +946,20 @@ def update_post_comments(postId: ObjectId, comments: int):
         {"$set": {"comments": comments}},
     )
     print("Update post {} to {} comments".format(str(postId), comments))
+
+
+def save_local_post(post: dict) -> str:
+    result = coll_posts.insert_one(post)
+    return str(result.inserted_id)
+
+
+def update_local_post(post_id: str, blocks: list) -> bool:
+    result = coll_posts.find_one_and_update(
+        {"_id": ObjectId(post_id), "editable": True},
+        {"$set": {"blocks": blocks, "updated_at": dt.datetime.utcnow()}},
+    )
+    return result is not None
+
+
+def get_saved_post_by_id(local_id: str):
+    return coll_posts.find_one({"_id": ObjectId(local_id)}, {"_id": 0})

@@ -70,15 +70,77 @@ def fetch_posts_from_block(block) -> list:
             post.shares = meta["shares"]
             comments = get_post_comments(author=post.author, block=post.block)
             post.comments = len(comments)
-            if post.d.t is None:  # validation
+            if post.d.t is None:
                 print("Skip post: {}/{}".format(post.author, post.block))
             else:
                 print("New post: {}/{}".format(post.author, post.block))
-                result.append(post.model_dump(exclude_none=True))
+                post_dict = post.model_dump(exclude_none=True)
+                post_dict["blocks"] = voice_to_editorjs_blocks(post_dict.get("d", {}))
+                post_dict["source"] = "blockchain"
+                post_dict["editable"] = False
+                result.append(post_dict)
         except Exception as e:
             print("Parse post error: {}".format(str(e)))
             continue
     return result
+
+
+def voice_to_editorjs_blocks(post_data: dict) -> list:
+    blocks = []
+
+    if post_data.get("m"):
+        blocks.extend(_markdown_to_blocks(post_data["m"]))
+    elif post_data.get("t"):
+        paragraphs = post_data["t"].strip().split("\n\n")
+        for p in paragraphs:
+            p = p.strip()
+            if p:
+                blocks.append({"type": "paragraph", "data": {"text": p.replace("\n", "<br>")}})
+
+    if post_data.get("i"):
+        blocks.append({"type": "image", "data": {"file": {"url": post_data["i"]}, "caption": ""}})
+
+    if post_data.get("s"):
+        blocks.append({"type": "paragraph", "data": {"text": f'<a href="{post_data["s"]}">{post_data["s"]}</a>'}})
+
+    return blocks
+
+
+def _markdown_to_blocks(text: str) -> list:
+    blocks = []
+    text = text.strip().replace("\r", "")
+    while "\n\n\n" in text:
+        text = text.replace("\n\n\n", "\n\n")
+    parts = text.split("\n\n")
+
+    for part in parts:
+        part = part.strip()
+        if not part:
+            continue
+
+        if part == "***":
+            blocks.append({"type": "delimiter", "data": {}})
+            continue
+
+        first = part.split(" ", 1)[0] if " " in part else ""
+        content = part.split(" ", 1)[1] if " " in part else part
+
+        if first == "##":
+            blocks.append({"type": "header", "data": {"text": content, "level": 2}})
+        elif first == "###":
+            blocks.append({"type": "header", "data": {"text": content, "level": 3}})
+        elif first == ">>" or first == ">":
+            blocks.append({"type": "quote", "data": {"text": content}})
+        elif first == "*":
+            items = [line.lstrip("* ") for line in part.split("\n")]
+            blocks.append({"type": "list", "data": {"style": "unordered", "items": items}})
+        elif first == "*n":
+            items = [line.lstrip("*n ") for line in part.split("\n")]
+            blocks.append({"type": "list", "data": {"style": "ordered", "items": items}})
+        else:
+            blocks.append({"type": "paragraph", "data": {"text": part.replace("\n", "<br>")}})
+
+    return blocks
 
 
 class Benificiary(BaseModel):

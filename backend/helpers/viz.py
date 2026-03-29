@@ -4,7 +4,7 @@ import random
 from typing import Any
 from viz import Client as VIZ
 
-nodes = ["wss://node.viz.cx/ws"]
+nodes = ["wss://node.viz.cx/ws", "https://api.viz.world"]
 
 
 def change_node(selectFirst=False) -> None:
