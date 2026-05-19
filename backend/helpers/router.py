@@ -2,6 +2,7 @@
 from fastapi import APIRouter
 
 from endpoints import (
+    accounts,
     auth,
     blocks,
     count_tx,
@@ -25,3 +26,4 @@ router.include_router(telegram.router)
 router.include_router(posts.router)
 router.include_router(profile.router)
 router.include_router(sitemap.router)
+router.include_router(accounts.router)
