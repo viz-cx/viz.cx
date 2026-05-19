@@ -32,5 +32,5 @@ def ensure_indexes() -> None:
         return
     db = get_db()
     coll = db[os.getenv("COLLECTION", "")]
-    coll.create_index({"_id": 1, "block.op.0": 1, "block.op.1.id": 1})
+    coll.create_index([("_id", 1), ("block.op.0", 1), ("block.op.1.id", 1)])
     _indexes_ensured = True
