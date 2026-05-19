@@ -1,12 +1,13 @@
 from fastapi import APIRouter
-from helpers.viz import viz
+
+from helpers.viz import get_client
 
 router = APIRouter()
 
 
 @router.get("/")
 def home() -> dict:
-    return viz.info()
+    return get_client().info()
 
 
 # Вовлечённость за 7 дней. Самые награждаемые: посты в телеграм,

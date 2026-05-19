@@ -1,21 +1,16 @@
 """VIZ Blockchain MongoDB operations sorter."""
 
 from typing import NoReturn
-import pymongo
-import os
-from env import *
+from time import sleep
+
 from helpers.mongo import (
-    get_last_blocknum_and_subcoll,
+    coll,
+    coll_ops,
     get_last_blocknum,
+    get_last_blocknum_and_subcoll,
     sort_block_ops_to_subcolls,
 )
-from time import sleep
-from helpers.enums import OpType, ops_custom, ops_shares
-
-db = pymongo.MongoClient(os.getenv("MONGO", ""))[os.getenv("DB_NAME", "")]
-coll = db[os.getenv("COLLECTION", "")]
-coll_ops = db[os.getenv("COLLECTION_OPS", "")]
-coll_custom = coll_ops[OpType.custom]
+from helpers.enums import ops_custom, ops_shares
 
 
 def del_last_sorted_ops(blocknum) -> None:

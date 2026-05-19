@@ -3,21 +3,46 @@
 import datetime as dt
 import json
 import os
-from bson import ObjectId
-import pymongo
-
-# from pymongo import TEXT
 import re
+
+import pymongo
+from bson import ObjectId
+
+from helpers.db_client import get_db
 from helpers.enums import OpType, ops_custom, ops_shares
 from helpers.viz import convertShares
 
-db = pymongo.MongoClient(os.getenv("MONGO", ""))[os.getenv("DB_NAME", "")]
-coll = db[os.getenv("COLLECTION", "")]
-coll.create_index({"_id": 1, "block.op.0": 1, "block.op.1.id": 1})
-coll_posts = db[os.getenv("COLLECTION_POSTS", "posts")]
-# coll_posts.create_index([("d.t", TEXT), ("d.m", TEXT)])
-coll_ops = db[os.getenv("COLLECTION_OPS", "")]
-coll_custom = coll_ops[OpType.custom]
+
+def _db():
+    return get_db()
+
+
+class _CollProxy:
+    """Lazy attribute proxy. Resolves to the underlying collection on access."""
+
+    def __init__(self, name_env: str, default: str = ""):
+        self._name_env = name_env
+        self._default = default
+
+    def _resolve(self):
+        return _db()[os.getenv(self._name_env, self._default)]
+
+    def __getattr__(self, item):
+        return getattr(self._resolve(), item)
+
+    def __getitem__(self, key):
+        return self._resolve()[key]
+
+
+coll = _CollProxy("COLLECTION")
+coll_posts = _CollProxy("COLLECTION_POSTS", "posts")
+coll_ops = _CollProxy("COLLECTION_OPS")
+
+
+def _coll_custom():
+    return coll_ops[OpType.custom]
+
+
 count_max_ops_in_block = 100_000
 sorted_op_types = ops_custom + ops_shares
 site_account = "cx.id"

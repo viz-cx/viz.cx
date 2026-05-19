@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Response
 from helpers.avatar import generateAvatar
-from helpers.viz import viz
+from helpers.viz import get_client
 from viz.account import Account, AccountDoesNotExistsException
 from fastapi_cache.decorator import cache
 
@@ -16,7 +16,7 @@ router = APIRouter(
 @cache(expire=60)
 async def profile(user: str):
     try:
-        acc = Account(user, viz)
+        acc = Account(user, get_client())
         if not isinstance(acc["json_metadata"], dict):
             acc["json_metadata"] = {}
         if "profile" not in acc["json_metadata"]:
