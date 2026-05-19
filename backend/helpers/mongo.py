@@ -957,6 +957,59 @@ def get_post_comments(author: str, block: int):
     return tuple(cursor)
 
 
+def _post_uri(author: str, block: int) -> str:
+    return "viz://@{}/{}".format(author, block)
+
+
+def get_post_thread(author: str, block: int, max_depth: int = 50) -> list:
+    """Return all descendants of (author, block) as a nested tree in one
+    pass per depth level (BFS), instead of N+1 queries per node.
+
+    The previous implementation called get_post_comments() for every node,
+    producing depth × fanout queries. This walks the tree level-by-level
+    with a single $or query per level.
+    """
+    root_uri = _post_uri(author, block)
+    direct = coll_posts.find(
+        {"d.r": {"$regex": "^" + re.escape(root_uri) + "($|/)"}},
+        {"_id": 0},
+    ).sort("block", pymongo.DESCENDING)
+    nodes_by_uri: dict[str, dict] = {}
+    children: dict[str, list[dict]] = {}
+    frontier: list[dict] = [dict(d) for d in direct]
+    for node in frontier:
+        uri = _post_uri(node["author"], node["block"])
+        nodes_by_uri[uri] = node
+        children.setdefault(node["d"]["r"], []).append(node)
+
+    depth = 1
+    while frontier and depth < max_depth:
+        child_uris = [_post_uri(n["author"], n["block"]) for n in frontier]
+        next_level_query = {
+            "d.r": {"$in": child_uris},
+        }
+        next_level = list(coll_posts.find(next_level_query, {"_id": 0}).sort(
+            "block", pymongo.DESCENDING
+        ))
+        if not next_level:
+            break
+        for node in next_level:
+            uri = _post_uri(node["author"], node["block"])
+            if uri in nodes_by_uri:
+                continue
+            nodes_by_uri[uri] = dict(node)
+            children.setdefault(node["d"]["r"], []).append(nodes_by_uri[uri])
+        frontier = next_level
+        depth += 1
+
+    for uri, node in nodes_by_uri.items():
+        kids = children.get(uri, [])
+        if kids:
+            node["replies"] = kids
+
+    return children.get(root_uri, [])
+
+
 def get_saved_post(author: str, block: int, show_id=False):
     post = coll_posts.find_one(
         postsQuery(author=author, block=block),

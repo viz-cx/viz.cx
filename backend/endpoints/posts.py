@@ -5,10 +5,10 @@ from pydantic import BaseModel
 from helpers.auth import verify_user
 from helpers.editorjs_validator import validate_editorjs_blocks
 from helpers.mongo import (
-    get_post_comments,
+    get_post_thread,
     get_posts_by_tag,
-    get_saved_posts,
     get_saved_post,
+    get_saved_posts,
     save_local_post,
     update_local_post,
 )
@@ -89,25 +89,12 @@ def post(author: str, block: int):
 
 @router.get("/comments/@{author}/{block}")
 def comments(author: str, block: int):
-    comments = addReplies(author=author, block=block)
-    return comments
+    return get_post_thread(author=author, block=block)
 
 
 @router.get("/tags/{tag}")
 def tags(tag: str):
     return get_posts_by_tag(tag=tag)
-
-
-def addReplies(author: str, block: int):
-    comments = get_post_comments(author=author, block=block)
-    for comment in comments:
-        if isinstance(comment, dict):
-            repliesCount = comment["comments"] if "comments" in comment else 0
-            if repliesCount > 0:
-                comment["replies"] = addReplies(
-                    author=comment["author"], block=comment["block"]
-                )
-    return comments
 
 
 @router.get("/{tab}/{page}")
