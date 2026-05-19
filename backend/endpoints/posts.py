@@ -1,8 +1,8 @@
 import datetime as dt
-from fastapi import APIRouter, Header, HTTPException
+
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
-from helpers.auth import verify_user
 from helpers.editorjs_validator import validate_editorjs_blocks
 from helpers.mongo import (
     get_post_thread,
@@ -12,6 +12,7 @@ from helpers.mongo import (
     save_local_post,
     update_local_post,
 )
+from helpers.signature_auth import require_signed_request
 
 router = APIRouter(
     prefix="/posts",
@@ -32,20 +33,17 @@ class UpdatePostBody(BaseModel):
 @router.post("/")
 def create_post(
     body: CreatePostBody,
-    x_login: str = Header(),
-    x_public_key: str = Header(),
+    account: str = Depends(require_signed_request),
 ) -> dict[str, str]:
-    if not verify_user(x_login, x_public_key):
-        raise HTTPException(status_code=401, detail="Invalid credentials")
     validate_editorjs_blocks(body.blocks)
     post = {
-        "author": x_login,
+        "author": account,
         "block": 0,
         "blocks": body.blocks,
         "d": {"t": _extract_text(body.blocks)},
         "source": "local",
         "editable": True,
-        "timestamp": dt.datetime.utcnow(),
+        "timestamp": dt.datetime.now(dt.UTC),
         "shares": 0.0,
         "awards": 0,
         "comments": 0,
@@ -60,13 +58,10 @@ def create_post(
 def update_post(
     post_id: str,
     body: UpdatePostBody,
-    x_login: str = Header(),
-    x_public_key: str = Header(),
+    account: str = Depends(require_signed_request),
 ):
-    if not verify_user(x_login, x_public_key):
-        raise HTTPException(status_code=401, detail="Invalid credentials")
     validate_editorjs_blocks(body.blocks)
-    if not update_local_post(post_id, body.blocks):
+    if not update_local_post(post_id, body.blocks, account):
         raise HTTPException(status_code=404, detail="Post not found or not editable")
     return {"ok": True}
 

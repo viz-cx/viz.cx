@@ -1031,10 +1031,15 @@ def save_local_post(post: dict) -> str:
     return str(result.inserted_id)
 
 
-def update_local_post(post_id: str, blocks: list) -> bool:
+def update_local_post(post_id: str, blocks: list, author: str | None = None) -> bool:
+    """Update a local post. If `author` is given, only update if the post
+    was created by that author (prevents cross-account edits)."""
+    query: dict = {"_id": ObjectId(post_id), "editable": True}
+    if author is not None:
+        query["author"] = author
     result = coll_posts.find_one_and_update(
-        {"_id": ObjectId(post_id), "editable": True},
-        {"$set": {"blocks": blocks, "updated_at": dt.datetime.utcnow()}},
+        query,
+        {"$set": {"blocks": blocks, "updated_at": dt.datetime.now(dt.UTC)}},
     )
     return result is not None
 

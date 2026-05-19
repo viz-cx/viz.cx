@@ -1,19 +1,21 @@
 """Helper module for API"""
 from fastapi import APIRouter
 from endpoints import (
+    auth,
     blocks,
     count_tx,
     others,
-    shares,
-    telegram,
-    voice,
     posts,
     profile,
+    shares,
     sitemap,
+    telegram,
+    voice,
 )
 
 router = APIRouter()
 router.include_router(others.router)
+router.include_router(auth.router)
 router.include_router(blocks.router)
 router.include_router(count_tx.router)
 router.include_router(shares.router)
