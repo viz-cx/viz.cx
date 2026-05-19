@@ -13,6 +13,7 @@ from endpoints import (
     sitemap,
     telegram,
     voice,
+    webhooks,
     ws,
 )
 
@@ -28,4 +29,5 @@ router.include_router(posts.router)
 router.include_router(profile.router)
 router.include_router(sitemap.router)
 router.include_router(accounts.router)
+router.include_router(webhooks.router)
 router.include_router(ws.router)
