@@ -1,9 +1,10 @@
 import datetime as dt
-from fastapi import APIRouter
-from helpers.enums import SelectType
-from helpers.dates import parse_date_string, iso8601
-import helpers.mongo as mongo
 
+from fastapi import APIRouter
+
+import helpers.mongo as mongo
+from helpers.dates import iso8601, resolve_window
+from helpers.enums import SelectType
 
 router = APIRouter(
     prefix="/voice",
@@ -11,72 +12,51 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
+_WEEK = dt.timedelta(weeks=1)
+
 
 @router.get("/top_posts")
 def show_top_posts_in_period(
     by: SelectType,
-    to_date: str = iso8601(dt.datetime.utcnow()),
-    from_date: str = iso8601(dt.datetime.utcnow() - dt.timedelta(weeks=1)),
+    to_date: str | None = None,
+    from_date: str | None = None,
     in_top: int = 10,
     to_skip: int = 0,
 ) -> dict:
-    to = parse_date_string(to_date)
-    _from = parse_date_string(from_date)
-    match by:
-        case SelectType.shares:
-            result = mongo.get_top_readdleme_posts_by_shares_in_period(
-                to, _from, in_top, to_skip
-            )
-        case SelectType.awards:
-            result = mongo.get_top_readdleme_posts_by_awards_in_period(
-                to, _from, in_top, to_skip
-            )
-    return {
-        "posts": result,
-        "date": {"from": from_date, "to": to_date},
-    }
+    to, fr = resolve_window(to_date, from_date, _WEEK)
+    if by == SelectType.shares:
+        result = mongo.get_top_readdleme_posts_by_shares_in_period(to, fr, in_top, to_skip)
+    else:
+        result = mongo.get_top_readdleme_posts_by_awards_in_period(to, fr, in_top, to_skip)
+    return {"posts": result, "date": {"from": iso8601(fr), "to": iso8601(to)}}
 
 
-# Количество авардов и SHARES полученные постом
 @router.get("/@{author}/{block}")
 def show_readdleme_post_awards_and_received_shares(author: str, block: int) -> dict:
-    result = mongo.get_readdleme_post_awards_and_shares(author, block)
-    return result
+    return mongo.get_readdleme_post_awards_and_shares(author, block)
 
 
-# Топ аккаунтов по полученным SHARES или по количеству авардов
 @router.get("/top_accounts")
 def show_top_accounts_in_period(
     by: SelectType,
-    to_date: str = iso8601(dt.datetime.utcnow()),
-    from_date: str = iso8601(dt.datetime.utcnow() - dt.timedelta(weeks=1)),
+    to_date: str | None = None,
+    from_date: str | None = None,
     in_top: int = 10,
     to_skip: int = 0,
 ) -> dict:
-    to = parse_date_string(to_date)
-    _from = parse_date_string(from_date)
-    match by:
-        case SelectType.shares:
-            result = mongo.get_top_readdleme_authors_by_shares_in_period(
-                to, _from, in_top, to_skip
-            )
-        case SelectType.awards:
-            result = mongo.get_top_readdleme_authors_by_awards_in_period(
-                to, _from, in_top, to_skip
-            )
-    return {"accounts": result, "date": {"from": _from, "to": to}}
+    to, fr = resolve_window(to_date, from_date, _WEEK)
+    if by == SelectType.shares:
+        result = mongo.get_top_readdleme_authors_by_shares_in_period(to, fr, in_top, to_skip)
+    else:
+        result = mongo.get_top_readdleme_authors_by_awards_in_period(to, fr, in_top, to_skip)
+    return {"accounts": result, "date": {"from": iso8601(fr), "to": iso8601(to)}}
 
 
-# Количество авардов и SHARES, полученные аккаунтом за указанный период
 @router.get("/account")
 def show_account_awards_and_received_shares_in_period(
     account_id: str = "@readdle",
-    to_date: str = iso8601(dt.datetime.utcnow()),
-    from_date: str = iso8601(dt.datetime.utcnow() - dt.timedelta(weeks=1)),
+    to_date: str | None = None,
+    from_date: str | None = None,
 ) -> dict:
-    to = parse_date_string(to_date)
-    _from = parse_date_string(from_date)
-    result = mongo.get_readdleme_author_awards_and_shares_in_period(
-        account_id, to, _from
-    )
-    return result
+    to, fr = resolve_window(to_date, from_date, _WEEK)
+    return mongo.get_readdleme_author_awards_and_shares_in_period(account_id, to, fr)
