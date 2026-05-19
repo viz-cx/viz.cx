@@ -10,11 +10,16 @@ _indexes_ensured = False
 
 
 def set_client(client: Any, db_name: str | None = None) -> None:
-    """Override the active client (used in tests)."""
+    """Override the active client (used in tests). Also clears any in-memory
+    caches keyed off the previous client (e.g. the webhook registry cache)
+    so tests don't bleed state across each other."""
     global _client, _db, _indexes_ensured
     _client = client
     _db = client[db_name or os.getenv("DB_NAME", "")]
     _indexes_ensured = False
+
+    from helpers import webhooks
+    webhooks._invalidate_cache()
 
 
 def get_db() -> Any:

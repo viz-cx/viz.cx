@@ -2,8 +2,11 @@
 
 import datetime as dt
 import json
+import logging
 import os
 import re
+from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor
 
 import pymongo
 from bson import ObjectId
@@ -11,6 +14,21 @@ from bson import ObjectId
 from helpers.db_client import get_db
 from helpers.enums import OpType, ops_custom, ops_shares
 from helpers.viz import convertShares
+
+logger = logging.getLogger(__name__)
+
+_meta_executor: ThreadPoolExecutor | None = None
+_VIZ_URI_RE = re.compile(r"viz://@([a-z0-9\-\.]+)/(\d+)")
+
+
+def _meta_executor_singleton() -> ThreadPoolExecutor:
+    global _meta_executor
+    if _meta_executor is None:
+        max_workers = int(os.getenv("META_RECALC_WORKERS", "2"))
+        _meta_executor = ThreadPoolExecutor(
+            max_workers=max_workers, thread_name_prefix="meta-recalc"
+        )
+    return _meta_executor
 
 
 def _db():
@@ -121,14 +139,21 @@ def get_last_blocknum_and_subcoll() -> dict:
 def sort_block_ops_to_subcolls(block_n_num) -> None:
     """Divide block to subcollection by operations. SHARES and CUSTOM ops:
     to separate subcollections. And 'ops' collection for unsorted others.
-    Also emits rollup deltas and pubsub events for WS subscribers."""
+    Also emits rollup deltas and pubsub events for WS subscribers.
+
+    Inserts are batched per op-type collection (one insert_many each) so a
+    block with N ops costs O(types) round trips instead of O(N). Meta
+    recalculation (extra DB reads + writes) is deferred to a background
+    executor so it never blocks the sorter."""
     from helpers import pubsub, rollups, webhooks
 
     op_number = 0.0
     block_number = block_n_num["_id"]
     block = block_n_num["block"]
-    not_sorted_ops = []
-    rollup_ops = []
+    by_type: dict[str, list[dict]] = defaultdict(list)
+    not_sorted_ops: list[dict] = []
+    rollup_ops: list[dict] = []
+    meta_ops: list[dict] = []
     for op in block:
         op_number += 1 / count_max_ops_in_block
         op_type = op["op"][0]
@@ -140,50 +165,70 @@ def sort_block_ops_to_subcolls(block_n_num) -> None:
             "op": op["op"],
         }
         if op_type in sorted_op_types:
-            coll_ops[op_type].insert_one(op_new_json)
-            recalculate_meta_if_needed(op)
+            by_type[op_type].append(op_new_json)
+            if _needs_meta_recalc(op):
+                meta_ops.append(op)
         else:
             not_sorted_ops.append(op_new_json)
         rollup_ops.append(op_new_json)
         pubsub.publish_op(op_new_json)
         webhooks.dispatch(op_new_json)
+    for op_type, docs in by_type.items():
+        coll_ops[op_type].insert_many(docs)
     if not_sorted_ops:
         coll_ops.insert_many(not_sorted_ops)
     rollups.aggregate_ops(rollup_ops)
+    if meta_ops:
+        executor = _meta_executor_singleton()
+        for op in meta_ops:
+            executor.submit(_recalc_meta_safe, op)
+
+
+def _needs_meta_recalc(op) -> bool:
+    op_type = op["op"][0]
+    if op_type == OpType.receive_award:
+        return op["op"][1].get("memo", "").startswith("viz://")
+    if op_type == OpType.custom:
+        return op["op"][1].get("id") == "V"
+    return False
+
+
+def _recalc_meta_safe(op) -> None:
+    try:
+        recalculate_meta_if_needed(op)
+    except Exception:
+        logger.exception("recalculate_meta_if_needed failed")
 
 
 def recalculate_meta_if_needed(op) -> None:
-    if op["op"][0] == "witness_reward":
-        return
-
-    if op["op"][0] in OpType.receive_award and op["op"][1]["memo"].startswith("viz://"):
+    op_type = op["op"][0]
+    if op_type == OpType.receive_award and op["op"][1]["memo"].startswith("viz://"):
         try:
-            result = re.search(r"viz://@([a-z0-9\-\.]+)/(\d+)", op["op"][1]["memo"])
-            if result is not None and len(result.groups()) == 2:
+            result = _VIZ_URI_RE.search(op["op"][1]["memo"])
+            if result is not None:
                 author = result.group(1)
                 block = int(result.group(2))
                 meta = get_readdleme_post_awards_and_shares(author, block)
-                awards = meta["awards"]
-                shares = meta["shares"]
-                update_post_meta_if_needed(author, block, awards, shares)
+                update_post_meta_if_needed(
+                    author, block, meta["awards"], meta["shares"]
+                )
         except Exception as e:
-            print(f"Shares recalculation error: {str(e)}")
+            logger.warning("Shares recalculation error: %s", e)
 
-    if op["op"][0] in OpType.custom and op["op"][1]["id"] == "V":
+    if op_type == OpType.custom and op["op"][1]["id"] == "V":
         try:
             js = json.loads(op["op"][1]["json"])
             if "d" in js and "r" in js["d"]:
-                result = re.search(r"viz://@([a-z0-9\-\.]+)/(\d+)", js["d"]["r"])
-                if result is not None and len(result.groups()) == 2:
+                result = _VIZ_URI_RE.search(js["d"]["r"])
+                if result is not None:
                     author = result.group(1)
                     block = int(result.group(2))
                     post = get_saved_post(author, block, show_id=True)
                     if isinstance(post, dict):
                         comments = get_post_comments(author=author, block=block)
-                        commentsCount = len(comments)
-                        update_post_comments(post["_id"], comments=commentsCount)
+                        update_post_comments(post["_id"], comments=len(comments))
         except Exception as e:
-            print(f"Replies recalculation error {str(e)}")
+            logger.warning("Replies recalculation error: %s", e)
 
 
 # Количество всех блоков в БД.

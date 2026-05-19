@@ -13,6 +13,12 @@ Delivery from the sorter thread is fire-and-forget on a ThreadPoolExecutor.
 Each POST is signed with header `X-Viz-Signature: sha256=<hex>` over the body.
 Retries: 3 attempts, exponential backoff (1s, 2s, 4s). On exhaustion the call
 is logged and dropped; the webhook stays active for future ops.
+
+The active-webhooks list is cached in-memory so dispatch() doesn't hit Mongo
+per op. The cache is invalidated explicitly on register/deactivate (covers
+the single-worker deployment that pubsub.py already documents) and refreshed
+on a TTL fallback for multi-worker setups where register may land in a
+different process than the sorter.
 """
 from __future__ import annotations
 
@@ -23,6 +29,7 @@ import json
 import logging
 import os
 import secrets
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any
@@ -40,6 +47,38 @@ DELIVERY_TIMEOUT = 10.0
 MAX_ATTEMPTS = 3
 
 _executor: ThreadPoolExecutor | None = None
+
+_cache_lock = threading.Lock()
+_cache: list[dict[str, Any]] | None = None
+_cache_expires_at: float = 0.0
+
+
+def _cache_ttl() -> float:
+    return float(os.getenv("WEBHOOK_CACHE_TTL", "5.0"))
+
+
+def _invalidate_cache() -> None:
+    global _cache, _cache_expires_at
+    with _cache_lock:
+        _cache = None
+        _cache_expires_at = 0.0
+
+
+def _active_webhooks() -> list[dict[str, Any]]:
+    global _cache, _cache_expires_at
+    now = time.monotonic()
+    with _cache_lock:
+        if _cache is not None and now < _cache_expires_at:
+            return _cache
+    try:
+        fresh = list(_coll().find({"active": True}))
+    except Exception:
+        logger.exception("Webhook registry read failed")
+        return []
+    with _cache_lock:
+        _cache = fresh
+        _cache_expires_at = time.monotonic() + _cache_ttl()
+    return fresh
 
 
 def _coll():
@@ -74,12 +113,16 @@ def register(account: str, url: str, op_type: str | None, target_account: str | 
         "active": True,
     }
     result = _coll().insert_one(doc)
+    _invalidate_cache()
     return {"id": str(result.inserted_id), "secret": secret}
 
 
 def deactivate(webhook_id: str, account: str) -> bool:
     result = _coll().delete_one({"_id": ObjectId(webhook_id), "account": account})
-    return result.deleted_count == 1
+    if result.deleted_count == 1:
+        _invalidate_cache()
+        return True
+    return False
 
 
 def list_for(account: str) -> list[dict[str, Any]]:
@@ -146,12 +189,9 @@ def _deliver(url: str, secret: str, payload: dict[str, Any]) -> None:
 
 def dispatch(op: dict[str, Any]) -> None:
     """Match the op against active webhooks and queue HTTP deliveries.
-    Called from the sorter thread; never blocks."""
-    try:
-        candidates = list(_coll().find({"active": True}))
-    except Exception:
-        logger.exception("Webhook registry read failed")
-        return
+    Called from the sorter thread; never blocks. The active-webhooks list
+    is served from an in-memory cache to avoid a Mongo round trip per op."""
+    candidates = _active_webhooks()
     if not candidates:
         return
     payload = _serialize(op)
