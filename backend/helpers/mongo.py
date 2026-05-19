@@ -431,8 +431,129 @@ def get_sum_shares_by_op_in_period(
 
 
 # ---------------------------------------------------------------------------
+# Leaderboards (Telegram + Voice) — shared aggregation primitives
+# ---------------------------------------------------------------------------
+#
+# Two pipeline shapes are used across all leaderboard endpoints:
+#   1. _top_memo_leaderboard:   $match memo prefix → $group by key → top-N.
+#   2. _memo_awards_and_shares: $match memo filter → $group all → one row.
+#
+# `coll_ops[OpType.receive_award]` is the source for everything below: every
+# receive_award op carries `op.memo` (an array of strings), and the prefix
+# distinguishes channels from voice posts.
+
+
+_MEMO_FULL = "$op.memo"
+_MEMO_TG_CHANNEL = {
+    # split "channel:@chan:postid" by ":" and take index 1 ("@chan").
+    "$arrayElemAt": [
+        {"$split": [{"$arrayElemAt": ["$op.memo", 0]}, ":"]},
+        1,
+    ]
+}
+_MEMO_VOICE_AUTHOR = {
+    # split "viz://@author/block" by "/" and take index 2 ("@author").
+    "$arrayElemAt": [
+        {"$split": [{"$arrayElemAt": ["$op.memo", 0]}, "/"]},
+        2,
+    ]
+}
+
+
+def _metric_accumulator(metric: str) -> dict:
+    if metric == "shares":
+        return {"$sum": {"$sum": "$op.shares"}}
+    if metric == "awards":
+        return {"$sum": 1}
+    raise ValueError(f"unknown metric: {metric}")
+
+
+def _top_memo_leaderboard(
+    *,
+    memo_regex: str,
+    from_date: dt.datetime,
+    to_date: dt.datetime,
+    in_top: int,
+    to_skip: int,
+    metric: str,
+    group_id,
+) -> list[dict]:
+    """Run the standard top-N memo-leaderboard pipeline and return raw rows.
+
+    Each row is `{"_id": <key>, "value": <metric>}`. Callers format the label
+    (post link / channel link / account name) from `_id` and rename `value`
+    to whatever the response shape demands."""
+    pipeline = [
+        {
+            "$match": {
+                "timestamp": {"$gt": from_date, "$lt": to_date},
+                "op.memo": {"$regex": memo_regex},
+            }
+        },
+        {"$group": {"_id": group_id, "value": _metric_accumulator(metric)}},
+        {"$sort": {"value": -1}},
+        {"$skip": to_skip},
+        {"$limit": in_top},
+    ]
+    return list(coll_ops[OpType.receive_award].aggregate(pipeline))
+
+
+def _memo_awards_and_shares(
+    *,
+    memo_filter,
+    from_date: dt.datetime,
+    to_date: dt.datetime,
+) -> dict:
+    """Aggregate `{awards, shares}` totals for a single memo filter
+    (either an exact match or a `{"$regex": ...}`). Returns zeros on no
+    match rather than an empty pipeline result."""
+    pipeline = [
+        {
+            "$match": {
+                "timestamp": {"$gt": from_date, "$lt": to_date},
+                "op.memo": memo_filter,
+            }
+        },
+        {
+            "$group": {
+                "_id": None,
+                "awards": {"$sum": 1},
+                "shares": {"$sum": {"$sum": "$op.shares"}},
+            }
+        },
+    ]
+    result = list(coll_ops[OpType.receive_award].aggregate(pipeline))
+    if not result:
+        return {"awards": 0, "shares": 0}
+    return {"awards": int(result[0]["awards"]), "shares": result[0]["shares"]}
+
+
+def _tg_post_link_from_memo(memo) -> str:
+    return memo[0].replace(":", "/", 2).replace("channel/@", "https://t.me/", 1)
+
+
+def _tg_channel_link(channel: str) -> str:
+    return channel.replace("@", "https://t.me/", 1)
+
+
+def _default_week_window(
+    to_date: dt.datetime | None, from_date: dt.datetime | None
+) -> tuple[dt.datetime, dt.datetime]:
+    """Resolve (to, from) defaults to (now, now - 1 week). Replaces the
+    legacy `dt.datetime.now()` mutable-default pattern."""
+    if to_date is None:
+        to_date = dt.datetime.now()
+    if from_date is None:
+        from_date = to_date - dt.timedelta(weeks=1)
+    return to_date, from_date
+
+
+# ---------------------------------------------------------------------------
 # Telegram leaderboards
 # ---------------------------------------------------------------------------
+
+
+_TG_MEMO_REGEX = "^channel:@"
 
 
 def get_top_tg_posts_by_shares_in_period(
@@ -442,249 +563,100 @@ def get_top_tg_posts_by_shares_in_period(
     to_skip: int,
 ) -> list:
     """Return top Telegram posts by shares."""
-    data = list(
-        coll_ops[OpType.receive_award].aggregate(
-            [
-                {
-                    "$match": {
-                        "timestamp": {"$gt": from_date, "$lt": to_date},
-                        "op.memo": {"$regex": "^channel:@"},
-                    }
-                },
-                {
-                    "$group": {
-                        "_id": "$op.memo",
-                        "shares": {"$sum": {"$sum": "$op.shares"}},
-                    }
-                },
-                {"$sort": {"shares": -1}},
-                {"$skip": to_skip},
-                {"$limit": in_top},
-            ]
-        )
+    rows = _top_memo_leaderboard(
+        memo_regex=_TG_MEMO_REGEX,
+        from_date=from_date, to_date=to_date,
+        in_top=in_top, to_skip=to_skip,
+        metric="shares", group_id=_MEMO_FULL,
     )
-    result = list()
-    for item in data:
-        link_to_post = item["_id"][0].replace(":", "/", 2)
-        link_to_post = link_to_post.replace("channel/@", "https://t.me/", 1)
-        result.append({"post": link_to_post, "value": item["shares"]})
-    return result
+    return [{"post": _tg_post_link_from_memo(r["_id"]), "value": r["value"]} for r in rows]
 
 
 def get_top_tg_ch_by_shares_in_period(
-    to_date: dt.datetime = dt.datetime.now(),
-    from_date: dt.datetime = dt.datetime.now() - dt.timedelta(weeks=1),
+    to_date: dt.datetime | None = None,
+    from_date: dt.datetime | None = None,
     in_top: int = 5,
     to_skip: int = 0,
 ) -> list:
     """Return top Telegram channels by received SHARES."""
-    data = coll_ops[OpType.receive_award].aggregate(
-        [
-            {
-                "$match": {
-                    "timestamp": {"$gt": from_date, "$lt": to_date},
-                    "op.memo": {"$regex": "^channel:@"},
-                }
-            },
-            {
-                "$project": {
-                    "_id": 0,
-                    "channel": {
-                        "$arrayElemAt": [
-                            {
-                                "$split": [
-                                    {"$arrayElemAt": ["$op.memo", 0]},
-                                    ":",
-                                ]
-                            },
-                            1,
-                        ]
-                    },
-                    "shares": "$op.shares",
-                }
-            },
-            {
-                "$group": {
-                    "_id": "$channel",
-                    "shares": {"$sum": {"$sum": "$shares"}},
-                }
-            },
-            {"$sort": {"shares": -1}},
-            {"$skip": to_skip},
-            {"$limit": in_top},
-        ]
+    to_date, from_date = _default_week_window(to_date, from_date)
+    rows = _top_memo_leaderboard(
+        memo_regex=_TG_MEMO_REGEX,
+        from_date=from_date, to_date=to_date,
+        in_top=in_top, to_skip=to_skip,
+        metric="shares", group_id=_MEMO_TG_CHANNEL,
     )
-    result = list()
-    for item in data:
-        link_to_channel = item["_id"].replace("@", "https://t.me/", 1)
-        result.append({"channel": link_to_channel, "value": item["shares"]})
-    return result
+    return [{"channel": _tg_channel_link(r["_id"]), "value": r["value"]} for r in rows]
 
 
 def get_top_tg_posts_by_awards_count_in_period(
-    to_date: dt.datetime = dt.datetime.now(),
-    from_date: dt.datetime = dt.datetime.now() - dt.timedelta(weeks=1),
+    to_date: dt.datetime | None = None,
+    from_date: dt.datetime | None = None,
     in_top: int = 5,
     to_skip: int = 0,
 ) -> list:
     """Return top Telegram posts by awards count."""
-    data = list(
-        coll_ops[OpType.receive_award].aggregate(
-            [
-                {
-                    "$match": {
-                        "timestamp": {"$gt": from_date, "$lt": to_date},
-                        "op.memo": {"$regex": "^channel:@"},
-                    }
-                },
-                {
-                    "$group": {
-                        "_id": "$op.memo",
-                        "awards": {"$sum": {"$sum": 1}},
-                    }
-                },
-                {"$sort": {"awards": -1}},
-                {"$skip": to_skip},
-                {"$limit": in_top},
-            ]
-        )
+    to_date, from_date = _default_week_window(to_date, from_date)
+    rows = _top_memo_leaderboard(
+        memo_regex=_TG_MEMO_REGEX,
+        from_date=from_date, to_date=to_date,
+        in_top=in_top, to_skip=to_skip,
+        metric="awards", group_id=_MEMO_FULL,
     )
-    result = list()
-    for item in data:
-        link_to_post = item["_id"][0].replace(":", "/", 2)
-        link_to_post = link_to_post.replace("channel/@", "https://t.me/", 1)
-        result.append({"post": link_to_post, "value": item["awards"]})
-    return result
+    return [{"post": _tg_post_link_from_memo(r["_id"]), "value": r["value"]} for r in rows]
 
 
 def get_tg_ch_post_awards_and_shares_in_period(
     tg_ch_post_link: str = "https://t.me/viz_news/80",
-    to_date: dt.datetime = dt.datetime.now(),
-    from_date: dt.datetime = dt.datetime.now() - dt.timedelta(weeks=1),
+    to_date: dt.datetime | None = None,
+    from_date: dt.datetime | None = None,
 ) -> dict:
     """Return telegram channel post awards count and received SHARES in period"""
-    memo_post_link = tg_ch_post_link.split("t.me/", 1)[-1]
-    memo_post_link = "channel:@" + memo_post_link.replace("/", ":")
-    result = coll_ops[OpType.receive_award].aggregate(
-        [
-            {
-                "$match": {
-                    "timestamp": {"$gt": from_date, "$lt": to_date},
-                    "op.memo": memo_post_link,
-                }
-            },
-            {
-                "$project": {
-                    "_id": 0,
-                    "post_link": tg_ch_post_link,
-                    "shares": "$op.shares",
-                }
-            },
-            {
-                "$group": {
-                    "_id": "$post_link",
-                    "awards": {"$sum": {"$sum": 1}},
-                    "shares": {"$sum": {"$sum": "$shares"}},
-                }
-            },
-        ]
+    to_date, from_date = _default_week_window(to_date, from_date)
+    memo_post_link = "channel:@" + tg_ch_post_link.split("t.me/", 1)[-1].replace("/", ":")
+    totals = _memo_awards_and_shares(
+        memo_filter=memo_post_link, from_date=from_date, to_date=to_date,
     )
-    result = tuple(result)
-    if len(result) != 0:
-        result = result[0]
-        result["post_link"] = result.pop("_id")
-    else:
-        result = {"awards": 0, "shares": 0, "post_link": tg_ch_post_link}
-    return result
+    return {"post_link": tg_ch_post_link, **totals}
 
 
 def get_top_tg_chs_by_awards_count_in_period(
-    to_date: dt.datetime = dt.datetime.now(),
-    from_date: dt.datetime = dt.datetime.now() - dt.timedelta(weeks=1),
+    to_date: dt.datetime | None = None,
+    from_date: dt.datetime | None = None,
     in_top: int = 5,
     to_skip: int = 0,
 ) -> list:
     """Return top telegram channels by awards count."""
-    data = coll_ops[OpType.receive_award].aggregate(
-        [
-            {
-                "$match": {
-                    "timestamp": {"$gt": from_date, "$lt": to_date},
-                    "op.memo": {"$regex": "^channel:@"},
-                }
-            },
-            {
-                "$project": {
-                    "_id": 0,
-                    "channel": {
-                        "$arrayElemAt": [
-                            {
-                                "$split": [
-                                    {"$arrayElemAt": ["$op.memo", 0]},
-                                    ":",
-                                ]
-                            },
-                            1,
-                        ]
-                    },
-                    "shares": "$op.shares",
-                }
-            },
-            {"$group": {"_id": "$channel", "awards": {"$sum": {"$sum": 1}}}},
-            {"$sort": {"awards": -1}},
-            {"$skip": to_skip},
-            {"$limit": in_top},
-        ]
+    to_date, from_date = _default_week_window(to_date, from_date)
+    rows = _top_memo_leaderboard(
+        memo_regex=_TG_MEMO_REGEX,
+        from_date=from_date, to_date=to_date,
+        in_top=in_top, to_skip=to_skip,
+        metric="awards", group_id=_MEMO_TG_CHANNEL,
     )
-    result = list()
-    for item in data:
-        link_to_channel = item["_id"].replace("@", "https://t.me/", 1)
-        result.append({"channel": link_to_channel, "value": item["awards"]})
-    return result
+    return [{"channel": _tg_channel_link(r["_id"]), "value": r["value"]} for r in rows]
 
 
 def get_tg_ch_awards_and_shares_in_period(
     tg_ch_id: str = "@viz_news",
-    to_date: dt.datetime = dt.datetime.now(),
-    from_date: dt.datetime = dt.datetime.now() - dt.timedelta(weeks=1),
+    to_date: dt.datetime | None = None,
+    from_date: dt.datetime | None = None,
 ) -> dict:
     """Return SHARES and awards received by telegram channel."""
-    result = coll_ops[OpType.receive_award].aggregate(
-        [
-            {
-                "$match": {
-                    "timestamp": {"$gt": from_date, "$lt": to_date},
-                    "op.memo": {"$regex": "^" + "channel:" + tg_ch_id},
-                }
-            },
-            {
-                "$project": {
-                    "_id": 0,
-                    "channel": tg_ch_id,
-                    "shares": "$op.shares",
-                }
-            },
-            {
-                "$group": {
-                    "_id": "$channel",
-                    "awards": {"$sum": {"$sum": 1}},
-                    "shares": {"$sum": {"$sum": "$shares"}},
-                }
-            },
-        ]
+    to_date, from_date = _default_week_window(to_date, from_date)
+    totals = _memo_awards_and_shares(
+        memo_filter={"$regex": "^channel:" + tg_ch_id},
+        from_date=from_date, to_date=to_date,
     )
-    result = tuple(result)
-    if len(result) != 0:
-        result = result[0]
-        result["channel"] = result.pop("_id")
-    else:
-        result = {"awards": 0, "shares": 0, "channel": tg_ch_id}
-    return result
+    return {"channel": tg_ch_id, **totals}
 
 
 # ---------------------------------------------------------------------------
 # Voice (readdle.me) leaderboards + post metadata
 # ---------------------------------------------------------------------------
+
+
+_VOICE_MEMO_REGEX = "^viz://@"
 
 
 def get_top_readdleme_posts_by_shares_in_period(
@@ -694,32 +666,13 @@ def get_top_readdleme_posts_by_shares_in_period(
     to_skip: int,
 ) -> list:
     """Return top Readdle.Me posts by SHARES."""
-    data = list(
-        coll_ops[OpType.receive_award].aggregate(
-            [
-                {
-                    "$match": {
-                        "timestamp": {"$gt": from_date, "$lt": to_date},
-                        "op.memo": {"$regex": "^viz://@"},
-                    }
-                },
-                {
-                    "$group": {
-                        "_id": "$op.memo",
-                        "shares": {"$sum": {"$sum": "$op.shares"}},
-                    }
-                },
-                {"$sort": {"shares": -1}},
-                {"$skip": to_skip},
-                {"$limit": in_top},
-            ]
-        )
+    rows = _top_memo_leaderboard(
+        memo_regex=_VOICE_MEMO_REGEX,
+        from_date=from_date, to_date=to_date,
+        in_top=in_top, to_skip=to_skip,
+        metric="shares", group_id=_MEMO_FULL,
     )
-    result = list()
-    for item in data:
-        link_to_post = item["_id"][0]
-        result.append({"post": link_to_post, "value": item["shares"]})
-    return result
+    return [{"post": r["_id"][0], "value": r["value"]} for r in rows]
 
 
 def get_readdleme_post_awards_and_shares(author: str, block: int) -> dict:
@@ -781,48 +734,13 @@ def get_top_readdleme_authors_by_shares_in_period(
     to_skip: int,
 ) -> list:
     """Return top Readdle.Me authors by SHARES."""
-    data = list(
-        coll_ops[OpType.receive_award].aggregate(
-            [
-                {
-                    "$match": {
-                        "timestamp": {"$gt": from_date, "$lt": to_date},
-                        "op.memo": {"$regex": "^viz://@"},
-                    }
-                },
-                {
-                    "$project": {
-                        "_id": 0,
-                        "author": {
-                            "$arrayElemAt": [
-                                {
-                                    "$split": [
-                                        {"$arrayElemAt": ["$op.memo", 0]},
-                                        "/",
-                                    ]
-                                },
-                                2,
-                            ]
-                        },
-                        "shares": "$op.shares",
-                    }
-                },
-                {
-                    "$group": {
-                        "_id": "$author",
-                        "shares": {"$sum": {"$sum": "$shares"}},
-                    }
-                },
-                {"$sort": {"shares": -1}},
-                {"$skip": to_skip},
-                {"$limit": in_top},
-            ]
-        )
+    rows = _top_memo_leaderboard(
+        memo_regex=_VOICE_MEMO_REGEX,
+        from_date=from_date, to_date=to_date,
+        in_top=in_top, to_skip=to_skip,
+        metric="shares", group_id=_MEMO_VOICE_AUTHOR,
     )
-    result = list()
-    for item in data:
-        result.append({"account": item["_id"], "value": item["shares"]})
-    return result
+    return [{"account": r["_id"], "value": r["value"]} for r in rows]
 
 
 def get_top_readdleme_posts_by_awards_in_period(
@@ -832,32 +750,13 @@ def get_top_readdleme_posts_by_awards_in_period(
     to_skip: int,
 ) -> list:
     """Return top Readdle.Me posts by awards count."""
-    data = list(
-        coll_ops[OpType.receive_award].aggregate(
-            [
-                {
-                    "$match": {
-                        "timestamp": {"$gt": from_date, "$lt": to_date},
-                        "op.memo": {"$regex": "^viz://@"},
-                    }
-                },
-                {
-                    "$group": {
-                        "_id": "$op.memo",
-                        "awards": {"$sum": {"$sum": 1}},
-                    }
-                },
-                {"$sort": {"awards": -1}},
-                {"$skip": to_skip},
-                {"$limit": in_top},
-            ]
-        )
+    rows = _top_memo_leaderboard(
+        memo_regex=_VOICE_MEMO_REGEX,
+        from_date=from_date, to_date=to_date,
+        in_top=in_top, to_skip=to_skip,
+        metric="awards", group_id=_MEMO_FULL,
     )
-    result = list()
-    for item in data:
-        link_to_post = item["_id"][0]
-        result.append({"post": link_to_post, "value": item["awards"]})
-    return result
+    return [{"post": r["_id"][0], "value": r["value"]} for r in rows]
 
 
 def get_top_readdleme_authors_by_awards_in_period(
@@ -867,86 +766,27 @@ def get_top_readdleme_authors_by_awards_in_period(
     to_skip: int,
 ) -> list:
     """Return top Readdle.Me authors by awards count."""
-    data = list(
-        coll_ops[OpType.receive_award].aggregate(
-            [
-                {
-                    "$match": {
-                        "timestamp": {"$gt": from_date, "$lt": to_date},
-                        "op.memo": {"$regex": "^viz://@"},
-                    }
-                },
-                {
-                    "$project": {
-                        "_id": 0,
-                        "author": {
-                            "$arrayElemAt": [
-                                {
-                                    "$split": [
-                                        {"$arrayElemAt": ["$op.memo", 0]},
-                                        "/",
-                                    ]
-                                },
-                                2,
-                            ]
-                        },
-                    }
-                },
-                {
-                    "$group": {
-                        "_id": "$author",
-                        "awards": {"$sum": {"$sum": 1}},
-                    }
-                },
-                {"$sort": {"awards": -1}},
-                {"$skip": to_skip},
-                {"$limit": in_top},
-            ]
-        )
+    rows = _top_memo_leaderboard(
+        memo_regex=_VOICE_MEMO_REGEX,
+        from_date=from_date, to_date=to_date,
+        in_top=in_top, to_skip=to_skip,
+        metric="awards", group_id=_MEMO_VOICE_AUTHOR,
     )
-    result = list()
-    for item in data:
-        result.append({"account": item["_id"], "value": item["awards"]})
-    return result
+    return [{"account": r["_id"], "value": r["value"]} for r in rows]
 
 
 def get_readdleme_author_awards_and_shares_in_period(
     readdleme_author_id: str = "@inov8",
-    to_date: dt.datetime = dt.datetime.now(),
-    from_date: dt.datetime = dt.datetime.now() - dt.timedelta(weeks=1),
+    to_date: dt.datetime | None = None,
+    from_date: dt.datetime | None = None,
 ) -> dict:
     """Return Readdle.Me author awards count and received SHARES in period."""
-    result = coll_ops[OpType.receive_award].aggregate(
-        [
-            {
-                "$match": {
-                    "timestamp": {"$gt": from_date, "$lt": to_date},
-                    "op.memo": {"$regex": "^viz://" + readdleme_author_id},
-                }
-            },
-            {
-                "$project": {
-                    "_id": 0,
-                    "account": readdleme_author_id,
-                    "shares": "$op.shares",
-                }
-            },
-            {
-                "$group": {
-                    "_id": "$account",
-                    "awards": {"$sum": {"$sum": 1}},
-                    "shares": {"$sum": {"$sum": "$shares"}},
-                }
-            },
-        ]
+    to_date, from_date = _default_week_window(to_date, from_date)
+    totals = _memo_awards_and_shares(
+        memo_filter={"$regex": "^viz://" + readdleme_author_id},
+        from_date=from_date, to_date=to_date,
     )
-    result = tuple(result)
-    if len(result) != 0:
-        result = result[0]
-        result["account"] = result.pop("_id")
-    else:
-        result = {"account": readdleme_author_id, "awards": 0, "shares": 0}
-    return result
+    return {"account": readdleme_author_id, **totals}
 
 
 # ---------------------------------------------------------------------------
