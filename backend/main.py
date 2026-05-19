@@ -15,11 +15,11 @@ from helpers.router import router
 parsing_thread = Thread(target=start_parsing, daemon=True, name="parser")
 parsing_thread.start()
 
-sorting_thread = Thread(target=start_sorting, daemon=True, name="sorter")
-sorting_thread.start()
+# sorting_thread = Thread(target=start_sorting, daemon=True, name="sorter")
+# sorting_thread.start()
 
-posts_thread = Thread(target=start_posts_parsing, daemon=True, name="posts")
-posts_thread.start()
+# posts_thread = Thread(target=start_posts_parsing, daemon=True, name="posts")
+# posts_thread.start()
 
 
 @asynccontextmanager

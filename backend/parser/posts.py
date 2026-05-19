@@ -66,6 +66,7 @@ def fetch_posts_from_block(block) -> list:
             post.author = author
             post.block = block["_id"]
             post.timestamp = transaction["timestamp"]
+            assert isinstance(post.block, int), "post.block must be an integer"
             meta = get_readdleme_post_awards_and_shares(post.author, post.block)
             post.shares = meta["shares"]
             comments = get_post_comments(author=post.author, block=post.block)

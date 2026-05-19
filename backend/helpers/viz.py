@@ -4,7 +4,7 @@ import random
 from typing import Any
 from viz import Client as VIZ
 
-nodes = ["wss://node.viz.cx/ws", "https://api.viz.world"]
+nodes = ["wss://node.viz.cx/ws"]
 
 
 def change_node(selectFirst=False) -> None:
@@ -23,9 +23,10 @@ change_node(selectFirst=True)
 
 def get_ops_in_block(block, onlyVirtual: bool) -> Any:
     virtualOpsOnly = 1 if onlyVirtual else 0
-    return viz.rpc.get_ops_in_block(  # pyright: ignore[reportOptionalMemberAccess]
+    ops_in_block = viz.rpc.get_ops_in_block(  # pyright: ignore[reportOptionalMemberAccess]
         block, virtualOpsOnly
     )
+    return ops_in_block
 
 
 def get_dgp() -> Any:

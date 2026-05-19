@@ -34,7 +34,7 @@ def create_post(
     body: CreatePostBody,
     x_login: str = Header(),
     x_public_key: str = Header(),
-):
+) -> dict[str, str]:
     if not verify_user(x_login, x_public_key):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     validate_editorjs_blocks(body.blocks)
