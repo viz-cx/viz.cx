@@ -30,11 +30,19 @@ class UpdatePostBody(BaseModel):
     blocks: list
 
 
-@router.post("/")
+class PostCreated(BaseModel):
+    id: str
+
+
+class PostUpdated(BaseModel):
+    ok: bool
+
+
+@router.post("/", response_model=PostCreated)
 def create_post(
     body: CreatePostBody,
     account: str = Depends(require_signed_request),
-) -> dict[str, str]:
+) -> PostCreated:
     validate_editorjs_blocks(body.blocks)
     post = {
         "author": account,
@@ -51,19 +59,19 @@ def create_post(
     if body.reply:
         post["d"]["r"] = body.reply
     post_id = save_local_post(post)
-    return {"id": post_id}
+    return PostCreated(id=post_id)
 
 
-@router.put("/{post_id}")
+@router.put("/{post_id}", response_model=PostUpdated)
 def update_post(
     post_id: str,
     body: UpdatePostBody,
     account: str = Depends(require_signed_request),
-):
+) -> PostUpdated:
     validate_editorjs_blocks(body.blocks)
     if not update_local_post(post_id, body.blocks, account):
         raise HTTPException(status_code=404, detail="Post not found or not editable")
-    return {"ok": True}
+    return PostUpdated(ok=True)
 
 
 def _extract_text(blocks: list) -> str:

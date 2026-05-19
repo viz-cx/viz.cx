@@ -120,11 +120,16 @@ def get_last_blocknum_and_subcoll() -> dict:
 
 def sort_block_ops_to_subcolls(block_n_num) -> None:
     """Divide block to subcollection by operations. SHARES and CUSTOM ops:
-    to separate subcollections. And 'ops' collection for unsorted others."""
+    to separate subcollections. And 'ops' collection for unsorted others.
+    Also emits rollup deltas so /count_ops and /shares serve from the rollup
+    collection."""
+    from helpers import rollups
+
     op_number = 0.0
     block_number = block_n_num["_id"]
     block = block_n_num["block"]
     not_sorted_ops = []
+    rollup_ops = []
     for op in block:
         op_number += 1 / count_max_ops_in_block
         op_type = op["op"][0]
@@ -140,8 +145,10 @@ def sort_block_ops_to_subcolls(block_n_num) -> None:
             recalculate_meta_if_needed(op)
         else:
             not_sorted_ops.append(op_new_json)
+        rollup_ops.append(op_new_json)
     if not_sorted_ops:
         coll_ops.insert_many(not_sorted_ops)
+    rollups.aggregate_ops(rollup_ops)
 
 
 def recalculate_meta_if_needed(op) -> None:

@@ -33,4 +33,9 @@ def ensure_indexes() -> None:
     db = get_db()
     coll = db[os.getenv("COLLECTION", "")]
     coll.create_index([("_id", 1), ("block.op.0", 1), ("block.op.1.id", 1)])
+
+    from helpers import rollups, signature_auth
+
+    rollups.ensure_indexes()
+    signature_auth.ensure_nonce_indexes()
     _indexes_ensured = True
