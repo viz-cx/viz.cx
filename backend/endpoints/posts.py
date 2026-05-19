@@ -70,9 +70,7 @@ def _extract_text(blocks: list) -> str:
     parts = []
     for block in blocks:
         data = block.get("data", {})
-        if block.get("type") == "paragraph":
-            parts.append(data.get("text", ""))
-        elif block.get("type") == "header":
+        if block.get("type") == "paragraph" or block.get("type") == "header":
             parts.append(data.get("text", ""))
     return "\n\n".join(parts)[:280] if parts else ""
 

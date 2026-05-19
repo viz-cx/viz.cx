@@ -1,6 +1,6 @@
 from fastapi import APIRouter
-from helpers.mongo import get_saved_posts, get_voice_posts
 
+from helpers.mongo import get_saved_posts
 
 router = APIRouter(
     prefix="/sitemap",

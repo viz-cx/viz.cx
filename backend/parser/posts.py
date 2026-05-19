@@ -1,7 +1,8 @@
 import datetime
 import json
 from time import sleep
-from typing import Literal, NoReturn, Optional
+from typing import Literal, NoReturn
+
 from pydantic import BaseModel
 
 from helpers.mongo import (
@@ -26,7 +27,7 @@ def start_posts_parsing() -> NoReturn:
                 for post in posts:
                     save_voice_post(post)
         except Exception as e:
-            print("Posts parsing error: {}".format(str(e)))
+            print(f"Posts parsing error: {str(e)}")
             sleep(3)
 
 
@@ -42,7 +43,7 @@ def update_posts_comments_count() -> None:
             block = post["block"]
             comments = get_post_comments(author=author, block=block)
             commentCount = len(comments)
-            postCommentsCount = post["comments"] if "comments" in post else 0
+            postCommentsCount = post.get("comments", 0)
             if commentCount != postCommentsCount:
                 update_post_comments(postId=post["_id"], comments=commentCount)
     print("Post comments updated successfully")
@@ -72,16 +73,16 @@ def fetch_posts_from_block(block) -> list:
             comments = get_post_comments(author=post.author, block=post.block)
             post.comments = len(comments)
             if post.d.t is None:
-                print("Skip post: {}/{}".format(post.author, post.block))
+                print(f"Skip post: {post.author}/{post.block}")
             else:
-                print("New post: {}/{}".format(post.author, post.block))
+                print(f"New post: {post.author}/{post.block}")
                 post_dict = post.model_dump(exclude_none=True)
                 post_dict["blocks"] = voice_to_editorjs_blocks(post_dict.get("d", {}))
                 post_dict["source"] = "blockchain"
                 post_dict["editable"] = False
                 result.append(post_dict)
         except Exception as e:
-            print("Parse post error: {}".format(str(e)))
+            print(f"Parse post error: {str(e)}")
             continue
     return result
 
@@ -150,36 +151,36 @@ class Benificiary(BaseModel):
 
 
 class ShortPost(BaseModel):
-    t: Optional[str] = None  # text or title
-    text: Optional[str] = None  # backward compatibility, only for parsing
-    r: Optional[str] = None  # reply
-    s: Optional[str] = None  # share
-    i: Optional[str] = None  # image
-    b: Optional[list[Benificiary]] = None  # benificiaries
+    t: str | None = None  # text or title
+    text: str | None = None  # backward compatibility, only for parsing
+    r: str | None = None  # reply
+    s: str | None = None  # share
+    i: str | None = None  # image
+    b: list[Benificiary] | None = None  # benificiaries
 
     def __repr__(self) -> str:
-        return "<ShortPost(t={self.t!r})>".format(self=self)
+        return f"<ShortPost(t={self.t!r})>"
 
 
 class ExtendedPost(ShortPost):
     m: str  # markdown
-    d: Optional[str] = None  # description
+    d: str | None = None  # description
 
     def __repr__(self) -> str:
-        return "<ExtendedPost(t={self.t!r})>".format(self=self)
+        return f"<ExtendedPost(t={self.t!r})>"
 
 
 class VoiceProtocol(BaseModel):
     """https://github.com/VIZ-Blockchain/Free-Speech-Project/blob/master/specification.md"""
 
-    p: Optional[int] = None  # previous
-    t: Optional[Literal["t", "text", "p"]] = None  # type
+    p: int | None = None  # previous
+    t: Literal["t", "text", "p"] | None = None  # type
     d: ExtendedPost | ShortPost  # data
-    v: Optional[int] = None  # version
+    v: int | None = None  # version
 
     # additional data
-    author: Optional[str] = None
-    block: Optional[int] = None
-    timestamp: Optional[datetime.datetime] = None
-    shares: Optional[float] = None
-    comments: Optional[int] = None
+    author: str | None = None
+    block: int | None = None
+    timestamp: datetime.datetime | None = None
+    shares: float | None = None
+    comments: int | None = None

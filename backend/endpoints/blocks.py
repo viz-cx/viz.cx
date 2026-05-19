@@ -1,6 +1,6 @@
-import helpers.mongo as mongo
 from fastapi import APIRouter
 
+import helpers.mongo as mongo
 
 router = APIRouter(
     prefix="/blocks",

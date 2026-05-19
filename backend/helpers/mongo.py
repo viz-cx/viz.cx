@@ -48,6 +48,11 @@ sorted_op_types = ops_custom + ops_shares
 site_account = "cx.id"
 
 
+# ---------------------------------------------------------------------------
+# Block I/O (raw blockchain data, indexer-facing)
+# ---------------------------------------------------------------------------
+
+
 def save_block(block) -> None:
     """Save block to MongoDB collection."""
     blocknumber = block[0]["block"]
@@ -108,6 +113,11 @@ def get_last_blocknum_and_subcoll() -> dict:
     return {"last_block_num": bnum_max, "collection": subcoll_bnum_max}
 
 
+# ---------------------------------------------------------------------------
+# Sorter / op-counter (cross-cuts blocks, ops subcollections, post metadata)
+# ---------------------------------------------------------------------------
+
+
 def sort_block_ops_to_subcolls(block_n_num) -> None:
     """Divide block to subcollection by operations. SHARES and CUSTOM ops:
     to separate subcollections. And 'ops' collection for unsorted others."""
@@ -149,7 +159,7 @@ def recalculate_meta_if_needed(op) -> None:
                 shares = meta["shares"]
                 update_post_meta_if_needed(author, block, awards, shares)
         except Exception as e:
-            print("Shares recalculation error: {}".format(str(e)))
+            print(f"Shares recalculation error: {str(e)}")
 
     if op["op"][0] in OpType.custom and op["op"][1]["id"] == "V":
         try:
@@ -165,7 +175,7 @@ def recalculate_meta_if_needed(op) -> None:
                         commentsCount = len(comments)
                         update_post_comments(post["_id"], comments=commentsCount)
         except Exception as e:
-            print("Replies recalculation error {}".format(str(e)))
+            print(f"Replies recalculation error {str(e)}")
 
 
 # Количество всех блоков в БД.
@@ -229,6 +239,11 @@ def get_ops_count_by_type_in_period(
             }
         )
     return result
+
+
+# ---------------------------------------------------------------------------
+# Shares aggregations
+# ---------------------------------------------------------------------------
 
 
 def get_sum_shares_in_period(
@@ -360,6 +375,11 @@ def get_sum_shares_by_op_in_period(
         except IndexError:
             sum_shares = 0
     return sum_shares
+
+
+# ---------------------------------------------------------------------------
+# Telegram leaderboards
+# ---------------------------------------------------------------------------
 
 
 def get_top_tg_posts_by_shares_in_period(
@@ -609,6 +629,11 @@ def get_tg_ch_awards_and_shares_in_period(
     return result
 
 
+# ---------------------------------------------------------------------------
+# Voice (readdle.me) leaderboards + post metadata
+# ---------------------------------------------------------------------------
+
+
 def get_top_readdleme_posts_by_shares_in_period(
     to_date: dt.datetime,
     from_date: dt.datetime,
@@ -646,7 +671,7 @@ def get_top_readdleme_posts_by_shares_in_period(
 
 def get_readdleme_post_awards_and_shares(author: str, block: int) -> dict:
     """Return Voice post awards count and received SHARES"""
-    memo_post_link = "viz://@{}/{}".format(author, block)
+    memo_post_link = f"viz://@{author}/{block}"
     regex = "^" + re.escape(memo_post_link) + "($|\\/)"
     result = coll_ops[OpType.receive_award].aggregate(
         [
@@ -684,17 +709,15 @@ def update_post_meta_if_needed(
 ) -> None:
     post = get_saved_post(author, block, show_id=True)
     if isinstance(post, dict):
-        postAwards: int = post["awards"] if "awards" in post else 0
-        postShares: float = post["shares"] if "shares" in post else 0.0
+        postAwards: int = post.get("awards", 0)
+        postShares: float = post.get("shares", 0.0)
         if awards != postAwards or postShares != shares:
             coll_posts.find_one_and_update(
                 {"_id": post["_id"]},
                 {"$set": {"awards": awards, "shares": shares}},
             )
             print(
-                "New {} awards and {} shares for post {}/{}".format(
-                    awards, shares, author, block
-                )
+                f"New {awards} awards and {shares} shares for post {author}/{block}"
             )
 
 
@@ -873,6 +896,11 @@ def get_readdleme_author_awards_and_shares_in_period(
     return result
 
 
+# ---------------------------------------------------------------------------
+# Local posts (Voice protocol + EditorJS) — CRUD, thread walking, queries
+# ---------------------------------------------------------------------------
+
+
 def get_last_saved_post_block_id() -> int:
     try:
         result = coll_posts.find({}).sort("block", pymongo.DESCENDING).limit(1)
@@ -949,7 +977,7 @@ def get_posts_by_tag(tag: str, limit=10, page=0):
 
 
 def get_post_comments(author: str, block: int):
-    replyRegex = {"$regex": "^viz://@{}/{}".format(author, block)}
+    replyRegex = {"$regex": f"^viz://@{author}/{block}"}
     cursor = coll_posts.find(
         {"d.r": replyRegex},
         {"_id": 0},
@@ -958,7 +986,7 @@ def get_post_comments(author: str, block: int):
 
 
 def _post_uri(author: str, block: int) -> str:
-    return "viz://@{}/{}".format(author, block)
+    return f"viz://@{author}/{block}"
 
 
 def get_post_thread(author: str, block: int, max_depth: int = 50) -> list:
@@ -1023,7 +1051,7 @@ def update_post_comments(postId: ObjectId, comments: int):
         {"_id": postId},
         {"$set": {"comments": comments}},
     )
-    print("Update post {} to {} comments".format(str(postId), comments))
+    print(f"Update post {str(postId)} to {comments} comments")
 
 
 def save_local_post(post: dict) -> str:

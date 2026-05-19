@@ -78,7 +78,7 @@ def verify_signature(account: str, nonce: str, signature_hex: str) -> str:
     try:
         sig_bytes = bytes.fromhex(signature_hex)
     except ValueError:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Bad signature encoding")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Bad signature encoding") from None
     if len(sig_bytes) != 65:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Bad signature length")
 
@@ -89,7 +89,7 @@ def verify_signature(account: str, nonce: str, signature_hex: str) -> str:
         recovered = verify_message(nonce.encode("utf-8"), sig_bytes)
     except Exception as exc:
         logger.info("Signature verification failed for %s: %s", account, exc)
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Bad signature")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Bad signature") from None
 
     authority = _account_authority(account)
     if not authority:

@@ -1,11 +1,12 @@
 """One-time migration: add EditorJS blocks to all existing posts."""
 import os
+
 import pymongo
 from dotenv import load_dotenv
 
 load_dotenv()
 
-from parser.posts import voice_to_editorjs_blocks
+from parser.posts import voice_to_editorjs_blocks  # noqa: E402
 
 db = pymongo.MongoClient(os.getenv("MONGO", ""))[os.getenv("DB_NAME", "")]
 coll_posts = db[os.getenv("COLLECTION_POSTS", "posts")]

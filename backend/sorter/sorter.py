@@ -1,8 +1,9 @@
 """VIZ Blockchain MongoDB operations sorter."""
 
-from typing import NoReturn
 from time import sleep
+from typing import NoReturn
 
+from helpers.enums import ops_custom, ops_shares
 from helpers.mongo import (
     coll,
     coll_ops,
@@ -10,7 +11,6 @@ from helpers.mongo import (
     get_last_blocknum_and_subcoll,
     sort_block_ops_to_subcolls,
 )
-from helpers.enums import ops_custom, ops_shares
 
 
 def del_last_sorted_ops(blocknum) -> None:
@@ -27,7 +27,7 @@ def start_sorting() -> NoReturn:
     last_sorted_block = get_last_blocknum_and_subcoll()["last_block_num"]
     if last_sorted_block != 0:
         del_last_sorted_ops(last_sorted_block)
-        print("Sorted ops from block {} deleted.".format(last_sorted_block))
+        print(f"Sorted ops from block {last_sorted_block} deleted.")
         last_sorted_block -= 1
     else:
         print("Blocks not found in subcolls.")
@@ -41,12 +41,12 @@ def start_sorting() -> NoReturn:
                     sort_block_ops_to_subcolls(block)
                     if blocknum % 100 == 0:
                         print(
-                            "Sorted block {} (db: {})".format(blocknum, last_db_block)
+                            f"Sorted block {blocknum} (db: {last_db_block})"
                         )
                     last_sorted_block = blocknum
             else:
                 sleep(3)
         except Exception as e:
-            print("Sorting error: {}. Restart in 10 seconds.".format(str(e)))
+            print(f"Sorting error: {str(e)}. Restart in 10 seconds.")
             sleep(10)
             print("Restarting...")

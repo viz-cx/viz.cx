@@ -2,8 +2,6 @@
 from graphenebase.account import PrivateKey
 from graphenebase.ecdsa import sign_message
 
-from helpers import signature_auth
-
 
 def _make_keypair():
     priv = PrivateKey()

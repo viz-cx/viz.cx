@@ -1,9 +1,9 @@
 from fastapi import APIRouter, HTTPException, Response
+from fastapi_cache.decorator import cache
+from viz.account import Account, AccountDoesNotExistsException
+
 from helpers.avatar import generateAvatar
 from helpers.viz import get_client
-from viz.account import Account, AccountDoesNotExistsException
-from fastapi_cache.decorator import cache
-
 
 router = APIRouter(
     prefix="/profile",
@@ -23,11 +23,11 @@ async def profile(user: str):
             acc["json_metadata"]["profile"] = {}
         if "avatar" not in acc["json_metadata"]["profile"]:
             prefix = "https://viz.cx/api/v1"  # "http://localhost:8080"
-            ava = "{}/profile/avatar/{}".format(prefix, user)
+            ava = f"{prefix}/profile/avatar/{user}"
             acc["json_metadata"]["profile"]["avatar"] = ava
         return acc
     except AccountDoesNotExistsException:
-        raise HTTPException(status_code=404, detail="Account doesn't exists")
+        raise HTTPException(status_code=404, detail="Account doesn't exists") from None
 
 
 @router.get("/avatar/{user}")

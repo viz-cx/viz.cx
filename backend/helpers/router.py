@@ -1,5 +1,6 @@
 """Helper module for API"""
 from fastapi import APIRouter
+
 from endpoints import (
     auth,
     blocks,
