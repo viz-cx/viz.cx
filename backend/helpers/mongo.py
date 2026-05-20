@@ -161,49 +161,56 @@ def get_last_blocknum_and_subcoll() -> dict:
 # ---------------------------------------------------------------------------
 
 
-def sort_block_ops_to_subcolls(block_n_num) -> None:
-    """Divide block to subcollection by operations. SHARES and CUSTOM ops:
-    to separate subcollections. And 'ops' collection for unsorted others.
-    Also emits rollup deltas and pubsub events for WS subscribers.
+def sort_blocks_to_subcolls(blocks) -> None:
+    """Bulk variant of sort_block_ops_to_subcolls — process K blocks in one
+    pass. Inserts are batched per op-type across the whole batch (one
+    insert_many each), rollup deltas are applied with a single aggregate
+    call over the union of ops, and post-meta / comment recalcs are deduped
+    across the entire batch (same post touched in blocks A and B → one
+    recalc, not two). pubsub.publish_op + webhooks.dispatch still fire
+    per op so consumers see the same ordered event stream as the
+    single-block path.
 
-    Inserts are batched per op-type collection (one insert_many each) so a
-    block with N ops costs O(types) round trips instead of O(N). Meta
-    recalculation is deduped per (author, block) so K awards on the same
-    post in one block trigger one re-aggregation, not K. Deferred to a
-    background executor so it never blocks the sorter."""
+    Each op is visited exactly once, so convertShares (which mutates
+    op["op"][1]["shares"] from string → float) runs once per op. Safe as
+    long as blocks aren't re-passed in the same call — the sorter never
+    does this; on retry it re-fetches fresh blocks from MongoDB."""
     from helpers import pubsub, rollups, webhooks
 
-    op_number = 0.0
-    block_number = block_n_num["_id"]
-    block = block_n_num["block"]
+    if not blocks:
+        return
     by_type: dict[str, list[dict]] = defaultdict(list)
     not_sorted_ops: list[dict] = []
     rollup_ops: list[dict] = []
     meta_targets: set[tuple[str, int]] = set()
     comment_targets: set[tuple[str, int]] = set()
-    for op in block:
-        op_number += 1 / count_max_ops_in_block
-        op_type = op["op"][0]
-        if op_type in ops_shares:
-            op["op"][1]["shares"] = convertShares(op["op"][1]["shares"])
-        op_new_json = {
-            "_id": block_number + op_number,
-            "timestamp": op["timestamp"],
-            "op": op["op"],
-        }
-        if op_type in sorted_op_types:
-            by_type[op_type].append(op_new_json)
-            target = _extract_recalc_target(op)
-            if target:
-                kind, author, block_id = target
-                (meta_targets if kind == "meta" else comment_targets).add(
-                    (author, block_id)
-                )
-        else:
-            not_sorted_ops.append(op_new_json)
-        rollup_ops.append(op_new_json)
-        pubsub.publish_op(op_new_json)
-        webhooks.dispatch(op_new_json)
+    for block_n_num in blocks:
+        block_number = block_n_num["_id"]
+        block = block_n_num["block"]
+        op_number = 0.0
+        for op in block:
+            op_number += 1 / count_max_ops_in_block
+            op_type = op["op"][0]
+            if op_type in ops_shares:
+                op["op"][1]["shares"] = convertShares(op["op"][1]["shares"])
+            op_new_json = {
+                "_id": block_number + op_number,
+                "timestamp": op["timestamp"],
+                "op": op["op"],
+            }
+            if op_type in sorted_op_types:
+                by_type[op_type].append(op_new_json)
+                target = _extract_recalc_target(op)
+                if target:
+                    kind, author, block_id = target
+                    (meta_targets if kind == "meta" else comment_targets).add(
+                        (author, block_id)
+                    )
+            else:
+                not_sorted_ops.append(op_new_json)
+            rollup_ops.append(op_new_json)
+            pubsub.publish_op(op_new_json)
+            webhooks.dispatch(op_new_json)
     for op_type, docs in by_type.items():
         coll_ops[op_type].insert_many(docs)
     if not_sorted_ops:
@@ -215,6 +222,13 @@ def sort_block_ops_to_subcolls(block_n_num) -> None:
             executor.submit(_recalc_post_meta_safe, author, block_id)
         for author, block_id in comment_targets:
             executor.submit(_recalc_post_comments_safe, author, block_id)
+
+
+def sort_block_ops_to_subcolls(block_n_num) -> None:
+    """Single-block wrapper around sort_blocks_to_subcolls. The sorter
+    thread uses the bulk entrypoint directly; this wrapper is kept for the
+    backfill script and tests that drive one block at a time."""
+    sort_blocks_to_subcolls([block_n_num])
 
 
 def _extract_recalc_target(op) -> tuple[str, str, int] | None:
