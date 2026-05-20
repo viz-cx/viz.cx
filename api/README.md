@@ -1,6 +1,6 @@
-# VIZ.cx/backend
+# VIZ.cx/api
 
-Backend based on FastAPI
+VIZ.cx API server, built on FastAPI
 
 ## Getting Started
 

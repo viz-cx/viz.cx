@@ -6,9 +6,9 @@ This site is just yet another entrypoint to show posts inside [VIZ blockchain](h
 
 Frontend is created on top of [Nuxt.js framework](https://nuxt.com) with [Vuetify.js](https://vuetifyjs.com/en/) and [viz-js-lib](https://github.com/VIZ-Blockchain/viz-js-lib) to interact with VIZ blockchain on client-side.
 
-## Backend
+## API
 
-Backend is created on top of [FastAPI Python framework](https://github.com/tiangolo/fastapi) and uses [viz-python-lib](https://github.com/VIZ-Blockchain/viz-python-lib) to obtain data from VIZ blockchain on backend-side.
+The API lives in `api/`. It's built on [FastAPI](https://github.com/tiangolo/fastapi) and uses [viz-python-lib](https://github.com/VIZ-Blockchain/viz-python-lib) to obtain data from VIZ blockchain server-side.
 
 ## Community
 
