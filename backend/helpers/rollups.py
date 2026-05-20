@@ -18,6 +18,8 @@ import os
 from collections import defaultdict
 from typing import Any
 
+from pymongo import UpdateOne
+
 from helpers.db_client import get_async_db, get_db
 from helpers.enums import ops_shares
 
@@ -61,8 +63,11 @@ def _delta_from_op(op: dict[str, Any]) -> tuple[str, float]:
 
 
 def aggregate_ops(ops: list[dict[str, Any]]) -> None:
-    """Apply rollup deltas for a list of ops (with timestamp). Batched per
-    (hour, op_type) to minimize round trips."""
+    """Apply rollup deltas for a list of ops (with timestamp). Deltas are
+    summed per (hour, op_type) in memory, then flushed as a single
+    unordered bulk_write — one round trip regardless of how many buckets
+    the input spans. Unordered because each bucket's upsert is
+    independent."""
     if not ops:
         return
     deltas: dict[tuple[dt.datetime, str], dict[str, float]] = defaultdict(
@@ -78,9 +83,8 @@ def aggregate_ops(ops: list[dict[str, Any]]) -> None:
         bucket["count"] += 1
         bucket["shares"] += shares
 
-    coll = _coll()
-    for (hour, op_type), delta in deltas.items():
-        coll.update_one(
+    operations = [
+        UpdateOne(
             {"_id": _doc_id(hour, op_type)},
             {
                 "$inc": {"count": int(delta["count"]), "shares": float(delta["shares"])},
@@ -88,6 +92,10 @@ def aggregate_ops(ops: list[dict[str, Any]]) -> None:
             },
             upsert=True,
         )
+        for (hour, op_type), delta in deltas.items()
+    ]
+    if operations:
+        _coll().bulk_write(operations, ordered=False)
 
 
 def _range_filter(

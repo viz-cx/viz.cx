@@ -6,7 +6,16 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
+from mongomock.collection import BulkOperationBuilder
 from mongomock_motor import AsyncMongoMockClient
+
+# pymongo 4.15's UpdateOne forwards sort=None to the bulk builder; mongomock
+# 4.3.0 hasn't picked up the new kwarg yet. Shim it so bulk_write works.
+_orig_add_update = BulkOperationBuilder.add_update
+if "sort" not in _orig_add_update.__code__.co_varnames:
+    def _add_update_with_sort(self, *args, sort=None, **kwargs):
+        return _orig_add_update(self, *args, **kwargs)
+    BulkOperationBuilder.add_update = _add_update_with_sort
 
 os.environ["SKIP_WORKERS"] = "1"
 os.environ.setdefault("DB_NAME", "viztest")
