@@ -10,6 +10,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 import pymongo
 from bson import ObjectId
+from pymongo import UpdateOne
 
 from helpers.db_client import get_async_db, get_db
 from helpers.enums import OpType, ops_custom, ops_shares
@@ -218,10 +219,10 @@ def sort_blocks_to_subcolls(blocks) -> None:
     rollups.aggregate_ops(rollup_ops)
     if meta_targets or comment_targets:
         executor = _meta_executor_singleton()
-        for author, block_id in meta_targets:
-            executor.submit(_recalc_post_meta_safe, author, block_id)
-        for author, block_id in comment_targets:
-            executor.submit(_recalc_post_comments_safe, author, block_id)
+        if meta_targets:
+            executor.submit(_bulk_recalc_post_meta, meta_targets)
+        if comment_targets:
+            executor.submit(_bulk_recalc_post_comments, comment_targets)
 
 
 def sort_block_ops_to_subcolls(block_n_num) -> None:
@@ -261,21 +262,102 @@ def _extract_recalc_target(op) -> tuple[str, str, int] | None:
     return None
 
 
-def _recalc_post_meta_safe(author: str, block: int) -> None:
+def _bulk_recalc_post_meta(targets: set[tuple[str, int]]) -> None:
+    """Recompute awards/shares for many (author, block) targets in one
+    pass — one aggregate over coll_ops[receive_award] with an $or of memo
+    regexes, then one bulk_write to coll_posts. Replaces the per-target
+    recalc-per-job pattern, which queued N jobs on a 2-worker pool for
+    every sorter flush.
+
+    Reduce logic mirrors _readdleme_post_awards_reduce: per (post,
+    receiver) row, credit the post's author and subtract site_account
+    rebates. Targets stay in the bulk_write even when their values didn't
+    change — the alternative is an extra find() to gate writes, which
+    negates the saving (and these targets only entered the set because
+    an award referenced them, so the value almost certainly moved)."""
+    if not targets:
+        return
     try:
-        # Already updates post meta internally.
-        get_readdleme_post_awards_and_shares(author, block)
+        memos = {f"viz://@{a}/{b}": (a, b) for a, b in targets}
+        match_clauses = [
+            {"op.memo.0": {"$regex": "^" + re.escape(m) + "($|/)"}}
+            for m in memos
+        ]
+        pipeline = [
+            {"$match": {"$or": match_clauses}},
+            {"$group": {
+                "_id": {
+                    "m": {"$arrayElemAt": ["$op.memo", 0]},
+                    "r": "$op.receiver",
+                },
+                "awards": {"$sum": 1},
+                "shares": {"$sum": {"$sum": "$op.shares"}},
+            }},
+        ]
+        rows = list(coll_ops[OpType.receive_award].aggregate(pipeline))
+        tally: dict[tuple[str, int], dict[str, float]] = {
+            t: {"awards": 0, "shares": 0.0} for t in targets
+        }
+        # Longest prefix first so viz://@a/1 doesn't swallow viz://@a/10 hits.
+        prefixes = sorted(memos.keys(), key=len, reverse=True)
+        for row in rows:
+            memo0 = row["_id"]["m"]
+            target_prefix = next(
+                (m for m in prefixes if memo0 == m or memo0.startswith(m + "/")),
+                None,
+            )
+            if target_prefix is None:
+                continue
+            target = memos[target_prefix]
+            receiver = row["_id"]["r"]
+            if receiver[0] == site_account:
+                tally[target]["awards"] += row["awards"]
+                tally[target]["shares"] -= row["shares"]
+            elif receiver[0] == target[0]:
+                tally[target]["awards"] += row["awards"]
+                tally[target]["shares"] += row["shares"]
+        ops_buf = [
+            UpdateOne(
+                postsQuery(author=a, block=b),
+                {"$set": {"awards": int(v["awards"]), "shares": float(v["shares"])}},
+            )
+            for (a, b), v in tally.items()
+        ]
+        if ops_buf:
+            coll_posts.bulk_write(ops_buf, ordered=False)
     except Exception:
-        logger.exception("post meta recalc failed for %s/%s", author, block)
+        logger.exception("bulk post meta recalc failed for %d targets", len(targets))
 
 
-def _recalc_post_comments_safe(author: str, block: int) -> None:
+def _bulk_recalc_post_comments(targets: set[tuple[str, int]]) -> None:
+    """Recompute comment counts for many (author, block) targets in one
+    pass — one $group over coll_posts.d.r followed by one bulk_write.
+    Targets with no replies get comments=0 written back."""
+    if not targets:
+        return
     try:
-        post = get_saved_post(author, block, show_id=True)
-        if isinstance(post, dict):
-            update_post_comments(post["_id"], count_post_comments(author, block))
+        uri_to_target = {_post_uri(a, b): (a, b) for a, b in targets}
+        pipeline = [
+            {"$match": {"d.r": {"$in": list(uri_to_target.keys())}}},
+            {"$group": {"_id": "$d.r", "count": {"$sum": 1}}},
+        ]
+        rows = list(coll_posts.aggregate(pipeline))
+        counts: dict[tuple[str, int], int] = dict.fromkeys(targets, 0)
+        for r in rows:
+            target = uri_to_target.get(r["_id"])
+            if target is not None:
+                counts[target] = int(r["count"])
+        ops_buf = [
+            UpdateOne(
+                postsQuery(author=a, block=b),
+                {"$set": {"comments": c}},
+            )
+            for (a, b), c in counts.items()
+        ]
+        if ops_buf:
+            coll_posts.bulk_write(ops_buf, ordered=False)
     except Exception:
-        logger.exception("post comments recalc failed for %s/%s", author, block)
+        logger.exception("bulk post comments recalc failed for %d targets", len(targets))
 
 
 # Количество всех блоков в БД.
