@@ -5,12 +5,12 @@ from pydantic import BaseModel
 
 from helpers.editorjs_validator import validate_editorjs_blocks
 from helpers.mongo import (
-    get_post_thread,
-    get_posts_by_tag,
-    get_saved_post,
-    get_saved_posts,
-    save_local_post,
-    update_local_post,
+    aget_post_thread,
+    aget_posts_by_tag,
+    aget_saved_post,
+    aget_saved_posts,
+    asave_local_post,
+    aupdate_local_post,
 )
 from helpers.signature_auth import require_signed_request
 
@@ -39,7 +39,7 @@ class PostUpdated(BaseModel):
 
 
 @router.post("/", response_model=PostCreated)
-def create_post(
+async def create_post(
     body: CreatePostBody,
     account: str = Depends(require_signed_request),
 ) -> PostCreated:
@@ -58,18 +58,18 @@ def create_post(
     }
     if body.reply:
         post["d"]["r"] = body.reply
-    post_id = save_local_post(post)
+    post_id = await asave_local_post(post)
     return PostCreated(id=post_id)
 
 
 @router.put("/{post_id}", response_model=PostUpdated)
-def update_post(
+async def update_post(
     post_id: str,
     body: UpdatePostBody,
     account: str = Depends(require_signed_request),
 ) -> PostUpdated:
     validate_editorjs_blocks(body.blocks)
-    if not update_local_post(post_id, body.blocks, account):
+    if not await aupdate_local_post(post_id, body.blocks, account):
         raise HTTPException(status_code=404, detail="Post not found or not editable")
     return PostUpdated(ok=True)
 
@@ -84,35 +84,35 @@ def _extract_text(blocks: list) -> str:
 
 
 @router.get("/@{author}/{block}")
-def post(author: str, block: int):
-    return get_saved_post(author, block)
+async def post(author: str, block: int):
+    return await aget_saved_post(author, block)
 
 
 @router.get("/comments/@{author}/{block}")
-def comments(author: str, block: int):
-    return get_post_thread(author=author, block=block)
+async def comments(author: str, block: int):
+    return await aget_post_thread(author=author, block=block)
 
 
 @router.get("/tags/{tag}")
-def tags(tag: str):
-    return get_posts_by_tag(tag=tag)
+async def tags(tag: str):
+    return await aget_posts_by_tag(tag=tag)
 
 
 @router.get("/{tab}/{page}")
-def posts(tab: str, page: int):
-    return postsHelper(tab=tab, page=page)
+async def posts(tab: str, page: int):
+    return await postsHelper(tab=tab, page=page)
 
 
 @router.get("/{tab}/{author}/{page}")
-def authorPosts(tab: str, author: str, page: int):
-    return postsHelper(tab=tab, page=page, author=author)
+async def authorPosts(tab: str, author: str, page: int):
+    return await postsHelper(tab=tab, page=page, author=author)
 
 
-def postsHelper(tab: str, page: int, author: str | None = None):
+async def postsHelper(tab: str, page: int, author: str | None = None):
     if tab in ["newest", "popular", "replies"]:
         isPopular = tab == "popular"
         isReplies = tab == "replies"
-        return get_saved_posts(
+        return await aget_saved_posts(
             limit=10, page=page, popular=isPopular, author=author, isReplies=isReplies
         )
     else:

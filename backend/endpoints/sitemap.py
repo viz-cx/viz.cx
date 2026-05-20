@@ -3,7 +3,7 @@ import datetime as dt
 from fastapi import APIRouter, Query
 from pydantic import BaseModel
 
-from helpers.mongo import get_saved_posts
+from helpers.mongo import aget_saved_posts
 
 router = APIRouter(
     prefix="/sitemap",
@@ -29,12 +29,12 @@ class SitemapPageResponse(BaseModel):
 
 
 @router.get("/posts", response_model=SitemapPageResponse)
-def show_posts_urls(
+async def show_posts_urls(
     page: int = Query(default=0, ge=0),
     limit: int = Query(default=MAX_PAGE_SIZE, ge=1, le=MAX_PAGE_SIZE),
 ) -> SitemapPageResponse:
     """Paginated post URL list. Callers iterate `page` until `has_more` is false."""
-    posts = get_saved_posts(page=page, limit=limit, isReplies=False)
+    posts = await aget_saved_posts(page=page, limit=limit, isReplies=False)
     items = [
         SitemapEntry(
             loc=f"{BASE_URL}/@{post['author']}/{post['block']}",

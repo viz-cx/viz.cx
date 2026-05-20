@@ -10,11 +10,10 @@ Example:
 """
 from __future__ import annotations
 
+import asyncio
 import base64
 import datetime as dt
 import json
-import os
-from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
 import pymongo
@@ -22,18 +21,6 @@ from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
 from helpers import mongo
-
-_history_executor: ThreadPoolExecutor | None = None
-
-
-def _executor() -> ThreadPoolExecutor:
-    global _history_executor
-    if _history_executor is None:
-        max_workers = int(os.getenv("HISTORY_FANOUT_WORKERS", "5"))
-        _history_executor = ThreadPoolExecutor(
-            max_workers=max_workers, thread_name_prefix="history"
-        )
-    return _history_executor
 
 router = APIRouter(
     prefix="/accounts",
@@ -100,16 +87,16 @@ def _collections_for(op_type: str | None):
     sorted_types = {str(t) for t in mongo.sorted_op_types}
     if op_type is None:
         for t in sorted_types:
-            yield mongo.coll_ops[t], t
-        yield mongo.coll_ops, None
+            yield mongo.acoll_ops[t], t
+        yield mongo.acoll_ops, None
     elif op_type in sorted_types:
-        yield mongo.coll_ops[op_type], op_type
+        yield mongo.acoll_ops[op_type], op_type
     else:
-        yield mongo.coll_ops, op_type
+        yield mongo.acoll_ops, op_type
 
 
 @router.get("/{account}/history", response_model=HistoryResponse)
-def account_history(
+async def account_history(
     account: str,
     op_type: str | None = Query(default=None),
     counterparty: str | None = Query(default=None),
@@ -131,28 +118,29 @@ def account_history(
         }
         base_filter = {"$and": [base_filter, cursor_clause]}
 
-    # Query each candidate collection in parallel, then merge sort by
-    # (timestamp, _id) desc. Independent reads — pymongo connections are
-    # thread-safe — so fan-out wall time is ~max(per-coll) instead of sum.
+    # Query each candidate collection concurrently and merge-sort by
+    # (timestamp, _id) desc. Motor multiplexes on the event loop so wall time
+    # is ~max(per-coll) instead of sum.
     overfetch = limit + 1
 
-    def _fetch(coll, label):
-        rows = list(
+    async def _fetch(coll, label):
+        cursor = (
             coll.find(base_filter)
             .sort([("timestamp", pymongo.DESCENDING), ("_id", pymongo.DESCENDING)])
             .limit(overfetch)
         )
+        rows = await cursor.to_list(length=overfetch)
         for row in rows:
             row.setdefault("op_type_label", label or row.get("op", [None])[0])
         return rows
 
     sources = list(_collections_for(op_type))
     if len(sources) > 1:
-        futures = [_executor().submit(_fetch, c, lbl) for c, lbl in sources]
-        candidates: list[dict[str, Any]] = [r for fut in futures for r in fut.result()]
+        results = await asyncio.gather(*(_fetch(c, lbl) for c, lbl in sources))
+        candidates: list[dict[str, Any]] = [r for batch in results for r in batch]
     else:
         coll, label = sources[0]
-        candidates = _fetch(coll, label)
+        candidates = await _fetch(coll, label)
 
     candidates.sort(
         key=lambda r: (r["timestamp"], r["_id"]), reverse=True

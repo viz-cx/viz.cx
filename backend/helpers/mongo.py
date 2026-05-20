@@ -105,10 +105,19 @@ def get_block(id: int) -> dict:
     return tuple(result)[0]
 
 
+async def aget_block(id: int) -> dict:
+    return await acoll.find_one({"_id": id})
+
+
 def get_last_block() -> dict:
     """Return last block from collection in MongoDB database."""
     result = coll.find({}).sort("_id", pymongo.DESCENDING).limit(1)
     return tuple(result)[0]
+
+
+async def aget_last_block() -> dict:
+    rows = await acoll.find({}).sort("_id", pymongo.DESCENDING).limit(1).to_list(length=1)
+    return rows[0]
 
 
 def get_last_blocknum() -> int:
@@ -709,16 +718,33 @@ def get_saved_posts(
     return tuple(cursor)
 
 
+async def aget_saved_posts(
+    limit=10,
+    page=0,
+    popular: bool = False,
+    author: str | None = None,
+    isReplies: bool | None = False,
+    showId: bool = False,
+):
+    field = "shares" if popular else "block"
+    cursor = (
+        acoll_posts.find(
+            postsQuery(author=author, isReplies=isReplies),
+            {} if showId else {"_id": 0},
+        )
+        .sort(field, pymongo.DESCENDING)
+        .limit(limit)
+        .skip(limit * page)
+    )
+    return await cursor.to_list(length=limit)
+
+
 def get_posts_by_tag(tag: str, limit=10, page=0):
-    # query = {"$text": {"$search": '"#{} "'.format(tag)}}
-    # cursor = (
-    #     coll_posts.find(query, {"_id": 0})
-    #     .sort("block", pymongo.DESCENDING)
-    #     .limit(limit)
-    #     .skip(limit * page)
-    # )
-    # return tuple(cursor)
     return tuple()
+
+
+async def aget_posts_by_tag(tag: str, limit=10, page=0):
+    return []
 
 
 def _post_uri(author: str, block: int) -> str:
@@ -778,6 +804,46 @@ def get_post_thread(author: str, block: int, max_depth: int = 50) -> list:
     return children.get(root_uri, [])
 
 
+async def aget_post_thread(author: str, block: int, max_depth: int = 50) -> list:
+    root_uri = _post_uri(author, block)
+    direct_cursor = acoll_posts.find(
+        {"d.r": root_uri},
+        {"_id": 0},
+    ).sort("block", pymongo.DESCENDING)
+    nodes_by_uri: dict[str, dict] = {}
+    children: dict[str, list[dict]] = {}
+    frontier = await direct_cursor.to_list(length=None)
+    for node in frontier:
+        uri = _post_uri(node["author"], node["block"])
+        nodes_by_uri[uri] = node
+        children.setdefault(node["d"]["r"], []).append(node)
+
+    depth = 1
+    while frontier and depth < max_depth:
+        child_uris = [_post_uri(n["author"], n["block"]) for n in frontier]
+        next_level_query = {"d.r": {"$in": child_uris}}
+        next_level = await acoll_posts.find(next_level_query, {"_id": 0}).sort(
+            "block", pymongo.DESCENDING
+        ).to_list(length=None)
+        if not next_level:
+            break
+        for node in next_level:
+            uri = _post_uri(node["author"], node["block"])
+            if uri in nodes_by_uri:
+                continue
+            nodes_by_uri[uri] = node
+            children.setdefault(node["d"]["r"], []).append(node)
+        frontier = next_level
+        depth += 1
+
+    for uri, node in nodes_by_uri.items():
+        kids = children.get(uri, [])
+        if kids:
+            node["replies"] = kids
+
+    return children.get(root_uri, [])
+
+
 def get_saved_post(author: str, block: int, show_id=False):
     post = coll_posts.find_one(
         postsQuery(author=author, block=block),
@@ -806,6 +872,11 @@ def save_local_post(post: dict) -> str:
     return str(result.inserted_id)
 
 
+async def asave_local_post(post: dict) -> str:
+    result = await acoll_posts.insert_one(post)
+    return str(result.inserted_id)
+
+
 def update_local_post(post_id: str, blocks: list, author: str | None = None) -> bool:
     """Update a local post. If `author` is given, only update if the post
     was created by that author (prevents cross-account edits)."""
@@ -813,6 +884,19 @@ def update_local_post(post_id: str, blocks: list, author: str | None = None) -> 
     if author is not None:
         query["author"] = author
     result = coll_posts.find_one_and_update(
+        query,
+        {"$set": {"blocks": blocks, "updated_at": dt.datetime.now(dt.UTC)}},
+    )
+    return result is not None
+
+
+async def aupdate_local_post(
+    post_id: str, blocks: list, author: str | None = None
+) -> bool:
+    query: dict = {"_id": ObjectId(post_id), "editable": True}
+    if author is not None:
+        query["author"] = author
+    result = await acoll_posts.find_one_and_update(
         query,
         {"$set": {"blocks": blocks, "updated_at": dt.datetime.now(dt.UTC)}},
     )
