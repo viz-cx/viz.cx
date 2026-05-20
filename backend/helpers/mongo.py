@@ -168,8 +168,9 @@ def sort_block_ops_to_subcolls(block_n_num) -> None:
 
     Inserts are batched per op-type collection (one insert_many each) so a
     block with N ops costs O(types) round trips instead of O(N). Meta
-    recalculation (extra DB reads + writes) is deferred to a background
-    executor so it never blocks the sorter."""
+    recalculation is deduped per (author, block) so K awards on the same
+    post in one block trigger one re-aggregation, not K. Deferred to a
+    background executor so it never blocks the sorter."""
     from helpers import pubsub, rollups, webhooks
 
     op_number = 0.0
@@ -178,7 +179,8 @@ def sort_block_ops_to_subcolls(block_n_num) -> None:
     by_type: dict[str, list[dict]] = defaultdict(list)
     not_sorted_ops: list[dict] = []
     rollup_ops: list[dict] = []
-    meta_ops: list[dict] = []
+    meta_targets: set[tuple[str, int]] = set()
+    comment_targets: set[tuple[str, int]] = set()
     for op in block:
         op_number += 1 / count_max_ops_in_block
         op_type = op["op"][0]
@@ -191,8 +193,12 @@ def sort_block_ops_to_subcolls(block_n_num) -> None:
         }
         if op_type in sorted_op_types:
             by_type[op_type].append(op_new_json)
-            if _needs_meta_recalc(op):
-                meta_ops.append(op)
+            target = _extract_recalc_target(op)
+            if target:
+                kind, author, block_id = target
+                (meta_targets if kind == "meta" else comment_targets).add(
+                    (author, block_id)
+                )
         else:
             not_sorted_ops.append(op_new_json)
         rollup_ops.append(op_new_json)
@@ -203,57 +209,59 @@ def sort_block_ops_to_subcolls(block_n_num) -> None:
     if not_sorted_ops:
         coll_ops.insert_many(not_sorted_ops)
     rollups.aggregate_ops(rollup_ops)
-    if meta_ops:
+    if meta_targets or comment_targets:
         executor = _meta_executor_singleton()
-        for op in meta_ops:
-            executor.submit(_recalc_meta_safe, op)
+        for author, block_id in meta_targets:
+            executor.submit(_recalc_post_meta_safe, author, block_id)
+        for author, block_id in comment_targets:
+            executor.submit(_recalc_post_comments_safe, author, block_id)
 
 
-def _needs_meta_recalc(op) -> bool:
+def _extract_recalc_target(op) -> tuple[str, str, int] | None:
+    """Return ('meta'|'comments', author, block) the op should refresh, or None.
+
+    receive_award with a viz:// memo → refresh awards/shares for the awarded
+    post. custom 'V' op replying to a viz:// URI → refresh the parent's
+    comment count."""
     op_type = op["op"][0]
     if op_type == OpType.receive_award:
-        return op["op"][1].get("memo", "").startswith("viz://")
-    if op_type == OpType.custom:
-        return op["op"][1].get("id") == "V"
-    return False
-
-
-def _recalc_meta_safe(op) -> None:
-    try:
-        recalculate_meta_if_needed(op)
-    except Exception:
-        logger.exception("recalculate_meta_if_needed failed")
-
-
-def recalculate_meta_if_needed(op) -> None:
-    op_type = op["op"][0]
-    if op_type == OpType.receive_award and op["op"][1]["memo"].startswith("viz://"):
-        try:
-            result = _VIZ_URI_RE.search(op["op"][1]["memo"])
-            if result is not None:
-                author = result.group(1)
-                block = int(result.group(2))
-                meta = get_readdleme_post_awards_and_shares(author, block)
-                update_post_meta_if_needed(
-                    author, block, meta["awards"], meta["shares"]
-                )
-        except Exception as e:
-            logger.warning("Shares recalculation error: %s", e)
-
-    if op_type == OpType.custom and op["op"][1]["id"] == "V":
+        memo = op["op"][1].get("memo", "")
+        if not memo.startswith("viz://"):
+            return None
+        match = _VIZ_URI_RE.search(memo)
+        if match is None:
+            return None
+        return ("meta", match.group(1), int(match.group(2)))
+    if op_type == OpType.custom and op["op"][1].get("id") == "V":
         try:
             js = json.loads(op["op"][1]["json"])
-            if "d" in js and "r" in js["d"]:
-                result = _VIZ_URI_RE.search(js["d"]["r"])
-                if result is not None:
-                    author = result.group(1)
-                    block = int(result.group(2))
-                    post = get_saved_post(author, block, show_id=True)
-                    if isinstance(post, dict):
-                        comments = count_post_comments(author=author, block=block)
-                        update_post_comments(post["_id"], comments=comments)
-        except Exception as e:
-            logger.warning("Replies recalculation error: %s", e)
+        except (ValueError, KeyError):
+            return None
+        reply = js.get("d", {}).get("r")
+        if not reply:
+            return None
+        match = _VIZ_URI_RE.search(reply)
+        if match is None:
+            return None
+        return ("comments", match.group(1), int(match.group(2)))
+    return None
+
+
+def _recalc_post_meta_safe(author: str, block: int) -> None:
+    try:
+        # Already updates post meta internally.
+        get_readdleme_post_awards_and_shares(author, block)
+    except Exception:
+        logger.exception("post meta recalc failed for %s/%s", author, block)
+
+
+def _recalc_post_comments_safe(author: str, block: int) -> None:
+    try:
+        post = get_saved_post(author, block, show_id=True)
+        if isinstance(post, dict):
+            update_post_comments(post["_id"], count_post_comments(author, block))
+    except Exception:
+        logger.exception("post comments recalc failed for %s/%s", author, block)
 
 
 # Количество всех блоков в БД.
