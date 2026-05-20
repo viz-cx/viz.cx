@@ -17,3 +17,9 @@ uvicorn main:app --reload --port 8080
 ```
 
 3. Open local API docs: [http://localhost:8080/docs](http://localhost:8080/docs) or [http://localhost:8080/redoc](http://localhost:8080/redoc)
+
+## Playground
+
+A self-contained API playground is served from `static/playground/` and mounted at [http://localhost:8080/playground/](http://localhost:8080/playground/). It reads `/openapi.json`, lists every endpoint grouped by tag, builds a form for path/query/body params, and runs the request in the browser. The live op feed panel connects to `/ws/ops` with optional `op_type` / `account` filters.
+
+No build step — it's plain HTML/CSS/JS. The mount is conditional on the directory existing, so it's safe in production behind nginx.

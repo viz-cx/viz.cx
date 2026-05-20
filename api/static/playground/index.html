@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>VIZ.cx API Playground</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">VIZ</span>
+      <span class="title">API Playground</span>
+    </div>
+    <div class="quicklinks">
+      <a href="/docs" target="_blank">Swagger</a>
+      <a href="/redoc" target="_blank">ReDoc</a>
+      <a href="/openapi.json" target="_blank">openapi.json</a>
+    </div>
+  </header>
+
+  <main class="layout">
+    <aside class="sidebar">
+      <input id="filter" type="search" placeholder="Filter endpoints…" autocomplete="off" />
+      <nav id="catalog" class="catalog">
+        <p class="muted">Loading catalog…</p>
+      </nav>
+    </aside>
+
+    <section class="content">
+      <section id="ws-panel" class="card ws-card">
+        <header class="card-head">
+          <h2>Live op feed <span class="badge" id="ws-status">disconnected</span></h2>
+        </header>
+        <div class="row">
+          <label>op_type <input id="ws-op-type" type="text" placeholder="receive_award" /></label>
+          <label>account <input id="ws-account" type="text" placeholder="alice" /></label>
+          <button id="ws-toggle" class="primary">Connect</button>
+          <button id="ws-clear">Clear</button>
+        </div>
+        <ul id="ws-feed" class="ws-feed" aria-live="polite"></ul>
+      </section>
+
+      <section id="endpoint-panel" class="card endpoint-card hidden">
+        <header class="card-head">
+          <h2 id="ep-title">Pick an endpoint</h2>
+          <div class="meta">
+            <span id="ep-method" class="method"></span>
+            <code id="ep-path"></code>
+          </div>
+        </header>
+        <p id="ep-summary" class="muted"></p>
+        <form id="ep-form" class="ep-form"></form>
+        <div class="row">
+          <button id="ep-run" class="primary">Send</button>
+          <span id="ep-status" class="muted"></span>
+        </div>
+        <details open>
+          <summary>Response</summary>
+          <pre id="ep-response" class="response"><code>—</code></pre>
+        </details>
+      </section>
+
+      <section id="hint" class="card hint-card">
+        <h2>Try one</h2>
+        <ul>
+          <li><code>GET /blocks/latest</code> — current chain head</li>
+          <li><code>GET /count_ops/all</code> — total ops indexed</li>
+          <li><code>GET /voice/top_posts</code> — recent Voice posts</li>
+          <li><code>GET /accounts/{account}/history</code> — paged account history</li>
+          <li><code>WS /ws/ops</code> — live op stream (use the panel above)</li>
+        </ul>
+      </section>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

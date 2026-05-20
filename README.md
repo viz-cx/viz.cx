@@ -10,6 +10,8 @@ Frontend is created on top of [Nuxt.js framework](https://nuxt.com) with [Vuetif
 
 The API lives in `api/`. It's built on [FastAPI](https://github.com/tiangolo/fastapi) and uses [viz-python-lib](https://github.com/VIZ-Blockchain/viz-python-lib) to obtain data from VIZ blockchain server-side.
 
+It also ships an in-browser API playground at `/playground/` — see [`api/README.md`](api/README.md#playground).
+
 ## Community
 
 Join our telegram group [t.me/viz_cx](https://t.me/viz_cx)

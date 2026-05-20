@@ -6,6 +6,7 @@ from threading import Thread
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from fastapi_cache import FastAPICache
 from fastapi_cache.backends.inmemory import InMemoryBackend
 
@@ -48,6 +49,14 @@ app = FastAPI(
     title="VIZ.cx API", root_path=os.getenv("ROOT_PATH", "/"), lifespan=lifespan
 )
 app.include_router(router)
+
+_playground_dir = os.path.join(os.path.dirname(__file__), "static", "playground")
+if os.path.isdir(_playground_dir):
+    app.mount(
+        "/playground",
+        StaticFiles(directory=_playground_dir, html=True),
+        name="playground",
+    )
 
 origins = ["https://viz.cx", "http://localhost:3000"]
 app.add_middleware(
