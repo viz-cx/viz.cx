@@ -9,15 +9,12 @@ from helpers.mongo import (
     get_last_saved_post_block_id,
     get_post_comments,
     get_readdleme_post_awards_and_shares,
-    get_saved_posts,
     get_voice_posts,
     save_voice_post,
-    update_post_comments,
 )
 
 
 def start_posts_parsing() -> NoReturn:
-    update_posts_comments_count()
     while True:
         try:
             last_block_id = get_last_saved_post_block_id()
@@ -29,24 +26,6 @@ def start_posts_parsing() -> NoReturn:
         except Exception as e:
             print(f"Posts parsing error: {str(e)}")
             sleep(3)
-
-
-def update_posts_comments_count() -> None:
-    page = 0
-    while True:
-        posts = get_saved_posts(page=page, limit=1000, isReplies=None, showId=True)
-        page += 1
-        if not posts:
-            break
-        for post in posts:
-            author = post["author"]
-            block = post["block"]
-            comments = get_post_comments(author=author, block=block)
-            commentCount = len(comments)
-            postCommentsCount = post.get("comments", 0)
-            if commentCount != postCommentsCount:
-                update_post_comments(postId=post["_id"], comments=commentCount)
-    print("Post comments updated successfully")
 
 
 def fetch_posts_from_block(block) -> list:

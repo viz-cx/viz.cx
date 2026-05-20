@@ -40,6 +40,22 @@ def ensure_indexes() -> None:
     coll.create_index([("_id", 1), ("block.op.0", 1), ("block.op.1.id", 1)])
 
     from helpers import rollups, signature_auth, webhooks
+    from helpers.enums import OpType, ops_custom, ops_shares
+
+    coll_ops_name = os.getenv("COLLECTION_OPS", "")
+    if coll_ops_name:
+        coll_ops = db[coll_ops_name]
+        for op_type in ops_custom + ops_shares:
+            coll_ops[str(op_type)].create_index([("timestamp", -1)])
+        coll_ops[str(OpType.receive_award)].create_index(
+            [("timestamp", -1), ("op.memo", 1)]
+        )
+
+    coll_posts = db[os.getenv("COLLECTION_POSTS", "posts")]
+    coll_posts.create_index([("d.r", 1)])
+    coll_posts.create_index([("author", 1), ("block", 1)])
+    coll_posts.create_index([("block", -1)])
+    coll_posts.create_index([("shares", -1)])
 
     rollups.ensure_indexes()
     signature_auth.ensure_nonce_indexes()
