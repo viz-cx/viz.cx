@@ -47,9 +47,9 @@ def backfill(from_block: int | None, to_block: int | None, batch: int) -> None:
         blocks = list(
             mongo.coll.find({"_id": {"$gte": cursor_start, "$lte": cursor_end}})
         )
-        for block in blocks:
-            mongo.sort_block_ops_to_subcolls(block)
-            processed += 1
+        if blocks:
+            mongo.sort_blocks_to_subcolls(blocks)
+            processed += len(blocks)
         elapsed = time.monotonic() - started
         rate = processed / elapsed if elapsed else 0
         logger.info(
