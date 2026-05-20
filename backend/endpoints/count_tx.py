@@ -40,16 +40,16 @@ class CountSeriesResponse(BaseModel):
 
 
 @router.get("/all", response_model=CountResponse)
-def count_ops() -> CountResponse:
+async def count_ops() -> CountResponse:
     return CountResponse(
-        operations=rollups.get_count(),
+        operations=await rollups.get_count(),
         operation_type="all",
         date="all",
     )
 
 
 @router.get("/series", response_model=CountSeriesResponse)
-def count_ops_series(
+async def count_ops_series(
     operation_type: OpType | None = None,
     from_date: str | None = None,
     to_date: str | None = None,
@@ -57,7 +57,7 @@ def count_ops_series(
     """Hourly time-series counts for charting. Defaults to last 24h."""
     t, f = resolve_window(to_date, from_date, dt.timedelta(hours=24))
     op_type_str = operation_type.value if operation_type else None
-    rows = rollups.get_series(op_type=op_type_str, from_date=f, to_date=t)
+    rows = await rollups.get_series(op_type=op_type_str, from_date=f, to_date=t)
     return CountSeriesResponse(
         operation_type=op_type_str or "all",
         date=DateRange.model_validate({"from": iso8601(f), "to": iso8601(t)}),
@@ -74,25 +74,25 @@ def count_ops_series(
 
 
 @router.get("/{operation_type}", response_model=CountResponse)
-def count_ops_by_op_type(
+async def count_ops_by_op_type(
     operation_type: OpType = OpType.witness_reward,
 ) -> CountResponse:
     return CountResponse(
-        operations=rollups.get_count(op_type=operation_type.value),
+        operations=await rollups.get_count(op_type=operation_type.value),
         operation_type=operation_type.value,
         date="all",
     )
 
 
 @router.get("/{to_date_str}/{period_in_seconds}", response_model=CountResponse)
-def count_ops_in_period(
+async def count_ops_in_period(
     to_date_str: str | None = None,
     period_in_seconds: int = 3600,
 ) -> CountResponse:
     to_date = dt.datetime.fromisoformat(to_date_str) if to_date_str else utcnow()
     from_date = to_date - dt.timedelta(seconds=period_in_seconds)
     return CountResponse(
-        operations=rollups.get_count(from_date=from_date, to_date=to_date),
+        operations=await rollups.get_count(from_date=from_date, to_date=to_date),
         operation_type="all",
         date=DateRange.model_validate({"from": iso8601(from_date), "to": iso8601(to_date)}),
     )
@@ -102,7 +102,7 @@ def count_ops_in_period(
     "/{operation_type}/{to_date_str}/{period_in_seconds}",
     response_model=CountResponse,
 )
-def count_ops_by_op_type_in_period(
+async def count_ops_by_op_type_in_period(
     operation_type: OpType = OpType.witness_reward,
     to_date_str: str | None = None,
     period_in_seconds: int = 3600,
@@ -110,7 +110,7 @@ def count_ops_by_op_type_in_period(
     to_date = dt.datetime.fromisoformat(to_date_str) if to_date_str else utcnow()
     from_date = to_date - dt.timedelta(seconds=period_in_seconds)
     return CountResponse(
-        operations=rollups.get_count(
+        operations=await rollups.get_count(
             op_type=operation_type.value, from_date=from_date, to_date=to_date
         ),
         operation_type=operation_type.value,

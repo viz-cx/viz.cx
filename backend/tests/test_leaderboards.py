@@ -39,7 +39,7 @@ def window():
 # ---------------------------------------------------------------------------
 
 
-def test_top_tg_posts_by_shares_sums_and_formats_link(window):
+async def test_top_tg_posts_by_shares_sums_and_formats_link(window):
     to, fr = window
     h = to - dt.timedelta(hours=12)
     _seed(
@@ -49,14 +49,14 @@ def test_top_tg_posts_by_shares_sums_and_formats_link(window):
             _award(1.3, h, "channel:@other:1", shares=7.0),
         ]
     )
-    rows = mongo.get_top_tg_posts_by_shares_in_period(to, fr, in_top=5, to_skip=0)
+    rows = await mongo.get_top_tg_posts_by_shares_in_period(to, fr, in_top=5, to_skip=0)
     assert rows == [
         {"post": "https://t.me/viz_news/80", "value": 15.0},
         {"post": "https://t.me/other/1", "value": 7.0},
     ]
 
 
-def test_top_tg_posts_by_awards_counts_each_op(window):
+async def test_top_tg_posts_by_awards_counts_each_op(window):
     to, fr = window
     h = to - dt.timedelta(hours=6)
     _seed(
@@ -66,14 +66,14 @@ def test_top_tg_posts_by_awards_counts_each_op(window):
             _award(2.3, h, "channel:@other:1"),
         ]
     )
-    rows = mongo.get_top_tg_posts_by_awards_count_in_period(
+    rows = await mongo.get_top_tg_posts_by_awards_count_in_period(
         to_date=to, from_date=fr, in_top=5, to_skip=0
     )
     assert rows[0] == {"post": "https://t.me/viz_news/80", "value": 2}
     assert rows[1] == {"post": "https://t.me/other/1", "value": 1}
 
 
-def test_top_tg_channels_by_shares_groups_across_posts(window):
+async def test_top_tg_channels_by_shares_groups_across_posts(window):
     to, fr = window
     h = to - dt.timedelta(hours=8)
     _seed(
@@ -83,7 +83,7 @@ def test_top_tg_channels_by_shares_groups_across_posts(window):
             _award(3.3, h, "channel:@other:1", shares=7.0),
         ]
     )
-    rows = mongo.get_top_tg_ch_by_shares_in_period(
+    rows = await mongo.get_top_tg_ch_by_shares_in_period(
         to_date=to, from_date=fr, in_top=5, to_skip=0
     )
     assert rows == [
@@ -92,7 +92,7 @@ def test_top_tg_channels_by_shares_groups_across_posts(window):
     ]
 
 
-def test_top_tg_channels_by_awards_counts(window):
+async def test_top_tg_channels_by_awards_counts(window):
     to, fr = window
     h = to - dt.timedelta(hours=4)
     _seed(
@@ -103,7 +103,7 @@ def test_top_tg_channels_by_awards_counts(window):
             _award(4.4, h, "channel:@other:1"),
         ]
     )
-    rows = mongo.get_top_tg_chs_by_awards_count_in_period(
+    rows = await mongo.get_top_tg_chs_by_awards_count_in_period(
         to_date=to, from_date=fr, in_top=5, to_skip=0
     )
     assert rows[0] == {"channel": "https://t.me/viz_news", "value": 3}
@@ -115,7 +115,7 @@ def test_top_tg_channels_by_awards_counts(window):
 # ---------------------------------------------------------------------------
 
 
-def test_tg_post_totals_match_exact_memo(window):
+async def test_tg_post_totals_match_exact_memo(window):
     to, fr = window
     h = to - dt.timedelta(hours=2)
     _seed(
@@ -125,21 +125,21 @@ def test_tg_post_totals_match_exact_memo(window):
             _award(5.3, h, "channel:@viz_news:81", shares=100.0),  # different post
         ]
     )
-    out = mongo.get_tg_ch_post_awards_and_shares_in_period(
+    out = await mongo.get_tg_ch_post_awards_and_shares_in_period(
         "https://t.me/viz_news/80", to_date=to, from_date=fr
     )
     assert out == {"post_link": "https://t.me/viz_news/80", "awards": 2, "shares": 15.0}
 
 
-def test_tg_post_totals_zero_when_no_match(window):
+async def test_tg_post_totals_zero_when_no_match(window):
     to, fr = window
-    out = mongo.get_tg_ch_post_awards_and_shares_in_period(
+    out = await mongo.get_tg_ch_post_awards_and_shares_in_period(
         "https://t.me/nothing/999", to_date=to, from_date=fr
     )
     assert out == {"post_link": "https://t.me/nothing/999", "awards": 0, "shares": 0}
 
 
-def test_tg_channel_totals_match_prefix_regex(window):
+async def test_tg_channel_totals_match_prefix_regex(window):
     to, fr = window
     h = to - dt.timedelta(hours=2)
     _seed(
@@ -149,7 +149,7 @@ def test_tg_channel_totals_match_prefix_regex(window):
             _award(6.3, h, "channel:@other:1", shares=100.0),
         ]
     )
-    out = mongo.get_tg_ch_awards_and_shares_in_period(
+    out = await mongo.get_tg_ch_awards_and_shares_in_period(
         "@viz_news", to_date=to, from_date=fr
     )
     assert out == {"channel": "@viz_news", "awards": 2, "shares": 15.0}
@@ -160,7 +160,7 @@ def test_tg_channel_totals_match_prefix_regex(window):
 # ---------------------------------------------------------------------------
 
 
-def test_top_voice_posts_by_shares_returns_memo_string(window):
+async def test_top_voice_posts_by_shares_returns_memo_string(window):
     to, fr = window
     h = to - dt.timedelta(hours=6)
     _seed(
@@ -170,14 +170,14 @@ def test_top_voice_posts_by_shares_returns_memo_string(window):
             _award(7.3, h, "viz://@bob/100", shares=2.0),
         ]
     )
-    rows = mongo.get_top_readdleme_posts_by_shares_in_period(to, fr, in_top=5, to_skip=0)
+    rows = await mongo.get_top_readdleme_posts_by_shares_in_period(to, fr, in_top=5, to_skip=0)
     assert rows == [
         {"post": "viz://@alice/42", "value": 12.0},
         {"post": "viz://@bob/100", "value": 2.0},
     ]
 
 
-def test_top_voice_authors_by_awards_groups_by_handle(window):
+async def test_top_voice_authors_by_awards_groups_by_handle(window):
     to, fr = window
     h = to - dt.timedelta(hours=6)
     _seed(
@@ -187,12 +187,12 @@ def test_top_voice_authors_by_awards_groups_by_handle(window):
             _award(8.3, h, "viz://@bob/100"),
         ]
     )
-    rows = mongo.get_top_readdleme_authors_by_awards_in_period(to, fr, in_top=5, to_skip=0)
+    rows = await mongo.get_top_readdleme_authors_by_awards_in_period(to, fr, in_top=5, to_skip=0)
     assert rows[0] == {"account": "@alice", "value": 2}
     assert rows[1] == {"account": "@bob", "value": 1}
 
 
-def test_voice_author_totals_match_prefix_regex(window):
+async def test_voice_author_totals_match_prefix_regex(window):
     to, fr = window
     h = to - dt.timedelta(hours=6)
     _seed(
@@ -202,15 +202,15 @@ def test_voice_author_totals_match_prefix_regex(window):
             _award(9.3, h, "viz://@bob/100", shares=2.0),
         ]
     )
-    out = mongo.get_readdleme_author_awards_and_shares_in_period(
+    out = await mongo.get_readdleme_author_awards_and_shares_in_period(
         "@alice", to_date=to, from_date=fr
     )
     assert out == {"account": "@alice", "awards": 2, "shares": 12.0}
 
 
-def test_voice_author_totals_zero_when_no_match(window):
+async def test_voice_author_totals_zero_when_no_match(window):
     to, fr = window
-    out = mongo.get_readdleme_author_awards_and_shares_in_period(
+    out = await mongo.get_readdleme_author_awards_and_shares_in_period(
         "@missing", to_date=to, from_date=fr
     )
     assert out == {"account": "@missing", "awards": 0, "shares": 0}
@@ -221,7 +221,7 @@ def test_voice_author_totals_zero_when_no_match(window):
 # ---------------------------------------------------------------------------
 
 
-def test_top_excludes_ops_outside_window(window):
+async def test_top_excludes_ops_outside_window(window):
     to, fr = window
     inside = to - dt.timedelta(hours=12)
     outside_old = fr - dt.timedelta(days=10)
@@ -233,11 +233,11 @@ def test_top_excludes_ops_outside_window(window):
             _award(10.3, outside_new, "channel:@viz_news:80", shares=999.0),
         ]
     )
-    rows = mongo.get_top_tg_posts_by_shares_in_period(to, fr, in_top=5, to_skip=0)
+    rows = await mongo.get_top_tg_posts_by_shares_in_period(to, fr, in_top=5, to_skip=0)
     assert rows == [{"post": "https://t.me/viz_news/80", "value": 10.0}]
 
 
-def test_tg_query_does_not_match_voice_memos(window):
+async def test_tg_query_does_not_match_voice_memos(window):
     """The `^channel:@` and `^viz://@` prefixes must isolate the two families.
     Without this guarantee, a voice op could leak into TG leaderboards if it
     happened to contain "channel:" later in its memo."""
@@ -249,13 +249,13 @@ def test_tg_query_does_not_match_voice_memos(window):
             _award(11.2, h, "channel:@viz_news:80", shares=5.0),
         ]
     )
-    tg = mongo.get_top_tg_posts_by_shares_in_period(to, fr, in_top=5, to_skip=0)
-    voice = mongo.get_top_readdleme_posts_by_shares_in_period(to, fr, in_top=5, to_skip=0)
+    tg = await mongo.get_top_tg_posts_by_shares_in_period(to, fr, in_top=5, to_skip=0)
+    voice = await mongo.get_top_readdleme_posts_by_shares_in_period(to, fr, in_top=5, to_skip=0)
     assert tg == [{"post": "https://t.me/viz_news/80", "value": 5.0}]
     assert voice == [{"post": "viz://@alice/42", "value": 10.0}]
 
 
-def test_pagination_skip_and_limit(window):
+async def test_pagination_skip_and_limit(window):
     to, fr = window
     h = to - dt.timedelta(hours=6)
     _seed(
@@ -265,8 +265,8 @@ def test_pagination_skip_and_limit(window):
             _award(12.3, h, "channel:@c:1", shares=10.0),
         ]
     )
-    first_page = mongo.get_top_tg_ch_by_shares_in_period(to, fr, in_top=2, to_skip=0)
-    second_page = mongo.get_top_tg_ch_by_shares_in_period(to, fr, in_top=2, to_skip=2)
+    first_page = await mongo.get_top_tg_ch_by_shares_in_period(to, fr, in_top=2, to_skip=0)
+    second_page = await mongo.get_top_tg_ch_by_shares_in_period(to, fr, in_top=2, to_skip=2)
     assert [r["channel"] for r in first_page] == [
         "https://t.me/a",
         "https://t.me/b",
@@ -274,41 +274,41 @@ def test_pagination_skip_and_limit(window):
     assert [r["channel"] for r in second_page] == ["https://t.me/c"]
 
 
-def test_default_week_window_resolves_when_arguments_omitted():
+async def test_default_week_window_resolves_when_arguments_omitted():
     """All functions with mutable-default args used to evaluate dt.datetime.now()
     at import time, freezing the window. After the refactor the defaults are
     resolved on each call, so a freshly seeded op shows up without the caller
     supplying explicit dates."""
     now = dt.datetime.now()
     _seed([_award(13.1, now - dt.timedelta(hours=1), "channel:@viz_news:80", shares=5.0)])
-    out = mongo.get_tg_ch_awards_and_shares_in_period("@viz_news")
+    out = await mongo.get_tg_ch_awards_and_shares_in_period("@viz_news")
     assert out == {"channel": "@viz_news", "awards": 1, "shares": 5.0}
 
 
-def test_empty_collection_returns_empty_list(window):
+async def test_empty_collection_returns_empty_list(window):
     to, fr = window
-    assert mongo.get_top_tg_posts_by_shares_in_period(to, fr, in_top=5, to_skip=0) == []
-    assert mongo.get_top_readdleme_authors_by_shares_in_period(to, fr, 5, 0) == []
+    assert await mongo.get_top_tg_posts_by_shares_in_period(to, fr, in_top=5, to_skip=0) == []
+    assert await mongo.get_top_readdleme_authors_by_shares_in_period(to, fr, 5, 0) == []
 
 
-def test_single_target_respects_window(window):
+async def test_single_target_respects_window(window):
     """A matching memo outside the window must NOT be counted, even when
     the memo filter alone would match."""
     to, fr = window
     outside = fr - dt.timedelta(days=30)
     _seed([_award(16.1, outside, "channel:@viz_news:80", shares=999.0)])
-    out = mongo.get_tg_ch_post_awards_and_shares_in_period(
+    out = await mongo.get_tg_ch_post_awards_and_shares_in_period(
         "https://t.me/viz_news/80", to_date=to, from_date=fr
     )
     assert out == {"post_link": "https://t.me/viz_news/80", "awards": 0, "shares": 0}
 
 
-def test_single_target_default_window_anchors_to_now():
+async def test_single_target_default_window_anchors_to_now():
     """Passing only from_date (or only to_date) must still resolve sensibly:
     omitted bound falls back to its default, not to a frozen import-time value."""
     now = dt.datetime.now()
     _seed([_award(17.1, now - dt.timedelta(hours=2), "viz://@alice/42", shares=4.0)])
-    out = mongo.get_readdleme_author_awards_and_shares_in_period(
+    out = await mongo.get_readdleme_author_awards_and_shares_in_period(
         "@alice", from_date=now - dt.timedelta(days=1)
     )
     assert out == {"account": "@alice", "awards": 1, "shares": 4.0}

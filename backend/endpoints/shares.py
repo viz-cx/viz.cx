@@ -27,16 +27,16 @@ class SharesResponse(BaseModel):
 
 
 @router.get("/all", response_model=SharesResponse)
-def sum_shares() -> SharesResponse:
+async def sum_shares() -> SharesResponse:
     return SharesResponse(
-        shares=rollups.get_shares_sum(),
+        shares=await rollups.get_shares_sum(),
         operation_type="all",
         date="all",
     )
 
 
 @router.get("/{to_date_str}/{from_date_str}", response_model=SharesResponse)
-def sum_shares_in_period(
+async def sum_shares_in_period(
     to_date_str: str | None = None,
     from_date_str: str | None = None,
 ) -> SharesResponse:
@@ -47,7 +47,7 @@ def sum_shares_in_period(
         else to_date - dt.timedelta(hours=1)
     )
     return SharesResponse(
-        shares=rollups.get_shares_sum(from_date=from_date, to_date=to_date),
+        shares=await rollups.get_shares_sum(from_date=from_date, to_date=to_date),
         operation_type="all",
         date=DateRange.model_validate({"from": iso8601(from_date), "to": iso8601(to_date)}),
     )
@@ -57,7 +57,7 @@ def sum_shares_in_period(
     "/{operation_type}/{to_date_str}/{from_date_str}",
     response_model=SharesResponse,
 )
-def sum_shares_by_op_type_in_period(
+async def sum_shares_by_op_type_in_period(
     operation_type: OpType = OpType.witness_reward,
     to_date_str: str | None = None,
     from_date_str: str | None = None,
@@ -69,7 +69,7 @@ def sum_shares_by_op_type_in_period(
         else to_date - dt.timedelta(hours=1)
     )
     return SharesResponse(
-        shares=rollups.get_shares_sum(
+        shares=await rollups.get_shares_sum(
             op_type=operation_type.value, from_date=from_date, to_date=to_date
         ),
         operation_type=operation_type.value,

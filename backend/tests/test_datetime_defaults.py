@@ -7,7 +7,7 @@ from unittest.mock import patch
 def test_voice_top_posts_resolves_window_per_request(client, monkeypatch):
     calls: list = []
 
-    def fake_top(to, fr, in_top, to_skip):
+    async def fake_top(to, fr, in_top, to_skip):
         calls.append((to, fr))
         return []
 
@@ -28,7 +28,7 @@ def test_voice_top_posts_resolves_window_per_request(client, monkeypatch):
 def test_telegram_top_posts_uses_explicit_dates(client, monkeypatch):
     captured: list = []
 
-    def fake_top(to, fr, in_top, to_skip):
+    async def fake_top(to, fr, in_top, to_skip):
         captured.append((to, fr))
         return []
 

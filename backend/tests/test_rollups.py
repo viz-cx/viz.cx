@@ -9,7 +9,7 @@ def _op(op_type: str, timestamp: dt.datetime, shares: float = 0.0) -> dict:
     return {"timestamp": timestamp, "op": [op_type, payload]}
 
 
-def test_aggregate_ops_counts_by_hour():
+async def test_aggregate_ops_counts_by_hour():
     h1 = dt.datetime(2026, 1, 1, 12, 0, 0, tzinfo=dt.UTC)
     h2 = dt.datetime(2026, 1, 1, 13, 0, 0, tzinfo=dt.UTC)
     rollups.aggregate_ops(
@@ -20,12 +20,12 @@ def test_aggregate_ops_counts_by_hour():
             _op("custom", h1 + dt.timedelta(minutes=15)),
         ]
     )
-    assert rollups.get_count(op_type="transfer") == 3
-    assert rollups.get_count(op_type="custom") == 1
-    assert rollups.get_count() == 4
+    assert await rollups.get_count(op_type="transfer") == 3
+    assert await rollups.get_count(op_type="custom") == 1
+    assert await rollups.get_count() == 4
 
 
-def test_aggregate_ops_sums_shares():
+async def test_aggregate_ops_sums_shares():
     h = dt.datetime(2026, 1, 1, 12, 0, 0, tzinfo=dt.UTC)
     rollups.aggregate_ops(
         [
@@ -34,17 +34,17 @@ def test_aggregate_ops_sums_shares():
             _op("transfer", h, shares=0.0),
         ]
     )
-    assert rollups.get_shares_sum(op_type="witness_reward") == 4.0
-    assert rollups.get_shares_sum(op_type="transfer") == 0.0
+    assert await rollups.get_shares_sum(op_type="witness_reward") == 4.0
+    assert await rollups.get_shares_sum(op_type="transfer") == 0.0
 
 
-def test_get_count_in_range_inclusive_left_exclusive_right():
+async def test_get_count_in_range_inclusive_left_exclusive_right():
     h = dt.datetime(2026, 1, 1, 10, 0, 0, tzinfo=dt.UTC)
     rollups.aggregate_ops([_op("transfer", h + dt.timedelta(minutes=i * 30)) for i in range(6)])
-    assert rollups.get_count(
+    assert await rollups.get_count(
         op_type="transfer", from_date=h, to_date=h + dt.timedelta(hours=2)
     ) == 4
-    assert rollups.get_count(
+    assert await rollups.get_count(
         op_type="transfer",
         from_date=h + dt.timedelta(hours=1),
         to_date=h + dt.timedelta(hours=3),

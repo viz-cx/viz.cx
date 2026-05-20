@@ -5,8 +5,8 @@ import sys
 from pathlib import Path
 from unittest.mock import MagicMock
 
-import mongomock
 import pytest
+from mongomock_motor import AsyncMongoMockClient
 
 os.environ["SKIP_WORKERS"] = "1"
 os.environ.setdefault("DB_NAME", "viztest")
@@ -21,12 +21,17 @@ if str(BACKEND_DIR) not in sys.path:
 
 @pytest.fixture(autouse=True)
 def _mongo(monkeypatch):
-    """Reset mongomock and inject it as the active client before every test."""
+    """Reset mongomock and inject it as the active client before every test.
+    One AsyncMongoMockClient backs both views — its internal sync mongomock
+    client is used for the sync helpers, so test seeding via either client
+    sees the same data."""
     from helpers import db_client
 
-    client = mongomock.MongoClient()
-    db_client.set_client(client, db_name=os.environ["DB_NAME"])
-    yield client
+    async_client = AsyncMongoMockClient()
+    sync_client = async_client._AsyncMongoMockClient__client
+    db_client.set_client(sync_client, db_name=os.environ["DB_NAME"])
+    db_client.set_async_client(async_client, db_name=os.environ["DB_NAME"])
+    yield sync_client
 
 
 @pytest.fixture(autouse=True)

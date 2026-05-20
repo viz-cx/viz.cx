@@ -11,7 +11,7 @@ from concurrent.futures import ThreadPoolExecutor
 import pymongo
 from bson import ObjectId
 
-from helpers.db_client import get_db
+from helpers.db_client import get_async_db, get_db
 from helpers.enums import OpType, ops_custom, ops_shares
 from helpers.viz import convertShares
 
@@ -35,26 +35,42 @@ def _db():
     return get_db()
 
 
-class _CollProxy:
-    """Lazy attribute proxy. Resolves to the underlying collection on access."""
+def _adb():
+    return get_async_db()
 
-    def __init__(self, name_env: str, default: str = ""):
+
+class _CollProxy:
+    """Lazy attribute proxy. Resolves to the underlying collection on access.
+    `db_getter` controls whether this is a sync (pymongo) or async (motor)
+    collection — same proxy shape, two storage backends."""
+
+    def __init__(self, name_env: str, default: str = "", db_getter=_db):
         self._name_env = name_env
         self._default = default
+        self._db_getter = db_getter
 
     def _resolve(self):
-        return _db()[os.getenv(self._name_env, self._default)]
+        return self._db_getter()[os.getenv(self._name_env, self._default)]
 
     def __getattr__(self, item):
         return getattr(self._resolve(), item)
 
     def __getitem__(self, key):
-        return self._resolve()[key]
+        # Motor's AsyncIOMotorCollection isn't subscriptable; use full dotted
+        # name on the db instead. Works for both sync pymongo and motor.
+        base_name = os.getenv(self._name_env, self._default)
+        return self._db_getter()[f"{base_name}.{key}"]
 
 
 coll = _CollProxy("COLLECTION")
 coll_posts = _CollProxy("COLLECTION_POSTS", "posts")
 coll_ops = _CollProxy("COLLECTION_OPS")
+
+# Async views over the same collections (motor). Used by endpoint handlers;
+# the sync `coll*` proxies are used by sorter/parser/webhook-delivery threads.
+acoll = _CollProxy("COLLECTION", db_getter=_adb)
+acoll_posts = _CollProxy("COLLECTION_POSTS", "posts", db_getter=_adb)
+acoll_ops = _CollProxy("COLLECTION_OPS", db_getter=_adb)
 
 
 def _coll_custom():
@@ -276,7 +292,7 @@ def _metric_accumulator(metric: str) -> dict:
     raise ValueError(f"unknown metric: {metric}")
 
 
-def _top_memo_leaderboard(
+async def _top_memo_leaderboard(
     *,
     memo_regex: str,
     from_date: dt.datetime,
@@ -303,10 +319,10 @@ def _top_memo_leaderboard(
         {"$skip": to_skip},
         {"$limit": in_top},
     ]
-    return list(coll_ops[OpType.receive_award].aggregate(pipeline))
+    return await acoll_ops[OpType.receive_award].aggregate(pipeline).to_list(length=in_top)
 
 
-def _memo_awards_and_shares(
+async def _memo_awards_and_shares(
     *,
     memo_filter,
     from_date: dt.datetime,
@@ -330,7 +346,7 @@ def _memo_awards_and_shares(
             }
         },
     ]
-    result = list(coll_ops[OpType.receive_award].aggregate(pipeline))
+    result = await acoll_ops[OpType.receive_award].aggregate(pipeline).to_list(length=1)
     if not result:
         return {"awards": 0, "shares": 0}
     return {"awards": int(result[0]["awards"]), "shares": result[0]["shares"]}
@@ -364,14 +380,14 @@ def _default_week_window(
 _TG_MEMO_REGEX = "^channel:@"
 
 
-def get_top_tg_posts_by_shares_in_period(
+async def get_top_tg_posts_by_shares_in_period(
     to_date: dt.datetime,
     from_date: dt.datetime,
     in_top: int,
     to_skip: int,
 ) -> list:
     """Return top Telegram posts by shares."""
-    rows = _top_memo_leaderboard(
+    rows = await _top_memo_leaderboard(
         memo_regex=_TG_MEMO_REGEX,
         from_date=from_date, to_date=to_date,
         in_top=in_top, to_skip=to_skip,
@@ -380,7 +396,7 @@ def get_top_tg_posts_by_shares_in_period(
     return [{"post": _tg_post_link_from_memo(r["_id"]), "value": r["value"]} for r in rows]
 
 
-def get_top_tg_ch_by_shares_in_period(
+async def get_top_tg_ch_by_shares_in_period(
     to_date: dt.datetime | None = None,
     from_date: dt.datetime | None = None,
     in_top: int = 5,
@@ -388,7 +404,7 @@ def get_top_tg_ch_by_shares_in_period(
 ) -> list:
     """Return top Telegram channels by received SHARES."""
     to_date, from_date = _default_week_window(to_date, from_date)
-    rows = _top_memo_leaderboard(
+    rows = await _top_memo_leaderboard(
         memo_regex=_TG_MEMO_REGEX,
         from_date=from_date, to_date=to_date,
         in_top=in_top, to_skip=to_skip,
@@ -397,7 +413,7 @@ def get_top_tg_ch_by_shares_in_period(
     return [{"channel": _tg_channel_link(r["_id"]), "value": r["value"]} for r in rows]
 
 
-def get_top_tg_posts_by_awards_count_in_period(
+async def get_top_tg_posts_by_awards_count_in_period(
     to_date: dt.datetime | None = None,
     from_date: dt.datetime | None = None,
     in_top: int = 5,
@@ -405,7 +421,7 @@ def get_top_tg_posts_by_awards_count_in_period(
 ) -> list:
     """Return top Telegram posts by awards count."""
     to_date, from_date = _default_week_window(to_date, from_date)
-    rows = _top_memo_leaderboard(
+    rows = await _top_memo_leaderboard(
         memo_regex=_TG_MEMO_REGEX,
         from_date=from_date, to_date=to_date,
         in_top=in_top, to_skip=to_skip,
@@ -414,7 +430,7 @@ def get_top_tg_posts_by_awards_count_in_period(
     return [{"post": _tg_post_link_from_memo(r["_id"]), "value": r["value"]} for r in rows]
 
 
-def get_tg_ch_post_awards_and_shares_in_period(
+async def get_tg_ch_post_awards_and_shares_in_period(
     tg_ch_post_link: str = "https://t.me/viz_news/80",
     to_date: dt.datetime | None = None,
     from_date: dt.datetime | None = None,
@@ -422,13 +438,13 @@ def get_tg_ch_post_awards_and_shares_in_period(
     """Return telegram channel post awards count and received SHARES in period"""
     to_date, from_date = _default_week_window(to_date, from_date)
     memo_post_link = "channel:@" + tg_ch_post_link.split("t.me/", 1)[-1].replace("/", ":")
-    totals = _memo_awards_and_shares(
+    totals = await _memo_awards_and_shares(
         memo_filter=memo_post_link, from_date=from_date, to_date=to_date,
     )
     return {"post_link": tg_ch_post_link, **totals}
 
 
-def get_top_tg_chs_by_awards_count_in_period(
+async def get_top_tg_chs_by_awards_count_in_period(
     to_date: dt.datetime | None = None,
     from_date: dt.datetime | None = None,
     in_top: int = 5,
@@ -436,7 +452,7 @@ def get_top_tg_chs_by_awards_count_in_period(
 ) -> list:
     """Return top telegram channels by awards count."""
     to_date, from_date = _default_week_window(to_date, from_date)
-    rows = _top_memo_leaderboard(
+    rows = await _top_memo_leaderboard(
         memo_regex=_TG_MEMO_REGEX,
         from_date=from_date, to_date=to_date,
         in_top=in_top, to_skip=to_skip,
@@ -445,14 +461,14 @@ def get_top_tg_chs_by_awards_count_in_period(
     return [{"channel": _tg_channel_link(r["_id"]), "value": r["value"]} for r in rows]
 
 
-def get_tg_ch_awards_and_shares_in_period(
+async def get_tg_ch_awards_and_shares_in_period(
     tg_ch_id: str = "@viz_news",
     to_date: dt.datetime | None = None,
     from_date: dt.datetime | None = None,
 ) -> dict:
     """Return SHARES and awards received by telegram channel."""
     to_date, from_date = _default_week_window(to_date, from_date)
-    totals = _memo_awards_and_shares(
+    totals = await _memo_awards_and_shares(
         memo_filter={"$regex": "^channel:" + tg_ch_id},
         from_date=from_date, to_date=to_date,
     )
@@ -467,14 +483,14 @@ def get_tg_ch_awards_and_shares_in_period(
 _VOICE_MEMO_REGEX = "^viz://@"
 
 
-def get_top_readdleme_posts_by_shares_in_period(
+async def get_top_readdleme_posts_by_shares_in_period(
     to_date: dt.datetime,
     from_date: dt.datetime,
     in_top: int,
     to_skip: int,
 ) -> list:
     """Return top Readdle.Me posts by SHARES."""
-    rows = _top_memo_leaderboard(
+    rows = await _top_memo_leaderboard(
         memo_regex=_VOICE_MEMO_REGEX,
         from_date=from_date, to_date=to_date,
         in_top=in_top, to_skip=to_skip,
@@ -483,39 +499,53 @@ def get_top_readdleme_posts_by_shares_in_period(
     return [{"post": r["_id"][0], "value": r["value"]} for r in rows]
 
 
-def get_readdleme_post_awards_and_shares(author: str, block: int) -> dict:
-    """Return Voice post awards count and received SHARES"""
+def _readdleme_post_awards_pipeline(author: str, block: int) -> tuple[str, list[dict]]:
     memo_post_link = f"viz://@{author}/{block}"
     regex = "^" + re.escape(memo_post_link) + "($|\\/)"
-    result = coll_ops[OpType.receive_award].aggregate(
-        [
-            {
-                "$match": {
-                    "op.memo": {"$regex": regex},
-                }
-            },
-            {
-                "$group": {
-                    "_id": "$op.receiver",
-                    "awards": {"$sum": {"$sum": 1}},
-                    "shares": {"$sum": {"$sum": "$op.shares"}},
-                }
-            },
-        ]
-    )
-    result = tuple(result)
-    awards: int = 0
-    shares: float = 0
-    for r in result:
+    pipeline = [
+        {"$match": {"op.memo": {"$regex": regex}}},
+        {
+            "$group": {
+                "_id": "$op.receiver",
+                "awards": {"$sum": {"$sum": 1}},
+                "shares": {"$sum": {"$sum": "$op.shares"}},
+            }
+        },
+    ]
+    return memo_post_link, pipeline
+
+
+def _readdleme_post_awards_reduce(
+    rows: list[dict], author: str
+) -> tuple[int, float]:
+    awards = 0
+    shares = 0.0
+    for r in rows:
         if r["_id"][0] == site_account:
             awards += r["awards"]
             shares -= r["shares"]
         elif r["_id"][0] == author:
             awards += r["awards"]
             shares += r["shares"]
+    return awards, shares
+
+
+def get_readdleme_post_awards_and_shares(author: str, block: int) -> dict:
+    """Sync variant for the parser/recalc worker."""
+    memo_post_link, pipeline = _readdleme_post_awards_pipeline(author, block)
+    rows = list(coll_ops[OpType.receive_award].aggregate(pipeline))
+    awards, shares = _readdleme_post_awards_reduce(rows, author)
     update_post_meta_if_needed(author, block, awards, shares)
-    result = {"awards": awards, "shares": shares, "post_link": memo_post_link}
-    return result
+    return {"awards": awards, "shares": shares, "post_link": memo_post_link}
+
+
+async def aget_readdleme_post_awards_and_shares(author: str, block: int) -> dict:
+    """Async variant used by the voice endpoint."""
+    memo_post_link, pipeline = _readdleme_post_awards_pipeline(author, block)
+    rows = await acoll_ops[OpType.receive_award].aggregate(pipeline).to_list(length=None)
+    awards, shares = _readdleme_post_awards_reduce(rows, author)
+    await aupdate_post_meta_if_needed(author, block, awards, shares)
+    return {"awards": awards, "shares": shares, "post_link": memo_post_link}
 
 
 def update_post_meta_if_needed(
@@ -535,14 +565,28 @@ def update_post_meta_if_needed(
             )
 
 
-def get_top_readdleme_authors_by_shares_in_period(
+async def aupdate_post_meta_if_needed(
+    author: str, block: int, awards: int, shares: float
+) -> None:
+    post = await aget_saved_post(author, block, show_id=True)
+    if isinstance(post, dict):
+        postAwards: int = post.get("awards", 0)
+        postShares: float = post.get("shares", 0.0)
+        if awards != postAwards or postShares != shares:
+            await acoll_posts.find_one_and_update(
+                {"_id": post["_id"]},
+                {"$set": {"awards": awards, "shares": shares}},
+            )
+
+
+async def get_top_readdleme_authors_by_shares_in_period(
     to_date: dt.datetime,
     from_date: dt.datetime,
     in_top: int,
     to_skip: int,
 ) -> list:
     """Return top Readdle.Me authors by SHARES."""
-    rows = _top_memo_leaderboard(
+    rows = await _top_memo_leaderboard(
         memo_regex=_VOICE_MEMO_REGEX,
         from_date=from_date, to_date=to_date,
         in_top=in_top, to_skip=to_skip,
@@ -551,14 +595,14 @@ def get_top_readdleme_authors_by_shares_in_period(
     return [{"account": r["_id"], "value": r["value"]} for r in rows]
 
 
-def get_top_readdleme_posts_by_awards_in_period(
+async def get_top_readdleme_posts_by_awards_in_period(
     to_date: dt.datetime,
     from_date: dt.datetime,
     in_top: int,
     to_skip: int,
 ) -> list:
     """Return top Readdle.Me posts by awards count."""
-    rows = _top_memo_leaderboard(
+    rows = await _top_memo_leaderboard(
         memo_regex=_VOICE_MEMO_REGEX,
         from_date=from_date, to_date=to_date,
         in_top=in_top, to_skip=to_skip,
@@ -567,14 +611,14 @@ def get_top_readdleme_posts_by_awards_in_period(
     return [{"post": r["_id"][0], "value": r["value"]} for r in rows]
 
 
-def get_top_readdleme_authors_by_awards_in_period(
+async def get_top_readdleme_authors_by_awards_in_period(
     to_date: dt.datetime,
     from_date: dt.datetime,
     in_top: int,
     to_skip: int,
 ) -> list:
     """Return top Readdle.Me authors by awards count."""
-    rows = _top_memo_leaderboard(
+    rows = await _top_memo_leaderboard(
         memo_regex=_VOICE_MEMO_REGEX,
         from_date=from_date, to_date=to_date,
         in_top=in_top, to_skip=to_skip,
@@ -583,14 +627,14 @@ def get_top_readdleme_authors_by_awards_in_period(
     return [{"account": r["_id"], "value": r["value"]} for r in rows]
 
 
-def get_readdleme_author_awards_and_shares_in_period(
+async def get_readdleme_author_awards_and_shares_in_period(
     readdleme_author_id: str = "@inov8",
     to_date: dt.datetime | None = None,
     from_date: dt.datetime | None = None,
 ) -> dict:
     """Return Readdle.Me author awards count and received SHARES in period."""
     to_date, from_date = _default_week_window(to_date, from_date)
-    totals = _memo_awards_and_shares(
+    totals = await _memo_awards_and_shares(
         memo_filter={"$regex": "^viz://" + readdleme_author_id},
         from_date=from_date, to_date=to_date,
     )
@@ -740,6 +784,13 @@ def get_saved_post(author: str, block: int, show_id=False):
         {} if show_id else {"_id": 0},
     )
     return post
+
+
+async def aget_saved_post(author: str, block: int, show_id=False):
+    return await acoll_posts.find_one(
+        postsQuery(author=author, block=block),
+        {} if show_id else {"_id": 0},
+    )
 
 
 def update_post_comments(postId: ObjectId, comments: int):

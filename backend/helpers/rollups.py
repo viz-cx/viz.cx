@@ -18,13 +18,18 @@ import os
 from collections import defaultdict
 from typing import Any
 
-from helpers.db_client import get_db
+from helpers.db_client import get_async_db, get_db
 from helpers.enums import ops_shares
 
 
 def _coll():
     name = os.getenv("COLLECTION_ROLLUPS", "rollups")
     return get_db()[name]
+
+
+def _acoll():
+    name = os.getenv("COLLECTION_ROLLUPS", "rollups")
+    return get_async_db()[name]
 
 
 def ensure_indexes() -> None:
@@ -103,7 +108,7 @@ def _range_filter(
     return q
 
 
-def get_count(
+async def get_count(
     op_type: str | None = None,
     from_date: dt.datetime | None = None,
     to_date: dt.datetime | None = None,
@@ -112,11 +117,11 @@ def get_count(
         {"$match": _range_filter(op_type, from_date, to_date)},
         {"$group": {"_id": None, "total": {"$sum": "$count"}}},
     ]
-    result = list(_coll().aggregate(pipeline))
+    result = await _acoll().aggregate(pipeline).to_list(length=1)
     return int(result[0]["total"]) if result else 0
 
 
-def get_shares_sum(
+async def get_shares_sum(
     op_type: str | None = None,
     from_date: dt.datetime | None = None,
     to_date: dt.datetime | None = None,
@@ -125,19 +130,19 @@ def get_shares_sum(
         {"$match": _range_filter(op_type, from_date, to_date)},
         {"$group": {"_id": None, "total": {"$sum": "$shares"}}},
     ]
-    result = list(_coll().aggregate(pipeline))
+    result = await _acoll().aggregate(pipeline).to_list(length=1)
     return float(result[0]["total"]) if result else 0.0
 
 
-def get_series(
+async def get_series(
     op_type: str | None = None,
     from_date: dt.datetime | None = None,
     to_date: dt.datetime | None = None,
 ) -> list[dict[str, Any]]:
     """Return per-hour series rows: [{hour, op_type, count, shares}, ...]."""
     cursor = (
-        _coll()
+        _acoll()
         .find(_range_filter(op_type, from_date, to_date), {"_id": 0})
         .sort([("hour", 1), ("op_type", 1)])
     )
-    return list(cursor)
+    return await cursor.to_list(length=None)
