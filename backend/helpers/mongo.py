@@ -225,8 +225,8 @@ def recalculate_meta_if_needed(op) -> None:
                     block = int(result.group(2))
                     post = get_saved_post(author, block, show_id=True)
                     if isinstance(post, dict):
-                        comments = get_post_comments(author=author, block=block)
-                        update_post_comments(post["_id"], comments=len(comments))
+                        comments = count_post_comments(author=author, block=block)
+                        update_post_comments(post["_id"], comments=comments)
         except Exception as e:
             logger.warning("Replies recalculation error: %s", e)
 
@@ -677,30 +677,25 @@ def get_posts_by_tag(tag: str, limit=10, page=0):
     return tuple()
 
 
-def get_post_comments(author: str, block: int):
-    replyRegex = {"$regex": f"^viz://@{author}/{block}"}
-    cursor = coll_posts.find(
-        {"d.r": replyRegex},
-        {"_id": 0},
-    ).sort("block", pymongo.DESCENDING)
-    return tuple(cursor)
-
-
 def _post_uri(author: str, block: int) -> str:
     return f"viz://@{author}/{block}"
+
+
+def count_post_comments(author: str, block: int) -> int:
+    """Number of direct replies to (author, block). Uses the `d.r` index."""
+    return coll_posts.count_documents({"d.r": _post_uri(author, block)})
 
 
 def get_post_thread(author: str, block: int, max_depth: int = 50) -> list:
     """Return all descendants of (author, block) as a nested tree in one
     pass per depth level (BFS), instead of N+1 queries per node.
 
-    The previous implementation called get_post_comments() for every node,
-    producing depth × fanout queries. This walks the tree level-by-level
-    with a single $or query per level.
+    Each level is an exact-match query on `d.r` (the reply URI), which is
+    index-backed (see helpers/db_client.ensure_indexes).
     """
     root_uri = _post_uri(author, block)
     direct = coll_posts.find(
-        {"d.r": {"$regex": "^" + re.escape(root_uri) + "($|/)"}},
+        {"d.r": root_uri},
         {"_id": 0},
     ).sort("block", pymongo.DESCENDING)
     nodes_by_uri: dict[str, dict] = {}

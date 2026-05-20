@@ -6,8 +6,8 @@ from typing import Literal, NoReturn
 from pydantic import BaseModel
 
 from helpers.mongo import (
+    count_post_comments,
     get_last_saved_post_block_id,
-    get_post_comments,
     get_readdleme_post_awards_and_shares,
     get_voice_posts,
     save_voice_post,
@@ -49,8 +49,7 @@ def fetch_posts_from_block(block) -> list:
             assert isinstance(post.block, int), "post.block must be an integer"
             meta = get_readdleme_post_awards_and_shares(post.author, post.block)
             post.shares = meta["shares"]
-            comments = get_post_comments(author=post.author, block=post.block)
-            post.comments = len(comments)
+            post.comments = count_post_comments(author=post.author, block=post.block)
             if post.d.t is None:
                 print(f"Skip post: {post.author}/{post.block}")
             else:
