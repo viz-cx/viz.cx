@@ -31,6 +31,35 @@ def del_last_sorted_ops(blocknum) -> None:
         coll_ops[op].delete_many({"_id": {"$gte": blocknum}})
 
 
+def _sort_pass(last_sorted_block: int, last_db_block: int) -> int:
+    """One sorter pass: sort blocks with _id in (last_sorted_block, upper]
+    and return upper as the new position.
+
+    Returns upper even when the window holds no blocks. The parser appends
+    strictly ascending, so an _id at or below last_db_block that is absent
+    now will never appear later (e.g. the known hole in history) — without
+    this the sorter would re-query the same empty window forever."""
+    upper = min(last_sorted_block + SORTER_BATCH_SIZE, last_db_block)
+    cursor = coll.find(
+        {"_id": {"$gt": last_sorted_block, "$lte": upper}}
+    ).sort("_id", pymongo.ASCENDING)
+    pending: list[dict] = []
+    prev_logged_century = last_sorted_block // 100
+    for block in cursor:
+        pending.append(block)
+        if len(pending) >= SORTER_BATCH_BLOCKS:
+            sort_blocks_to_subcolls(pending)
+            sorted_to = pending[-1]["_id"]
+            pending = []
+            century = sorted_to // 100
+            if century != prev_logged_century:
+                logger.info("Sorted block %d (db: %d)", sorted_to, last_db_block)
+                prev_logged_century = century
+    if pending:
+        sort_blocks_to_subcolls(pending)
+    return upper
+
+
 def start_sorting() -> NoReturn:
     """Sort VIZ blockchain MongoDB blocks to subcolls by operation type.
 
@@ -53,34 +82,7 @@ def start_sorting() -> NoReturn:
             if last_db_block <= last_sorted_block:
                 sleep(3)
                 continue
-            upper = min(last_sorted_block + SORTER_BATCH_SIZE, last_db_block)
-            cursor = coll.find(
-                {"_id": {"$gt": last_sorted_block, "$lte": upper}}
-            ).sort("_id", pymongo.ASCENDING)
-            pending: list[dict] = []
-            prev_logged_century = last_sorted_block // 100
-            for block in cursor:
-                pending.append(block)
-                if len(pending) >= SORTER_BATCH_BLOCKS:
-                    sort_blocks_to_subcolls(pending)
-                    last_sorted_block = pending[-1]["_id"]
-                    pending = []
-                    century = last_sorted_block // 100
-                    if century != prev_logged_century:
-                        logger.info(
-                            "Sorted block %d (db: %d)",
-                            last_sorted_block, last_db_block,
-                        )
-                        prev_logged_century = century
-            if pending:
-                sort_blocks_to_subcolls(pending)
-                last_sorted_block = pending[-1]["_id"]
-                century = last_sorted_block // 100
-                if century != prev_logged_century:
-                    logger.info(
-                        "Sorted block %d (db: %d)",
-                        last_sorted_block, last_db_block,
-                    )
+            last_sorted_block = _sort_pass(last_sorted_block, last_db_block)
         except Exception as e:
             logger.warning("Sorting error: %s. Restart in 10 seconds.", e)
             sleep(10)
