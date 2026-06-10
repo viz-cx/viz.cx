@@ -6,6 +6,8 @@ class OpType(str, Enum):
     benefactor_award = "benefactor_award"
     receive_award = "receive_award"
     witness_reward = "witness_reward"
+    # witness_reward renamed on-chain between blocks ~79.1M and ~80.46M
+    validator_reward = "validator_reward"
 
     def __str__(self) -> str:
         return str(self.value)
@@ -17,6 +19,7 @@ ops_shares = [
     OpType.benefactor_award,
     OpType.receive_award,
     OpType.witness_reward,
+    OpType.validator_reward,
 ]
 
 

@@ -41,6 +41,27 @@ def test_resolve_start_block_never_rewinds(monkeypatch):
     assert resolve_start_block(100) == 100
 
 
+async def test_validator_reward_sorted_and_rolled_up():
+    """Newer VIZ emits validator_reward (the renamed witness_reward); it
+    must get its own subcollection and contribute shares to rollups."""
+    from helpers import rollups
+
+    mongo.coll.insert_one(
+        {
+            "_id": 80463601,
+            "block": [
+                {
+                    "timestamp": dt.datetime(2026, 6, 3, tzinfo=dt.UTC),
+                    "op": ["validator_reward", {"validator": "v", "shares": "2.500000 SHARES"}],
+                }
+            ],
+        }
+    )
+    _sort_pass(80463600, 80463601)
+    assert mongo.coll_ops["validator_reward"].count_documents({}) == 1
+    assert await rollups.get_shares_sum(op_type="validator_reward") == 2.5
+
+
 def test_sort_pass_advances_over_empty_window():
     _seed_block(1)
     _seed_block(5000)
