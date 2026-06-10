@@ -22,6 +22,7 @@ from pymongo import UpdateOne
 
 from helpers.db_client import get_async_db, get_db
 from helpers.enums import ops_shares
+from helpers.viz import convertShares
 
 
 def _coll():
@@ -58,7 +59,12 @@ def _doc_id(hour: dt.datetime, op_type: str) -> str:
 
 def _delta_from_op(op: dict[str, Any]) -> tuple[str, float]:
     op_type = op["op"][0]
-    shares = float(op["op"][1].get("shares", 0.0) or 0.0) if op_type in ops_shares else 0.0
+    if op_type not in ops_shares:
+        return op_type, 0.0
+    # Raw block ops carry shares as "0.199999 SHARES"; the sorter converts
+    # them to floats before they get here, the backfill CLI does not.
+    raw = op["op"][1].get("shares", 0.0) or 0.0
+    shares = convertShares(raw) if isinstance(raw, str) else float(raw)
     return op_type, shares
 
 

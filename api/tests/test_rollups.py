@@ -38,6 +38,19 @@ async def test_aggregate_ops_sums_shares():
     assert await rollups.get_shares_sum(op_type="transfer") == 0.0
 
 
+async def test_aggregate_ops_accepts_raw_string_shares():
+    """Raw block ops carry shares as '0.199999 SHARES' strings; the backfill
+    feeds them to aggregate_ops unconverted (the sorter converts first)."""
+    h = dt.datetime(2026, 1, 1, 12, 0, 0, tzinfo=dt.UTC)
+    rollups.aggregate_ops(
+        [
+            {"timestamp": h, "op": ["witness_reward", {"shares": "0.199999 SHARES"}]},
+            {"timestamp": h, "op": ["witness_reward", {"shares": 0.300001}]},
+        ]
+    )
+    assert await rollups.get_shares_sum(op_type="witness_reward") == 0.5
+
+
 async def test_get_count_in_range_inclusive_left_exclusive_right():
     h = dt.datetime(2026, 1, 1, 10, 0, 0, tzinfo=dt.UTC)
     rollups.aggregate_ops([_op("transfer", h + dt.timedelta(minutes=i * 30)) for i in range(6)])
