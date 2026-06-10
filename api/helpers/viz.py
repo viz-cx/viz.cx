@@ -1,14 +1,38 @@
 """Helper module to VIZ blockchain."""
 import logging
+import os
 import random
 from time import sleep
 from typing import Any
 
+import requests
+from grapheneapi.http import Http as _GrapheneHttp
 from viz import Client as VIZ
 
 logger = logging.getLogger(__name__)
 
-nodes = ["wss://node.viz.cx/ws"]
+
+def _patched_get_request_session(self: Any) -> requests.Session:
+    # Upstream get_request_session reads a private attr that is unset when
+    # Http.__init__ hasn't run; the miss falls through to Rpc.__getattr__,
+    # which returns an RPC proxy function instead of raising. Go through
+    # __dict__ to bypass that fallback entirely.
+    session = self.__dict__.get("_request_session")
+    if session is None:
+        session = requests.Session()
+        self.__dict__["_request_session"] = session
+    return session
+
+
+_GrapheneHttp.get_request_session = _patched_get_request_session
+
+
+def _nodes_from_env() -> list[str]:
+    raw = os.getenv("VIZ_NODES", "wss://node.viz.cx/ws")
+    return [n.strip() for n in raw.split(",") if n.strip()]
+
+
+nodes = _nodes_from_env()
 
 viz: Any = None
 
