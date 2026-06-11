@@ -1,0 +1,69 @@
+# Kamal deploy config for the viz.cx API — single FastAPI container (uvicorn
+# :8000) with parser/sorter/posts worker threads inside. API-only deploy: the
+# legacy box (138.201.117.201) keeps serving the viz.cx site frontend; this app
+# serves api.viz.cx and carries node.viz.cx solely for the 308 redirect to
+# https://rpc.viz.cx:19443 (FastAPI middleware in api/main.py — kamal-proxy
+# issues/renews the cert because the host is listed here; node.viz.cx does NOT
+# go into infra's tls-hosts.txt, redirect-only hosts never do).
+#
+# Data: shared platform MongoDB, db `viz-cx-api` (the legacy 15.2 GB
+# `viz-blockchain` db restored with ns remap — infra runbook-viz-migration §10).
+# Chain feed: the VIZ RPC node on vpn-amnezia. The app calls mongo AND the node
+# during boot (lifespan: init_node + ensure_indexes), so it relies on
+# platform-up.sh's mongo bridge onto the kamal network — hostname `mongo`
+# resolves at container boot; the post-deploy hook adds platform_net after.
+
+service: viz-cx-api
+image:   chiliec/viz-cx-api        # GHCR: composed to ghcr.io/chiliec/viz-cx-api via registry.server
+
+servers:
+  web:
+    hosts:
+      - 5.223.75.86               # axveer VPS public IPv4
+
+ssh:
+  user: deploy
+  port: 666                       # hardened sshd per infra inventory.yml
+
+proxy:
+  hosts:
+    - api.viz.cx                  # the API's own name (A record → axveer)
+    - node.viz.cx                 # legacy RPC name — 308 middleware only
+  app_port: 8000
+  ssl: true
+  healthcheck:
+    path: /                       # others.py home() — node info round-trip;
+                                  # only polled during deploy. Fail-closed: the
+                                  # lifespan already hard-fails boot if the VIZ
+                                  # node or mongo is unreachable.
+
+registry:
+  server: ghcr.io
+  username: chiliec
+  password:
+    - KAMAL_REGISTRY_PASSWORD     # GHCR PAT (write:packages) — SOPS shared.enc.yaml docker_registry_password
+
+env:
+  clear:
+    DB_NAME: viz-cx-api           # restored from legacy `viz-blockchain` (ns remap)
+    COLLECTION: blocks4           # legacy collection names carried over as-is
+    COLLECTION_OPS: ops
+    COLLECTION_POSTS: posts
+    # COLLECTION_ROLLUPS / COLLECTION_WEBHOOKS use code defaults (rollups/webhooks)
+    VIZ_NODES: https://rpc.viz.cx:19443
+    # Parser floor: first block with op history on rpc.viz.cx (snapshot-sync
+    # node, bootstrapped 2026-06-11; probed empirically). Blocks
+    # 79,105,831–80,679,604 are a known unfillable hole — no reachable node
+    # serves them (see commit 1f6663f; the 80,463,600 bound there assumed the
+    # legacy vizd, which is wedged).
+    PARSER_START_BLOCK: "80679605"
+    LOG_LEVEL: INFO
+    # ROOT_PATH unset on purpose: kamal drops empty-string env values, so the
+    # "" default lives in api/main.py. Set it only under a stripped prefix.
+  secret:                         # decrypted from SOPS via .kamal/secrets
+    - MONGO                       # full mongodb:// URI incl. app-user creds
+
+builder:
+  arch: amd64
+  context: api                    # build context = api/ (kamal chdirs to the
+  dockerfile: api/Dockerfile      # git clone root; both paths resolve from there)

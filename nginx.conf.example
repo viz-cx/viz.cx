@@ -1,8 +1,9 @@
 # node.viz.cx is the legacy public VIZ RPC name — 308 it to the live endpoint
-# (the VIZ node on vpn-amnezia, stood up 2026-06-11). This block MUST ship with
-# the viz.cx deploy to axveer: node.viz.cx DNS is already pre-pointed at axveer
-# (5.223.75.86) and the host goes into the app's kamal proxy.hosts (cert from
-# kamal-proxy; redirect-only hosts do NOT go into infra's tls-hosts.txt).
+# (the VIZ node on vpn-amnezia, stood up 2026-06-11). LIVE IMPLEMENTATION: the
+# FastAPI middleware in api/main.py (the axveer deploy is API-only, no nginx);
+# node.viz.cx sits in config/deploy.yml proxy.hosts (cert from kamal-proxy;
+# redirect-only hosts do NOT go into infra's tls-hosts.txt). This nginx block
+# documents the same contract for any future nginx-fronted deployment.
 # 308 (not 301) so JSON-RPC POSTs keep their method+body when followed.
 server {
     listen 80;
