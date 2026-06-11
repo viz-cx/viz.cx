@@ -45,8 +45,11 @@ async def lifespan(app: FastAPI):
     yield
 
 
+# root_path "" (FastAPI's default) when serving at the domain root; "/" makes
+# Starlette 307-redirect every path (/ -> //, /playground/ -> 404). Set
+# ROOT_PATH only when mounted under a stripped prefix (e.g. /api/v1).
 app = FastAPI(
-    title="VIZ.cx API", root_path=os.getenv("ROOT_PATH", "/"), lifespan=lifespan
+    title="VIZ.cx API", root_path=os.getenv("ROOT_PATH", ""), lifespan=lifespan
 )
 app.include_router(router)
 

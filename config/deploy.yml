@@ -58,9 +58,8 @@ env:
     # legacy vizd, which is wedged).
     PARSER_START_BLOCK: "80679605"
     LOG_LEVEL: INFO
-    ROOT_PATH: ""                 # FastAPI wants "" when serving at the domain
-                                  # root; the code default "/" makes every path
-                                  # 307-redirect (/ -> //, /playground -> 404)
+    # ROOT_PATH unset on purpose: kamal drops empty-string env values, so the
+    # "" default lives in api/main.py. Set it only under a stripped prefix.
   secret:                         # decrypted from SOPS via .kamal/secrets
     - MONGO                       # full mongodb:// URI incl. app-user creds
 
