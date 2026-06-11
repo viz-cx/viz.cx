@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from threading import Thread
 
 from dotenv import load_dotenv
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi_cache import FastAPICache
@@ -49,6 +49,22 @@ app = FastAPI(
     title="VIZ.cx API", root_path=os.getenv("ROOT_PATH", "/"), lifespan=lifespan
 )
 app.include_router(router)
+
+
+@app.middleware("http")
+async def redirect_legacy_rpc_host(request: Request, call_next):
+    """node.viz.cx is the legacy public VIZ RPC name — 308 it to the live node.
+
+    Host-scoped: kamal-proxy healthchecks carry a container-address Host and
+    are never redirected. 308 (not 301) so JSON-RPC POSTs keep their
+    method+body when followed. wss:// clients are not covered — websocket
+    handshakes bypass HTTP middleware; legacy /ws users must repoint."""
+    if request.headers.get("host", "").split(":")[0] == "node.viz.cx":
+        target = "https://rpc.viz.cx:19443" + request.url.path
+        if request.url.query:
+            target += "?" + request.url.query
+        return Response(status_code=308, headers={"Location": target})
+    return await call_next(request)
 
 _playground_dir = os.path.join(os.path.dirname(__file__), "static", "playground")
 if os.path.isdir(_playground_dir):
