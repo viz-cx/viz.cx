@@ -1,0 +1,53 @@
+# Kamal deploy config for the viz.cx site frontend — Next.js (standalone) in
+# web/. Separate Kamal app from the API: deploy with
+#
+#   kamal deploy -c config/deploy.web.yml
+#
+# Serves the viz.cx apex (+ www.viz.cx, which the app itself 308s to the apex —
+# host-scoped redirects() in web/next.config.ts, seahava pattern). Both hosts
+# are listed under proxy.hosts so kamal-proxy issues/renews certs for both;
+# only the apex goes into infra's tls-hosts.txt (www never does).
+#
+# Stateless — no DB, no platform_net needed. The repo's shared post-deploy hook
+# still runs and attaches the container to platform_net; that's an idempotent
+# no-op cost, not a dependency.
+#
+# History: the previous viz.cx frontend (Nuxt) lived on the legacy box
+# 138.201.117.201, which died 2026-06-12. This app replaces it on axveer,
+# starting as a "Coming soon" placeholder.
+
+service: viz-cx-web
+image:   chiliec/viz-cx-web       # GHCR: composed to ghcr.io/chiliec/viz-cx-web via registry.server
+
+servers:
+  web:
+    hosts:
+      - 5.223.75.86               # axveer VPS public IPv4
+
+ssh:
+  user: deploy
+  port: 666                       # hardened sshd per infra inventory.yml
+
+proxy:
+  hosts:
+    - viz.cx
+    - www.viz.cx                  # cert only — the app 308s it to the apex
+  app_port: 3000
+  ssl: true
+  healthcheck:
+    path: /                       # marketing page; only polled during deploy
+
+registry:
+  server: ghcr.io
+  username: chiliec
+  password:
+    - KAMAL_REGISTRY_PASSWORD     # GHCR PAT (write:packages) — SOPS shared.enc.yaml docker_registry_password
+
+env:
+  clear:
+    NODE_ENV: production
+
+builder:
+  arch: amd64
+  context: web                    # build context = web/ (kamal chdirs to the
+  dockerfile: web/Dockerfile      # git clone root; both paths resolve from there)
