@@ -57,6 +57,12 @@ env:
     # serves them (see commit 1f6663f; the 80,463,600 bound there assumed the
     # legacy vizd, which is wedged).
     PARSER_START_BLOCK: "80679605"
+    # Sorter + posts workers disabled on this instance (operator decision
+    # 2026-06-12): the sorted per-op-type subcollections and parsed posts are no
+    # longer consumed here. Only the parser runs (feeds raw blocks into mongo).
+    # See api/main.py _start_background_workers.
+    SKIP_SORTER: "1"
+    SKIP_POSTS: "1"
     LOG_LEVEL: INFO
     # ROOT_PATH unset on purpose: kamal drops empty-string env values, so the
     # "" default lives in api/main.py. Set it only under a stripped prefix.

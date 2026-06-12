@@ -27,12 +27,16 @@ logger = logging.getLogger(__name__)
 
 
 def _start_background_workers() -> None:
-    """Spawn parser/sorter/posts threads. Skipped in tests via SKIP_WORKERS=1."""
+    """Spawn parser/sorter/posts threads. SKIP_WORKERS=1 skips all (tests);
+    SKIP_PARSER/SKIP_SORTER/SKIP_POSTS=1 skip individual workers."""
     if os.getenv("SKIP_WORKERS") == "1":
         return
-    Thread(target=start_parsing, daemon=True, name="parser").start()
-    Thread(target=start_sorting, daemon=True, name="sorter").start()
-    Thread(target=start_posts_parsing, daemon=True, name="posts").start()
+    if os.getenv("SKIP_PARSER") != "1":
+        Thread(target=start_parsing, daemon=True, name="parser").start()
+    if os.getenv("SKIP_SORTER") != "1":
+        Thread(target=start_sorting, daemon=True, name="sorter").start()
+    if os.getenv("SKIP_POSTS") != "1":
+        Thread(target=start_posts_parsing, daemon=True, name="posts").start()
 
 
 @asynccontextmanager
