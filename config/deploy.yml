@@ -1,10 +1,11 @@
 # Kamal deploy config for the viz.cx API — single FastAPI container (uvicorn
 # :8000) with parser/sorter/posts worker threads inside. API-only deploy: the
 # legacy box (138.201.117.201) keeps serving the viz.cx site frontend; this app
-# serves api.viz.cx and carries node.viz.cx solely for the 308 redirect to
-# https://rpc.viz.cx:19443 (FastAPI middleware in api/main.py — kamal-proxy
-# issues/renews the cert because the host is listed here; node.viz.cx does NOT
-# go into infra's tls-hosts.txt, redirect-only hosts never do).
+# serves api.viz.cx and reverse-proxies node.viz.cx (HTTP + WS) to the live RPC
+# node at https://rpc.viz.cx:19443 (FastAPI middleware + ws route in
+# api/main.py — kamal-proxy issues/renews the cert because the host is listed
+# here; node.viz.cx does NOT go into infra's tls-hosts.txt, proxy-only hosts
+# never do).
 #
 # Data: shared platform MongoDB, db `viz-cx-api` (the legacy 15.2 GB
 # `viz-blockchain` db restored with ns remap — infra runbook-viz-migration §10).
@@ -28,7 +29,7 @@ ssh:
 proxy:
   hosts:
     - api.viz.cx                  # the API's own name (A record → axveer)
-    - node.viz.cx                 # legacy RPC name — 308 middleware only
+    - node.viz.cx                 # legacy RPC name — reverse-proxied (HTTP+WS)
   app_port: 8000
   ssl: true
   healthcheck:
