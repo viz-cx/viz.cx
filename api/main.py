@@ -1,10 +1,13 @@
+import asyncio
 import logging
 import os
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 from threading import Thread
 
+import httpx
+import websockets
 from dotenv import load_dotenv
-from fastapi import FastAPI, Request, Response
+from fastapi import FastAPI, Request, Response, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi_cache import FastAPICache
@@ -25,24 +28,52 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# node.viz.cx is the legacy public VIZ RPC name. It is reverse-proxied (not
+# 308-redirected) to the live node so the clean, portless URL survives end to
+# end — clients never see :19443. The node lives on a box whose :443 is held by
+# the VPN's xray, so the node itself can only be served on :19443; this app (on
+# axveer, where kamal-proxy owns :443) is the one host that can present it on a
+# standard port.
+LEGACY_RPC_HOST = "node.viz.cx"
+RPC_UPSTREAM = "https://rpc.viz.cx:19443"
+RPC_WS_UPSTREAM = "wss://rpc.viz.cx:19443"
+# RFC 7230 hop-by-hop headers — must not be forwarded across the proxy.
+_HOP_BY_HOP = {
+    "connection", "keep-alive", "proxy-authenticate", "proxy-authorization",
+    "te", "trailers", "transfer-encoding", "upgrade",
+}
+
+# Shared async client for the node.viz.cx reverse proxy; created in lifespan.
+_rpc_client: httpx.AsyncClient | None = None
+
 
 def _start_background_workers() -> None:
-    """Spawn parser/sorter/posts threads. Skipped in tests via SKIP_WORKERS=1."""
+    """Spawn parser/sorter/posts threads. SKIP_WORKERS=1 skips all (tests);
+    SKIP_PARSER/SKIP_SORTER/SKIP_POSTS=1 skip individual workers."""
     if os.getenv("SKIP_WORKERS") == "1":
         return
-    Thread(target=start_parsing, daemon=True, name="parser").start()
-    Thread(target=start_sorting, daemon=True, name="sorter").start()
-    Thread(target=start_posts_parsing, daemon=True, name="posts").start()
+    if os.getenv("SKIP_PARSER") != "1":
+        Thread(target=start_parsing, daemon=True, name="parser").start()
+    if os.getenv("SKIP_SORTER") != "1":
+        Thread(target=start_sorting, daemon=True, name="sorter").start()
+    if os.getenv("SKIP_POSTS") != "1":
+        Thread(target=start_posts_parsing, daemon=True, name="posts").start()
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    global _rpc_client
     FastAPICache.init(InMemoryBackend(), prefix="fastapi-cache")
     if os.getenv("SKIP_WORKERS") != "1":
         init_node()
         ensure_indexes()
     _start_background_workers()
-    yield
+    _rpc_client = httpx.AsyncClient(timeout=httpx.Timeout(30.0), follow_redirects=False)
+    try:
+        yield
+    finally:
+        await _rpc_client.aclose()
+        _rpc_client = None
 
 
 # root_path "" (FastAPI's default) when serving at the domain root; "/" makes
@@ -55,19 +86,96 @@ app.include_router(router)
 
 
 @app.middleware("http")
-async def redirect_legacy_rpc_host(request: Request, call_next):
-    """node.viz.cx is the legacy public VIZ RPC name — 308 it to the live node.
+async def proxy_legacy_rpc_host(request: Request, call_next):
+    """Transparently reverse-proxy node.viz.cx HTTP traffic to the live node.
 
     Host-scoped: kamal-proxy healthchecks carry a container-address Host and
-    are never redirected. 308 (not 301) so JSON-RPC POSTs keep their
-    method+body when followed. wss:// clients are not covered — websocket
-    handshakes bypass HTTP middleware; legacy /ws users must repoint."""
-    if request.headers.get("host", "").split(":")[0] == "node.viz.cx":
-        target = "https://rpc.viz.cx:19443" + request.url.path
-        if request.url.query:
-            target += "?" + request.url.query
-        return Response(status_code=308, headers={"Location": target})
-    return await call_next(request)
+    every other vhost (api.viz.cx, the playground) fall through to call_next
+    untouched. For node.viz.cx the request is forwarded to RPC_UPSTREAM and the
+    upstream response returned verbatim, so the client stays on the clean
+    https://node.viz.cx URL — no redirect, no :19443 leaked, and JSON-RPC POSTs
+    work without redirect-following. WebSocket upgrades are handled separately
+    by proxy_legacy_rpc_ws below (handshakes bypass HTTP middleware)."""
+    if request.headers.get("host", "").split(":")[0] != LEGACY_RPC_HOST:
+        return await call_next(request)
+
+    url = RPC_UPSTREAM + request.url.path
+    if request.url.query:
+        url += "?" + request.url.query
+    fwd_headers = {
+        k: v
+        for k, v in request.headers.items()
+        if k.lower() != "host" and k.lower() not in _HOP_BY_HOP
+    }
+    upstream = await _rpc_client.request(
+        request.method, url, content=await request.body(), headers=fwd_headers
+    )
+    # Drop hop-by-hop + length/encoding headers; httpx already decoded the body,
+    # so a stale Content-Length/Content-Encoding would corrupt the response.
+    resp_headers = {
+        k: v
+        for k, v in upstream.headers.items()
+        if k.lower() not in _HOP_BY_HOP
+        and k.lower() not in ("content-length", "content-encoding")
+    }
+    return Response(
+        content=upstream.content,
+        status_code=upstream.status_code,
+        headers=resp_headers,
+    )
+
+
+@app.websocket("/{_path:path}")
+async def proxy_legacy_rpc_ws(websocket: WebSocket, _path: str):
+    """WebSocket JSON-RPC reverse proxy for node.viz.cx -> RPC_WS_UPSTREAM.
+
+    Host-scoped catch-all: this app exposes no other WebSocket endpoints, so a
+    single catch-all is safe; connections whose Host isn't node.viz.cx are
+    rejected (1008) and never reach a real route. Both directions are pumped
+    until either side closes."""
+    if websocket.headers.get("host", "").split(":")[0] != LEGACY_RPC_HOST:
+        await websocket.close(code=1008)
+        return
+
+    upstream_url = RPC_WS_UPSTREAM + "/" + _path
+    if websocket.url.query:
+        upstream_url += "?" + websocket.url.query
+
+    await websocket.accept()
+    try:
+        async with websockets.connect(upstream_url, max_size=None) as upstream:
+
+            async def client_to_upstream():
+                while True:
+                    msg = await websocket.receive()
+                    if msg["type"] == "websocket.disconnect":
+                        return
+                    if (text := msg.get("text")) is not None:
+                        await upstream.send(text)
+                    elif (data := msg.get("bytes")) is not None:
+                        await upstream.send(data)
+
+            async def upstream_to_client():
+                async for message in upstream:
+                    if isinstance(message, bytes | bytearray):
+                        await websocket.send_bytes(message)
+                    else:
+                        await websocket.send_text(message)
+
+            tasks = [
+                asyncio.create_task(client_to_upstream()),
+                asyncio.create_task(upstream_to_client()),
+            ]
+            _, pending = await asyncio.wait(
+                tasks, return_when=asyncio.FIRST_COMPLETED
+            )
+            for task in pending:
+                task.cancel()
+    except Exception:
+        logger.debug("node.viz.cx ws proxy closed", exc_info=True)
+    finally:
+        with suppress(Exception):
+            await websocket.close()
 
 _playground_dir = os.path.join(os.path.dirname(__file__), "static", "playground")
 if os.path.isdir(_playground_dir):

@@ -1,10 +1,11 @@
 # Kamal deploy config for the viz.cx API — single FastAPI container (uvicorn
 # :8000) with parser/sorter/posts worker threads inside. API-only deploy: the
 # legacy box (138.201.117.201) keeps serving the viz.cx site frontend; this app
-# serves api.viz.cx and carries node.viz.cx solely for the 308 redirect to
-# https://rpc.viz.cx:19443 (FastAPI middleware in api/main.py — kamal-proxy
-# issues/renews the cert because the host is listed here; node.viz.cx does NOT
-# go into infra's tls-hosts.txt, redirect-only hosts never do).
+# serves api.viz.cx and reverse-proxies node.viz.cx (HTTP + WS) to the live RPC
+# node at https://rpc.viz.cx:19443 (FastAPI middleware + ws route in
+# api/main.py — kamal-proxy issues/renews the cert because the host is listed
+# here; node.viz.cx does NOT go into infra's tls-hosts.txt, proxy-only hosts
+# never do).
 #
 # Data: shared platform MongoDB, db `viz-cx-api` (the legacy 15.2 GB
 # `viz-blockchain` db restored with ns remap — infra runbook-viz-migration §10).
@@ -28,7 +29,7 @@ ssh:
 proxy:
   hosts:
     - api.viz.cx                  # the API's own name (A record → axveer)
-    - node.viz.cx                 # legacy RPC name — 308 middleware only
+    - node.viz.cx                 # legacy RPC name — reverse-proxied (HTTP+WS)
   app_port: 8000
   ssl: true
   healthcheck:
@@ -57,6 +58,12 @@ env:
     # serves them (see commit 1f6663f; the 80,463,600 bound there assumed the
     # legacy vizd, which is wedged).
     PARSER_START_BLOCK: "80679605"
+    # Sorter + posts workers disabled on this instance (operator decision
+    # 2026-06-12): the sorted per-op-type subcollections and parsed posts are no
+    # longer consumed here. Only the parser runs (feeds raw blocks into mongo).
+    # See api/main.py _start_background_workers.
+    SKIP_SORTER: "1"
+    SKIP_POSTS: "1"
     LOG_LEVEL: INFO
     # ROOT_PATH unset on purpose: kamal drops empty-string env values, so the
     # "" default lives in api/main.py. Set it only under a stripped prefix.
