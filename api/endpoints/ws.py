@@ -13,8 +13,8 @@ from typing import Any
 
 from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect
 
-from endpoints.accounts import ACCOUNT_FIELDS
 from helpers import pubsub
+from helpers.pubsub import ACCOUNT_FIELDS
 
 logger = logging.getLogger(__name__)
 

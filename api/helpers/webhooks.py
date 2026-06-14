@@ -38,6 +38,7 @@ import httpx
 from bson import ObjectId
 
 from helpers.db_client import get_db
+from helpers.pubsub import ACCOUNT_FIELDS
 
 logger = logging.getLogger(__name__)
 
@@ -141,8 +142,6 @@ def _matches(filt: dict[str, Any], op: dict[str, Any]) -> bool:
         return False
     if account_f:
         body = op["op"][1] if len(op["op"]) > 1 else {}
-        from endpoints.accounts import ACCOUNT_FIELDS
-
         for field in ACCOUNT_FIELDS:
             value = body.get(field)
             if value == account_f or (isinstance(value, list) and account_f in value):

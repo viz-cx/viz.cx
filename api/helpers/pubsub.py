@@ -15,6 +15,22 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
+# Well-known op-body fields that name an account. Used by the WS and webhook
+# filters to match an op against a subscriber's `account` filter. Lives here
+# (a stdlib-only leaf module) so both consumers can import it without a cycle.
+ACCOUNT_FIELDS = [
+    "from",
+    "to",
+    "receiver",
+    "account",
+    "benefactor",
+    "witness",
+    "beneficiaries.account",
+    "required_active_auths",
+    "required_regular_auths",
+    "required_posting_auths",
+]
+
 _Filter = Callable[[dict[str, Any]], bool]
 _Entry = tuple[asyncio.AbstractEventLoop, asyncio.Queue, _Filter]
 
