@@ -9,7 +9,7 @@ Storage (`coll_webhooks`):
     created_at: datetime
     active: bool
 
-Delivery from the sorter thread is fire-and-forget on a ThreadPoolExecutor.
+Delivery from the parser thread is fire-and-forget on a ThreadPoolExecutor.
 Each POST is signed with header `X-Viz-Signature: sha256=<hex>` over the body.
 Retries: 3 attempts, exponential backoff (1s, 2s, 4s). On exhaustion the call
 is logged and dropped; the webhook stays active for future ops.
@@ -18,7 +18,7 @@ The active-webhooks list is cached in-memory so dispatch() doesn't hit Mongo
 per op. The cache is invalidated explicitly on register/deactivate (covers
 the single-worker deployment that pubsub.py already documents) and refreshed
 on a TTL fallback for multi-worker setups where register may land in a
-different process than the sorter.
+different process than the parser.
 """
 from __future__ import annotations
 
@@ -38,6 +38,7 @@ import httpx
 from bson import ObjectId
 
 from helpers.db_client import get_db
+from helpers.pubsub import ACCOUNT_FIELDS
 
 logger = logging.getLogger(__name__)
 
@@ -141,8 +142,6 @@ def _matches(filt: dict[str, Any], op: dict[str, Any]) -> bool:
         return False
     if account_f:
         body = op["op"][1] if len(op["op"]) > 1 else {}
-        from endpoints.accounts import ACCOUNT_FIELDS
-
         for field in ACCOUNT_FIELDS:
             value = body.get(field)
             if value == account_f or (isinstance(value, list) and account_f in value):
@@ -189,8 +188,9 @@ def _deliver(url: str, secret: str, payload: dict[str, Any]) -> None:
 
 def dispatch(op: dict[str, Any]) -> None:
     """Match the op against active webhooks and queue HTTP deliveries.
-    Called from the sorter thread; never blocks. The active-webhooks list
-    is served from an in-memory cache to avoid a Mongo round trip per op."""
+    Called from the parser thread (via op_stream emit); never blocks. The
+    active-webhooks list is served from an in-memory cache to avoid a Mongo
+    round trip per op."""
     candidates = _active_webhooks()
     if not candidates:
         return

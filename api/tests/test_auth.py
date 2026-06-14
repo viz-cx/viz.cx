@@ -1,6 +1,13 @@
-"""End-to-end tests for the signature-challenge auth flow."""
+"""End-to-end tests for the signature-challenge auth flow.
+
+Auth is exercised against POST /webhooks/ (a kept route guarded by
+require_signed_request). Its success response carries an "id", so the
+key-in-authority test can assert on that.
+"""
 from graphenebase.account import PrivateKey
 from graphenebase.ecdsa import sign_message
+
+_HOOK_BODY = {"url": "https://example.com/hook"}
 
 
 def _make_keypair():
@@ -36,8 +43,8 @@ def test_signed_request_succeeds_when_key_in_authority(client, _viz):
     sig = sign_message(nonce.encode("utf-8"), wif).hex()
 
     response = client.post(
-        "/posts/",
-        json={"blocks": [{"type": "paragraph", "data": {"text": "hi"}}]},
+        "/webhooks/",
+        json=_HOOK_BODY,
         headers={
             "X-Auth-Account": "alice",
             "X-Auth-Nonce": nonce,
@@ -57,8 +64,8 @@ def test_signed_request_rejects_wrong_key(client, _viz):
     sig = sign_message(nonce.encode("utf-8"), wif_attacker).hex()
 
     response = client.post(
-        "/posts/",
-        json={"blocks": [{"type": "paragraph", "data": {"text": "hi"}}]},
+        "/webhooks/",
+        json=_HOOK_BODY,
         headers={
             "X-Auth-Account": "alice",
             "X-Auth-Nonce": nonce,
@@ -79,20 +86,16 @@ def test_nonce_is_single_use(client, _viz):
         "X-Auth-Nonce": nonce,
         "X-Auth-Signature": sig,
     }
-    body = {"blocks": [{"type": "paragraph", "data": {"text": "hi"}}]}
 
-    first = client.post("/posts/", json=body, headers=headers)
-    second = client.post("/posts/", json=body, headers=headers)
+    first = client.post("/webhooks/", json=_HOOK_BODY, headers=headers)
+    second = client.post("/webhooks/", json=_HOOK_BODY, headers=headers)
 
     assert first.status_code == 200
     assert second.status_code == 401
 
 
 def test_missing_headers_rejected(client):
-    response = client.post(
-        "/posts/",
-        json={"blocks": [{"type": "paragraph", "data": {"text": "hi"}}]},
-    )
+    response = client.post("/webhooks/", json=_HOOK_BODY)
     assert response.status_code == 401
 
 
@@ -104,8 +107,8 @@ def test_weight_below_threshold_rejected(client, _viz):
     sig = sign_message(nonce.encode("utf-8"), wif).hex()
 
     response = client.post(
-        "/posts/",
-        json={"blocks": [{"type": "paragraph", "data": {"text": "hi"}}]},
+        "/webhooks/",
+        json=_HOOK_BODY,
         headers={
             "X-Auth-Account": "alice",
             "X-Auth-Nonce": nonce,

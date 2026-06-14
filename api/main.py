@@ -19,8 +19,6 @@ from helpers.db_client import ensure_indexes  # noqa: E402
 from helpers.router import router  # noqa: E402
 from helpers.viz import init_node  # noqa: E402
 from parser.parser import start_parsing  # noqa: E402
-from parser.posts import start_posts_parsing  # noqa: E402
-from sorter.sorter import start_sorting  # noqa: E402
 
 logging.basicConfig(
     level=os.getenv("LOG_LEVEL", "INFO"),
@@ -48,16 +46,10 @@ _rpc_client: httpx.AsyncClient | None = None
 
 
 def _start_background_workers() -> None:
-    """Spawn parser/sorter/posts threads. SKIP_WORKERS=1 skips all (tests);
-    SKIP_PARSER/SKIP_SORTER/SKIP_POSTS=1 skip individual workers."""
+    """Spawn the parser thread. SKIP_WORKERS=1 skips it (tests)."""
     if os.getenv("SKIP_WORKERS") == "1":
         return
-    if os.getenv("SKIP_PARSER") != "1":
-        Thread(target=start_parsing, daemon=True, name="parser").start()
-    if os.getenv("SKIP_SORTER") != "1":
-        Thread(target=start_sorting, daemon=True, name="sorter").start()
-    if os.getenv("SKIP_POSTS") != "1":
-        Thread(target=start_posts_parsing, daemon=True, name="posts").start()
+    Thread(target=start_parsing, daemon=True, name="parser").start()
 
 
 @asynccontextmanager

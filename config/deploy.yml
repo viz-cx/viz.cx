@@ -1,5 +1,6 @@
 # Kamal deploy config for the viz.cx API — single FastAPI container (uvicorn
-# :8000) with parser/sorter/posts worker threads inside. API-only deploy: the
+# :8000) with the parser worker thread inside (raw-block ingest; it also emits
+# the live op stream for tip blocks to /ws/ops + webhooks). API-only deploy: the
 # legacy box (138.201.117.201) keeps serving the viz.cx site frontend; this app
 # serves api.viz.cx and reverse-proxies node.viz.cx (HTTP + WS) to the live RPC
 # node at https://rpc.viz.cx:19443 (FastAPI middleware + ws route in
@@ -9,6 +10,9 @@
 #
 # Data: shared platform MongoDB, db `viz-cx-api` (the legacy 15.2 GB
 # `viz-blockchain` db restored with ns remap — infra runbook-viz-migration §10).
+# Raw blocks live in `blocks` (renamed from the legacy `blocks4`). The derived
+# `ops`/`rollups`/`posts` collections were dropped — the API is raw-blocks-only;
+# anything derived is recomputed from `blocks` or read off-chain by the frontend.
 # Chain feed: the VIZ RPC node on vpn-amnezia. The app calls mongo AND the node
 # during boot (lifespan: init_node + ensure_indexes), so it relies on
 # platform-up.sh's mongo bridge onto the kamal network — hostname `mongo`
@@ -47,10 +51,9 @@ registry:
 env:
   clear:
     DB_NAME: viz-cx-api           # restored from legacy `viz-blockchain` (ns remap)
-    COLLECTION: blocks4           # legacy collection names carried over as-is
-    COLLECTION_OPS: ops
-    COLLECTION_POSTS: posts
-    # COLLECTION_ROLLUPS / COLLECTION_WEBHOOKS use code defaults (rollups/webhooks)
+    COLLECTION: blocks            # raw blocks (renamed from legacy `blocks4`)
+    # COLLECTION_WEBHOOKS uses the code default (webhooks). The ops/rollups/posts
+    # collections and their COLLECTION_OPS/COLLECTION_POSTS knobs are gone.
     VIZ_NODES: https://rpc.viz.cx:19443
     # Parser floor: first block with op history on rpc.viz.cx (snapshot-sync
     # node, bootstrapped 2026-06-11; probed empirically). Blocks
@@ -58,12 +61,13 @@ env:
     # serves them (see commit 1f6663f; the 80,463,600 bound there assumed the
     # legacy vizd, which is wedged).
     PARSER_START_BLOCK: "80679605"
-    # Sorter + posts workers disabled on this instance (operator decision
-    # 2026-06-12): the sorted per-op-type subcollections and parsed posts are no
-    # longer consumed here. Only the parser runs (feeds raw blocks into mongo).
-    # See api/main.py _start_background_workers.
-    SKIP_SORTER: "1"
-    SKIP_POSTS: "1"
+    # Only the parser worker exists now (feeds raw blocks into mongo and emits
+    # tip ops live). The sorter/posts workers were removed, along with their
+    # SKIP_SORTER/SKIP_POSTS knobs. SKIP_WORKERS=1 (unset here) would skip the
+    # parser — used only by tests. See api/main.py _start_background_workers.
+    # EMIT_TIP_LAG bounds how close to the chain tip a block must be to emit
+    # live (default 5); set explicitly here for clarity.
+    EMIT_TIP_LAG: "5"
     LOG_LEVEL: INFO
     # ROOT_PATH unset on purpose: kamal drops empty-string env values, so the
     # "" default lives in api/main.py. Set it only under a stripped prefix.

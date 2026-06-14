@@ -20,8 +20,6 @@ if "sort" not in _orig_add_update.__code__.co_varnames:
 os.environ["SKIP_WORKERS"] = "1"
 os.environ.setdefault("DB_NAME", "viztest")
 os.environ.setdefault("COLLECTION", "blocks")
-os.environ.setdefault("COLLECTION_OPS", "ops")
-os.environ.setdefault("COLLECTION_POSTS", "posts")
 
 BACKEND_DIR = Path(__file__).resolve().parent.parent
 if str(BACKEND_DIR) not in sys.path:
