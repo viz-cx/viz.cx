@@ -5,7 +5,12 @@ from time import sleep
 from typing import NoReturn
 
 from helpers.mongo import get_last_blocknum, save_block
+from helpers.op_stream import emit_block_ops
 from helpers.viz import get_last_block_in_chain, get_ops_in_block
+
+# Only blocks within this many of the chain tip emit to live subscribers, so a
+# cold-start catch-up or backfill doesn't replay history to WS/webhook clients.
+EMIT_TIP_LAG = int(os.getenv("EMIT_TIP_LAG", "5"))
 
 
 def resolve_start_block(last_db_block: int) -> int:
@@ -18,8 +23,13 @@ def resolve_start_block(last_db_block: int) -> int:
     return max(last_db_block, start - 1)
 
 
+def _at_tip(last_chain_block: int, block_num: int) -> bool:
+    """True when block_num is within EMIT_TIP_LAG of the chain tip."""
+    return last_chain_block - block_num <= EMIT_TIP_LAG
+
+
 def start_parsing() -> NoReturn:
-    """Parse VIZ Blockchain blocks to MongoDB."""
+    """Parse VIZ Blockchain blocks to MongoDB and emit tip ops live."""
     try:
         last_db_block = get_last_blocknum()
         print(f"Last block in db: {last_db_block}")
@@ -34,6 +44,8 @@ def start_parsing() -> NoReturn:
                 for _ in range(last_db_block + 1, last_chain_block + 1):
                     block = get_ops_in_block(_, False)
                     save_block(block)
+                    if _at_tip(last_chain_block, _):
+                        emit_block_ops(_, block)
                     last_db_block = _
                     if last_db_block % 100 == 0:
                         print(f"Saved block {_} (ch: {last_chain_block})")
