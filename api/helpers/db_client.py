@@ -1,5 +1,5 @@
-"""Dual Mongo clients: sync pymongo for background workers (sorter, parser,
-webhook delivery, meta-recalc executor) and async motor for FastAPI handlers.
+"""Dual Mongo clients: sync pymongo for the parser worker (and its webhook
+delivery) and async motor for FastAPI handlers.
 
 Both clients point at the same MongoDB server; pymongo and motor each maintain
 their own connection pool. Index creation is done once on the sync client
