@@ -1,418 +1,315 @@
-(() => {
-  "use strict";
+const ENDPOINTS = [
+  { method: 'GET', path: '/blocks/latest', name: 'Latest Block', category: 'Blocks' },
+  { method: 'GET', path: '/blocks/{id}', name: 'Get Block', category: 'Blocks', params: ['id'] },
+  { method: 'GET', path: '/accounts/{account}/history', name: 'Account History', category: 'Accounts', params: ['account', 'op_type', 'counterparty', 'from', 'to', 'limit', 'cursor'] },
+  { method: 'GET', path: '/auth/nonce', name: 'Get Auth Nonce', category: 'Auth' },
+  { method: 'GET', path: '/count_ops/all', name: 'Count All Ops', category: 'Counts' },
+  { method: 'GET', path: '/count_ops/series', name: 'Op Count Series', category: 'Counts', params: ['op_type', 'account', 'hours'] },
+  { method: 'GET', path: '/count_ops/{operation_type}', name: 'Count By Type', category: 'Counts', params: ['operation_type', 'account'] },
+  { method: 'GET', path: '/profile/{account}', name: 'Account Profile', category: 'Profile', params: ['account'] },
+  { method: 'GET', path: '/posts', name: 'Get Posts', category: 'Posts', params: ['limit', 'cursor'] },
+  { method: 'GET', path: '/posts/{id}', name: 'Get Post', category: 'Posts', params: ['id'] },
+  { method: 'GET', path: '/shares/{post_id}', name: 'Post Shares', category: 'Shares', params: ['post_id', 'limit', 'cursor'] },
+  { method: 'GET', path: '/sitemap/posts', name: 'Sitemap Posts', category: 'Sitemap', params: ['page', 'limit'] },
+  { method: 'GET', path: '/telegram/top_posts', name: 'TG Top Posts', category: 'Telegram', params: ['days', 'limit'] },
+  { method: 'GET', path: '/telegram/top_accounts', name: 'TG Top Accounts', category: 'Telegram', params: ['days', 'limit'] },
+  { method: 'GET', path: '/voice/top_posts', name: 'Voice Top Posts', category: 'Voice', params: ['days', 'limit'] },
+  { method: 'GET', path: '/voice/top_accounts', name: 'Voice Top Accounts', category: 'Voice', params: ['days', 'limit'] },
+  { method: 'POST', path: '/webhooks', name: 'Register Webhook', category: 'Webhooks', params: ['url', 'secret', 'op_type_filter', 'account_filter'] },
+  { method: 'GET', path: '/webhooks', name: 'List Webhooks', category: 'Webhooks' },
+  { method: 'DELETE', path: '/webhooks/{id}', name: 'Delete Webhook', category: 'Webhooks', params: ['id'] },
+  { method: 'WebSocket', path: '/ws/ops', name: 'Op Stream', category: 'WebSocket', params: ['op_type', 'account'] },
+];
 
-  const $ = (sel) => document.querySelector(sel);
+let currentEndpoint = null;
+let wsConnection = null;
 
-  const catalog = $("#catalog");
-  const filter = $("#filter");
-  const epPanel = $("#endpoint-panel");
-  const epTitle = $("#ep-title");
-  const epMethod = $("#ep-method");
-  const epPath = $("#ep-path");
-  const epSummary = $("#ep-summary");
-  const epForm = $("#ep-form");
-  const epRun = $("#ep-run");
-  const epStatus = $("#ep-status");
-  const epResponse = $("#ep-response").querySelector("code");
-  const hint = $("#hint");
+function initUI() {
+  renderEndpointList();
+  selectEndpoint(ENDPOINTS[0]);
+}
 
-  const state = { spec: null, endpoints: [], selected: null };
+function renderEndpointList() {
+  const list = document.getElementById('endpoint-list');
+  const grouped = {};
 
-  function el(tag, opts = {}, children = []) {
-    const node = document.createElement(tag);
-    if (opts.className) node.className = opts.className;
-    if (opts.text != null) node.textContent = opts.text;
-    if (opts.attrs) {
-      for (const [k, v] of Object.entries(opts.attrs)) {
-        if (v === false || v == null) continue;
-        if (v === true) node.setAttribute(k, "");
-        else node.setAttribute(k, String(v));
-      }
-    }
-    if (opts.dataset) {
-      for (const [k, v] of Object.entries(opts.dataset)) node.dataset[k] = String(v);
-    }
-    if (opts.on) {
-      for (const [k, v] of Object.entries(opts.on)) node.addEventListener(k, v);
-    }
-    for (const c of children) {
-      if (c == null) continue;
-      node.appendChild(typeof c === "string" ? document.createTextNode(c) : c);
-    }
-    return node;
-  }
-
-  function clear(node) { while (node.firstChild) node.removeChild(node.firstChild); }
-
-  // ---------- OpenAPI catalog ----------
-
-  async function loadSpec() {
-    try {
-      const res = await fetch("/openapi.json");
-      if (!res.ok) throw new Error(`openapi.json -> ${res.status}`);
-      state.spec = await res.json();
-    } catch (err) {
-      clear(catalog);
-      catalog.appendChild(el("p", { className: "muted", text: `Failed to load /openapi.json: ${err.message}` }));
-      return;
-    }
-    state.endpoints = flattenSpec(state.spec);
-    state.endpoints.push({
-      method: "ws",
-      path: "/ws/ops",
-      tag: "Subscriptions",
-      operationId: "ws_ops",
-      summary: "Live op stream (use the Live op feed panel above)",
-      parameters: [
-        { name: "op_type", in: "query", schema: { type: "string" } },
-        { name: "account", in: "query", schema: { type: "string" } },
-      ],
-      requestBody: null,
-      isWs: true,
-    });
-    renderCatalog();
-  }
-
-  function flattenSpec(spec) {
-    const out = [];
-    const paths = spec.paths || {};
-    for (const path of Object.keys(paths)) {
-      const item = paths[path];
-      for (const method of ["get", "post", "put", "delete", "patch"]) {
-        const op = item[method];
-        if (!op) continue;
-        out.push({
-          method,
-          path,
-          tag: (op.tags && op.tags[0]) || "Other",
-          operationId: op.operationId || `${method}_${path}`,
-          summary: op.summary || op.description || "",
-          parameters: op.parameters || [],
-          requestBody: op.requestBody || null,
-        });
-      }
-    }
-    return out;
-  }
-
-  function groupByTag(eps) {
-    const groups = new Map();
-    for (const ep of eps) {
-      if (!groups.has(ep.tag)) groups.set(ep.tag, []);
-      groups.get(ep.tag).push(ep);
-    }
-    for (const list of groups.values()) {
-      list.sort((a, b) => a.path.localeCompare(b.path) || a.method.localeCompare(b.method));
-    }
-    return Array.from(groups.entries()).sort((a, b) => a[0].localeCompare(b[0]));
-  }
-
-  function renderCatalog() {
-    const term = (filter.value || "").trim().toLowerCase();
-    const visible = state.endpoints.filter((ep) => {
-      if (!term) return true;
-      return (
-        ep.path.toLowerCase().includes(term) ||
-        ep.method.toLowerCase().includes(term) ||
-        ep.tag.toLowerCase().includes(term) ||
-        ep.summary.toLowerCase().includes(term)
-      );
-    });
-    const groups = groupByTag(visible);
-    clear(catalog);
-    if (!groups.length) {
-      catalog.appendChild(el("p", { className: "muted", text: "No matches." }));
-      return;
-    }
-    for (const [tag, eps] of groups) {
-      const group = el("div", { className: "tag-group" }, [
-        el("div", { className: "tag-name", text: tag }),
-      ]);
-      for (const ep of eps) {
-        const active = state.selected && epKey(state.selected) === epKey(ep);
-        const btn = el(
-          "button",
-          {
-            className: `ep${active ? " active" : ""}`,
-            dataset: { key: epKey(ep) },
-            on: { click: () => selectEndpoint(ep) },
-          },
-          [
-            el("span", { className: `method ${ep.method}`, text: ep.method.toUpperCase() }),
-            el("code", { text: ep.path }),
-          ]
-        );
-        group.appendChild(btn);
-      }
-      catalog.appendChild(group);
-    }
-  }
-
-  const epKey = (ep) => `${ep.method} ${ep.path}`;
-
-  // ---------- Endpoint form ----------
-
-  function selectEndpoint(ep) {
-    state.selected = ep;
-    hint.classList.add("hidden");
-    epPanel.classList.remove("hidden");
-    epTitle.textContent = ep.summary || ep.operationId;
-    epMethod.className = `method ${ep.method}`;
-    epMethod.textContent = ep.method.toUpperCase();
-    epPath.textContent = ep.path;
-    epSummary.textContent = ep.summary || "";
-    clear(epForm);
-
-    for (const p of ep.parameters || []) addParamField(p);
-    if (ep.requestBody) addBodyField(ep.requestBody);
-
-    if (ep.isWs) {
-      epRun.disabled = true;
-      epStatus.textContent = "Use the Live op feed panel above to connect.";
-    } else {
-      epRun.disabled = false;
-      epStatus.textContent = "";
-    }
-
-    epResponse.textContent = "—";
-    renderCatalog();
-  }
-
-  function addParamField(p) {
-    const schema = p.schema || {};
-    const type = schema.type || "string";
-    const example = schema.example ?? schema.default ?? "";
-    const wrap = el("label", { className: p.in === "query" || p.in === "path" ? "" : "full" }, [
-      el("span", {}, [
-        document.createTextNode(`${p.name}${p.required ? " *" : ""} `),
-        el("span", { className: "where", text: `(${p.in})` }),
-      ]),
-      el("input", {
-        attrs: {
-          name: p.name,
-          type: type === "integer" || type === "number" ? "number" : "text",
-          placeholder: String(example),
-          required: !!p.required,
-        },
-        dataset: { in: p.in, type },
-      }),
-    ]);
-    epForm.appendChild(wrap);
-  }
-
-  function addBodyField(rb) {
-    const content = rb.content || {};
-    const json = content["application/json"];
-    if (!json) return;
-    const schema = resolveSchema(json.schema);
-    const sample = sampleFromSchema(schema);
-    const ta = el("textarea", { dataset: { in: "body" }, attrs: { id: "f-body" } });
-    ta.value = JSON.stringify(sample, null, 2);
-    const wrap = el("label", { className: "full" }, [
-      el("span", {}, [
-        document.createTextNode("request body "),
-        el("span", {
-          className: "where",
-          text: `(application/json${rb.required ? ", required" : ""})`,
-        }),
-      ]),
-      ta,
-    ]);
-    epForm.appendChild(wrap);
-  }
-
-  function resolveSchema(schema) {
-    if (!schema) return {};
-    if (schema.$ref) {
-      const name = schema.$ref.split("/").pop();
-      const found = state.spec.components?.schemas?.[name];
-      return found ? resolveSchema(found) : {};
-    }
-    return schema;
-  }
-
-  function sampleFromSchema(schema) {
-    schema = resolveSchema(schema);
-    if (!schema || typeof schema !== "object") return null;
-    if (schema.example !== undefined) return schema.example;
-    if (schema.default !== undefined) return schema.default;
-    if (schema.enum) return schema.enum[0];
-    if (schema.type === "object" || schema.properties) {
-      const out = {};
-      const props = schema.properties || {};
-      for (const k of Object.keys(props)) {
-        out[k] = sampleFromSchema(props[k]);
-      }
-      return out;
-    }
-    if (schema.type === "array") return [sampleFromSchema(schema.items || {})];
-    if (schema.type === "integer" || schema.type === "number") return 0;
-    if (schema.type === "boolean") return false;
-    if (schema.type === "string") {
-      if (schema.format === "date-time") return new Date().toISOString();
-      if (schema.format === "uri" || schema.format === "url") return "https://example.com";
-      return "";
-    }
-    return null;
-  }
-
-  // ---------- Request ----------
-
-  async function runRequest() {
-    if (!state.selected) return;
-    const ep = state.selected;
-    let path = ep.path;
-    const query = new URLSearchParams();
-    let body = undefined;
-    const headers = {};
-
-    for (const field of epForm.querySelectorAll("[data-in]")) {
-      const where = field.dataset.in;
-      const name = field.name;
-      const val = field.value;
-      if (where === "path") {
-        if (!val) {
-          epStatus.textContent = `Missing required path param "${name}"`;
-          return;
-        }
-        path = path.replace(`{${name}}`, encodeURIComponent(val));
-      } else if (where === "query") {
-        if (val !== "") query.append(name, val);
-      } else if (where === "header") {
-        if (val !== "") headers[name] = val;
-      } else if (where === "body") {
-        if (val.trim()) {
-          try {
-            body = JSON.stringify(JSON.parse(val));
-            headers["Content-Type"] = "application/json";
-          } catch (err) {
-            epStatus.textContent = `Body is not valid JSON: ${err.message}`;
-            return;
-          }
-        }
-      }
-    }
-
-    const qs = query.toString();
-    const url = path + (qs ? `?${qs}` : "");
-
-    epStatus.textContent = `${ep.method.toUpperCase()} ${url} …`;
-    epResponse.textContent = "…";
-    const started = performance.now();
-
-    try {
-      const res = await fetch(url, {
-        method: ep.method.toUpperCase(),
-        headers,
-        body,
-      });
-      const elapsed = (performance.now() - started).toFixed(0);
-      const ct = res.headers.get("content-type") || "";
-      let text;
-      if (ct.includes("application/json")) {
-        const json = await res.json();
-        text = JSON.stringify(json, null, 2);
-        renderHighlightedJson(text);
-      } else {
-        text = await res.text();
-        epResponse.textContent = text;
-      }
-      epStatus.textContent = `${res.status} ${res.statusText} · ${elapsed} ms · ${text.length.toLocaleString()} bytes`;
-    } catch (err) {
-      epStatus.textContent = `Network error: ${err.message}`;
-      epResponse.textContent = String(err);
-    }
-  }
-
-  // ---------- JSON highlight (DOM-only, no innerHTML) ----------
-
-  const JSON_TOKEN_RE = /("(?:\\u[a-fA-F0-9]{4}|\\[^u]|[^\\"])*"\s*:?)|(\b(?:true|false|null)\b)|(-?\d+(?:\.\d+)?(?:[eE][+\-]?\d+)?)/g;
-
-  function renderHighlightedJson(json) {
-    clear(epResponse);
-    let last = 0;
-    for (const m of json.matchAll(JSON_TOKEN_RE)) {
-      if (m.index > last) {
-        epResponse.appendChild(document.createTextNode(json.slice(last, m.index)));
-      }
-      const tok = m[0];
-      let cls;
-      if (m[1]) cls = /:\s*$/.test(tok) ? "json-key" : "json-string";
-      else if (m[2]) cls = tok === "null" ? "json-null" : "json-bool";
-      else cls = "json-number";
-      epResponse.appendChild(el("span", { className: cls, text: tok }));
-      last = m.index + tok.length;
-    }
-    if (last < json.length) {
-      epResponse.appendChild(document.createTextNode(json.slice(last)));
-    }
-  }
-
-  // ---------- WebSocket ----------
-
-  const ws = { sock: null };
-  const wsStatus = $("#ws-status");
-  const wsToggle = $("#ws-toggle");
-  const wsClear = $("#ws-clear");
-  const wsFeed = $("#ws-feed");
-
-  function wsConnect() {
-    const opType = $("#ws-op-type").value.trim();
-    const account = $("#ws-account").value.trim();
-    const params = new URLSearchParams();
-    if (opType) params.set("op_type", opType);
-    if (account) params.set("account", account);
-    const proto = location.protocol === "https:" ? "wss:" : "ws:";
-    const url = `${proto}//${location.host}/ws/ops${params.toString() ? `?${params}` : ""}`;
-    setWsStatus("connecting…");
-    const sock = new WebSocket(url);
-    ws.sock = sock;
-    sock.onopen = () => {
-      setWsStatus("connected", true);
-      wsToggle.textContent = "Disconnect";
-    };
-    sock.onclose = () => {
-      setWsStatus("disconnected");
-      wsToggle.textContent = "Connect";
-      ws.sock = null;
-    };
-    sock.onerror = () => setWsStatus("error");
-    sock.onmessage = (event) => {
-      let msg;
-      try { msg = JSON.parse(event.data); } catch { return; }
-      appendWsRow(msg);
-    };
-  }
-
-  function setWsStatus(label, on = false) {
-    wsStatus.textContent = label;
-    wsStatus.classList.toggle("on", on);
-  }
-
-  function appendWsRow(msg) {
-    const ts = (msg.timestamp || "").replace("T", " ").slice(0, 19);
-    const opType = msg.op_type || "?";
-    const body = msg.body ? JSON.stringify(msg.body) : "";
-    const li = el("li", {}, [
-      el("span", { className: "ts", text: ts }),
-      el("span", { className: "opt", text: opType }),
-      el("span", { className: "body", text: body, attrs: { title: body } }),
-    ]);
-    wsFeed.insertBefore(li, wsFeed.firstChild);
-    while (wsFeed.children.length > 200) wsFeed.removeChild(wsFeed.lastChild);
-  }
-
-  wsToggle.addEventListener("click", () => {
-    if (ws.sock) ws.sock.close();
-    else wsConnect();
+  ENDPOINTS.forEach(ep => {
+    if (!grouped[ep.category]) grouped[ep.category] = [];
+    grouped[ep.category].push(ep);
   });
-  wsClear.addEventListener("click", () => clear(wsFeed));
 
-  // ---------- Wire-up ----------
+  Object.entries(grouped).forEach(([category, endpoints]) => {
+    const header = document.createElement('div');
+    header.style.cssText = 'font-size: 11px; font-weight: 600; color: #666; text-transform: uppercase; margin-top: 16px; margin-bottom: 8px;';
+    header.textContent = category;
+    list.appendChild(header);
 
-  epRun.addEventListener("click", (e) => { e.preventDefault(); runRequest(); });
-  epForm.addEventListener("submit", (e) => { e.preventDefault(); runRequest(); });
-  filter.addEventListener("input", renderCatalog);
+    endpoints.forEach(ep => {
+      const btn = document.createElement('button');
+      btn.className = 'endpoint-btn';
+      btn.innerHTML = '';
+      const method = document.createElement('span');
+      method.className = 'method';
+      method.textContent = ep.method;
+      const path = document.createElement('span');
+      path.textContent = ep.path;
+      btn.appendChild(method);
+      btn.appendChild(path);
+      btn.addEventListener('click', () => selectEndpoint(ep, btn));
+      list.appendChild(btn);
+    });
+  });
+}
 
-  loadSpec();
-})();
+function selectEndpoint(ep, btnEl) {
+  currentEndpoint = ep;
+  document.querySelectorAll('.endpoint-btn').forEach(btn => btn.classList.remove('active'));
+  if (btnEl) btnEl.classList.add('active');
+
+  renderRequestForm();
+  clearResponse();
+}
+
+function renderRequestForm() {
+  const ep = currentEndpoint;
+  const form = document.getElementById('request-form');
+  form.innerHTML = '';
+
+  const title = document.createElement('h3');
+  title.textContent = ep.method + ' ' + ep.path;
+  form.appendChild(title);
+
+  const pathInput = document.createElement('div');
+  pathInput.className = 'form-group';
+  const pathLabel = document.createElement('label');
+  pathLabel.textContent = 'Endpoint';
+  const pathField = document.createElement('input');
+  pathField.type = 'text';
+  pathField.id = 'endpoint-path';
+  pathField.value = ep.path;
+  pathField.readOnly = true;
+  pathInput.appendChild(pathLabel);
+  pathInput.appendChild(pathField);
+  form.appendChild(pathInput);
+
+  if (ep.params && ep.params.length > 0) {
+    const paramsTitle = document.createElement('h4');
+    paramsTitle.textContent = 'Parameters';
+    paramsTitle.style.cssText = 'font-size: 13px; font-weight: 500; margin: 16px 0 12px; color: #333;';
+    form.appendChild(paramsTitle);
+
+    ep.params.forEach(param => {
+      const group = document.createElement('div');
+      group.className = 'form-group';
+      const label = document.createElement('label');
+      label.textContent = param;
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.id = 'param-' + param;
+      input.placeholder = 'Enter ' + param;
+      group.appendChild(label);
+      group.appendChild(input);
+      form.appendChild(group);
+    });
+  }
+
+  if (ep.method === 'POST') {
+    const bodyGroup = document.createElement('div');
+    bodyGroup.className = 'form-group';
+    const label = document.createElement('label');
+    label.textContent = 'Request Body (JSON)';
+    const textarea = document.createElement('textarea');
+    textarea.id = 'request-body';
+    textarea.placeholder = '{}';
+    bodyGroup.appendChild(label);
+    bodyGroup.appendChild(textarea);
+    form.appendChild(bodyGroup);
+  }
+
+  const buttons = document.createElement('div');
+  buttons.className = 'button-group';
+
+  if (ep.method === 'WebSocket') {
+    const connectBtn = document.createElement('button');
+    connectBtn.className = 'btn-primary';
+    connectBtn.textContent = 'Connect';
+    connectBtn.addEventListener('click', connectWebSocket);
+    buttons.appendChild(connectBtn);
+
+    const disconnectBtn = document.createElement('button');
+    disconnectBtn.className = 'btn-secondary';
+    disconnectBtn.textContent = 'Disconnect';
+    disconnectBtn.addEventListener('click', disconnectWebSocket);
+    buttons.appendChild(disconnectBtn);
+  } else {
+    const sendBtn = document.createElement('button');
+    sendBtn.className = 'btn-primary';
+    sendBtn.textContent = 'Send Request';
+    sendBtn.addEventListener('click', sendRequest);
+    buttons.appendChild(sendBtn);
+
+    const clearBtn = document.createElement('button');
+    clearBtn.className = 'btn-secondary';
+    clearBtn.textContent = 'Clear';
+    clearBtn.addEventListener('click', clearResponse);
+    buttons.appendChild(clearBtn);
+  }
+
+  form.appendChild(buttons);
+}
+
+function buildUrl() {
+  let url = currentEndpoint.path;
+
+  if (currentEndpoint.params) {
+    currentEndpoint.params.forEach(param => {
+      const value = document.getElementById('param-' + param)?.value || '';
+      if (value && currentEndpoint.path.includes('{' + param + '}')) {
+        url = url.replace('{' + param + '}', value);
+      } else if (value && !currentEndpoint.path.includes('{' + param + '}')) {
+        url += url.includes('?') ? '&' : '?';
+        url += param + '=' + encodeURIComponent(value);
+      }
+    });
+  }
+
+  return url;
+}
+
+async function sendRequest() {
+  const url = buildUrl();
+  const method = currentEndpoint.method;
+  const options = {
+    method: method,
+    headers: {
+      'Content-Type': 'application/json',
+    }
+  };
+
+  if (method === 'POST') {
+    const bodyText = document.getElementById('request-body')?.value || '{}';
+    try {
+      options.body = JSON.stringify(JSON.parse(bodyText));
+    } catch {
+      showResponse('Invalid JSON in request body', 400);
+      return;
+    }
+  }
+
+  try {
+    const loading = document.getElementById('response-output');
+    if (loading) {
+      const spinner = document.createElement('div');
+      spinner.className = 'loading';
+      loading.innerHTML = '';
+      loading.appendChild(spinner);
+    }
+
+    const response = await fetch(url, options);
+    const data = await response.json().catch(() => ({}));
+    showResponse(data, response.status, response.headers.get('content-type'));
+  } catch (error) {
+    showResponse('Error: ' + error.message, 0);
+  }
+}
+
+function showResponse(data, status, contentType) {
+  const panel = document.getElementById('response-panel');
+  panel.innerHTML = '';
+
+  const title = document.createElement('h3');
+  title.textContent = 'Response';
+  panel.appendChild(title);
+
+  if (status > 0) {
+    const statusLine = document.createElement('div');
+    statusLine.className = 'response-status';
+    const label = document.createElement('span');
+    label.className = 'response-status-label';
+    label.textContent = 'Status:';
+    const code = document.createElement('span');
+    code.className = 'status-' + status;
+    code.textContent = status;
+    statusLine.appendChild(label);
+    statusLine.appendChild(code);
+    panel.appendChild(statusLine);
+  }
+
+  const output = document.createElement('div');
+  output.id = 'response-output';
+  if (typeof data === 'string') {
+    output.textContent = data;
+  } else {
+    output.textContent = JSON.stringify(data, null, 2);
+  }
+  panel.appendChild(output);
+}
+
+function clearResponse() {
+  const panel = document.getElementById('response-panel');
+  panel.innerHTML = '';
+  const title = document.createElement('h3');
+  title.textContent = 'Response';
+  const msg = document.createElement('p');
+  msg.style.cssText = 'color: #999; font-size: 13px;';
+  msg.textContent = 'Send a request to see the response';
+  panel.appendChild(title);
+  panel.appendChild(msg);
+}
+
+function connectWebSocket() {
+  if (wsConnection) disconnectWebSocket();
+
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const params = new URLSearchParams();
+
+  if (document.getElementById('param-op_type')) {
+    const val = document.getElementById('param-op_type')?.value;
+    if (val) params.append('op_type', val);
+  }
+  if (document.getElementById('param-account')) {
+    const val = document.getElementById('param-account')?.value;
+    if (val) params.append('account', val);
+  }
+
+  const url = protocol + '//' + window.location.host + '/ws/ops' + (params.toString() ? '?' + params : '');
+
+  try {
+    wsConnection = new WebSocket(url);
+    wsConnection.onopen = () => logWsMessage('Connected', 'connected');
+    wsConnection.onmessage = (e) => logWsMessage(e.data, 'message');
+    wsConnection.onerror = (e) => logWsMessage('WebSocket error', 'disconnected');
+    wsConnection.onclose = () => logWsMessage('Disconnected', 'disconnected');
+  } catch (error) {
+    logWsMessage('Error: ' + error.message, 'disconnected');
+  }
+}
+
+function disconnectWebSocket() {
+  if (wsConnection) {
+    wsConnection.close();
+    wsConnection = null;
+  }
+}
+
+function logWsMessage(text, type) {
+  const output = document.getElementById('ws-output');
+  const msg = document.createElement('div');
+  msg.className = 'ws-message';
+  const timestamp = document.createElement('span');
+  timestamp.className = 'ws-timestamp';
+  timestamp.textContent = new Date().toLocaleTimeString() + ' ';
+  const content = document.createElement('span');
+  content.className = 'ws-' + type;
+  content.textContent = text;
+  msg.appendChild(timestamp);
+  msg.appendChild(content);
+  output.appendChild(msg);
+  output.scrollTop = output.scrollHeight;
+
+  if (output.children.length > 100) {
+    output.removeChild(output.firstChild);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', initUI);
