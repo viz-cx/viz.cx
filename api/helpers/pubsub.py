@@ -1,8 +1,8 @@
-"""In-memory pubsub bridging the sync sorter thread to async WebSocket subscribers.
+"""In-memory pubsub bridging the sync parser thread to async WebSocket subscribers.
 
-Multi-worker note: subscribers only receive ops that flow through the sorter on
+Multi-worker note: subscribers only receive ops that flow through the parser on
 *their own* worker process. With a Redis-less deploy, this is the accepted
-limitation — a single worker process handles the indexer and serves ops for
+limitation — a single worker process runs the parser and serves ops for
 its connected subscribers. A horizontal scale-out would require a broker.
 """
 from __future__ import annotations
@@ -55,7 +55,7 @@ def subscribe(filter_fn: _Filter, *, maxsize: int = 1000) -> tuple[asyncio.Queue
 
 
 def publish_op(op: dict[str, Any]) -> None:
-    """Called from the sorter (sync) thread. Non-blocking: drops on full queues."""
+    """Called from the parser (sync) thread. Non-blocking: drops on full queues."""
     with _lock:
         snapshot = list(_subscribers)
     for loop, queue, filter_fn in snapshot:

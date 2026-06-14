@@ -10,10 +10,9 @@ This repo currently contains only the **API server** (`api/`). The Nuxt frontend
 api/                 FastAPI app
   main.py            entrypoint; mounts /playground if api/static/playground/ exists
   endpoints/         route modules (one file per resource group)
-  helpers/           db client, mongo, auth, viz node, rollups, pubsub
-  parser/            block parser worker (background thread)
-  sorter/            sorted-ops indexer (background thread)
-  scripts/           one-off backfills (backfill_rollups.py, backfill_sorted_ops.py)
+  helpers/           db client, mongo, auth, viz node, pubsub, webhooks
+  helpers/op_stream.py  live op-stream emit to WS subscribers + webhooks for chain-tip blocks
+  parser/            block parser worker (background thread; also emits the live op stream)
   static/playground/ in-browser API playground (plain HTML/JS/CSS, no build step)
   tests/             pytest suite
 nginx.conf.example   reverse-proxy template
@@ -33,13 +32,17 @@ Open <http://localhost:8080/playground/>.
 
 `.env` in `api/` is loaded by `python-dotenv`. Needs at minimum a reachable Mongo connection and the VIZ node config.
 
+Key env knobs:
+- `SKIP_WORKERS=1` — skip startup side-effects (see section below).
+- `EMIT_TIP_LAG=5` — the tip window (in blocks) within which the parser emits ops live to WS subscribers and webhooks. Default 5.
+
 ### `SKIP_WORKERS=1` — what it does and when to use it
 
 Set `SKIP_WORKERS=1` to skip three things on startup:
 
 1. `init_node()` — VIZ node websocket handshake. Will hard-fail startup if the node is unreachable.
 2. `ensure_indexes()` — Mongo index creation. Needs a live Mongo.
-3. The parser / sorter / posts background threads.
+3. The parser background thread (the only worker; also drives the live op stream).
 
 Use it when you only want to exercise the FastAPI surface (e.g. the playground, OpenAPI shape, route wiring). Endpoints that hit Mongo or the node will 500, but `/openapi.json`, `/docs`, `/redoc`, and `/playground/` all work.
 
@@ -73,6 +76,6 @@ The mount in `main.py` is conditional on the directory existing, so dropping the
 ## Conventions
 
 - One endpoint module per resource group in `endpoints/` — register the router in `helpers/router.py`.
-- Mongo access goes through `helpers/db_client.py` / `helpers/mongo.py`. Rollups (post meta, comment counts, etc.) live in `helpers/rollups.py` and are recomputed in bulk; backfill scripts in `api/scripts/`.
+- Mongo access goes through `helpers/db_client.py` / `helpers/mongo.py`.
 - Background workers are daemon threads spawned in `main._start_background_workers`. They must respect `SKIP_WORKERS=1`.
 - Don't add a `Co-Authored-By: Claude` trailer to commits.
