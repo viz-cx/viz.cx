@@ -188,14 +188,14 @@ details summary { cursor: pointer; color: var(--muted); margin-top: 8px; }
   border-top: 1px solid var(--border);
 }
 .ws-feed li {
-  display: grid; grid-template-columns: 90px 160px 1fr; gap: 10px;
+  display: grid; grid-template-columns: 150px 160px 1fr; gap: 10px;
   padding: 6px 4px;
   border-bottom: 1px solid var(--border);
   white-space: nowrap;
 }
 .ws-feed li:last-child { border-bottom: 0; }
-.ws-feed .ts { color: var(--muted); }
-.ws-feed .opt { color: var(--accent-2); }
+.ws-feed .ts { color: var(--muted); overflow: hidden; text-overflow: ellipsis; }
+.ws-feed .opt { color: var(--accent-2); overflow: hidden; text-overflow: ellipsis; }
 .ws-feed .body { color: var(--text); overflow: hidden; text-overflow: ellipsis; }
 
 .hint-card ul { margin: 0; padding-left: 20px; line-height: 1.8; }
