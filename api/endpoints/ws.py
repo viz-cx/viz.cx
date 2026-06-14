@@ -2,8 +2,9 @@
 
     GET /ws/ops?op_type=transfer&account=alice
 
-Each socket subscribes to live ops produced by *this* worker's sorter, filtered
-server-side. See helpers.pubsub for the multi-worker scope caveat.
+Each socket subscribes to live ops emitted by *this* worker's parser (tip
+blocks only), filtered server-side. See helpers.pubsub for the multi-worker
+scope caveat.
 """
 from __future__ import annotations
 
