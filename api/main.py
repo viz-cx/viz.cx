@@ -16,6 +16,7 @@ from fastapi_cache.backends.inmemory import InMemoryBackend
 load_dotenv()
 
 from helpers.db_client import ensure_indexes  # noqa: E402
+from helpers.richlist_snapshot import run_richlist  # noqa: E402
 from helpers.router import router  # noqa: E402
 from helpers.viz import init_node  # noqa: E402
 from parser.parser import start_parsing  # noqa: E402
@@ -46,10 +47,12 @@ _rpc_client: httpx.AsyncClient | None = None
 
 
 def _start_background_workers() -> None:
-    """Spawn the parser thread. SKIP_WORKERS=1 skips it (tests)."""
+    """Spawn the parser and richlist threads. SKIP_WORKERS=1 skips them (tests)."""
     if os.getenv("SKIP_WORKERS") == "1":
         return
     Thread(target=start_parsing, daemon=True, name="parser").start()
+    if os.getenv("RICHLIST_ENABLED", "1") == "1":
+        Thread(target=run_richlist, daemon=True, name="richlist").start()
 
 
 @asynccontextmanager

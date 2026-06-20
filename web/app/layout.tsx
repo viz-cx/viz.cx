@@ -1,33 +1,62 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
+import { Header } from "@/components/Header";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const mono = JetBrains_Mono({
+  variable: "--font-jetbrains",
   subsets: ["latin"],
+  display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const sans = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "VIZ.cx",
-  description: "VIZ blockchain — explorer, API and tools.",
+  metadataBase: new URL("https://viz.cx"),
+  title: {
+    default: "VIZ.cx — VIZ blockchain explorer",
+    template: "%s · VIZ.cx",
+  },
+  description:
+    "The English-first block explorer and network dashboard for the VIZ blockchain. Blocks, accounts, transactions, validators and richlist — read-only, real-time.",
+  openGraph: {
+    title: "VIZ.cx — VIZ blockchain explorer",
+    description: "English-first block explorer and network dashboard for VIZ.",
+    url: "https://viz.cx",
+    siteName: "VIZ.cx",
+    type: "website",
+  },
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col">{children}</body>
+    <html lang="en" className={`${sans.variable} ${mono.variable} h-full`}>
+      <body className="flex min-h-full flex-col">
+        <Header />
+        <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6">{children}</main>
+        <footer className="border-t border-border">
+          <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-2 px-4 py-5 text-[11px] text-fg-dim sm:flex-row">
+            <span className="font-prose">
+              VIZ.cx — independent English explorer for the VIZ blockchain. Read-only.
+            </span>
+            <span className="flex items-center gap-3">
+              <a href="https://node.viz.cx" className="hover:text-fg" rel="noreferrer">
+                node.viz.cx
+              </a>
+              <a href="/playground/" className="hover:text-fg">
+                API
+              </a>
+              <a href="https://github.com/viz-cx" className="hover:text-fg" rel="noreferrer">
+                GitHub
+              </a>
+            </span>
+          </div>
+        </footer>
+      </body>
     </html>
   );
 }
