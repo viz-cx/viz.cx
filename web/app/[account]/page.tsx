@@ -36,7 +36,7 @@ export default async function AccountPage({ params }: { params: Promise<{ accoun
   const [profile, info] = await Promise.all([getProfile(user), getChainInfo()]);
   if (!profile) notFound();
 
-  const fund = info?.total_vesting_fund_viz ?? "0";
+  const fund = info?.total_vesting_fund ?? "0";
   const totalShares = info?.total_vesting_shares ?? "0";
 
   const liquid = assetAmount(profile.balance);

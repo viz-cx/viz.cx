@@ -27,7 +27,7 @@ _LOOKUP_LIMIT = 1000  # graphene caps lookup_accounts / get_accounts at 1000
 def _vesting_rate() -> float:
     """VIZ per SHARE at the current vesting rate (fund / total shares)."""
     dgp = get_client().rpc.get_dynamic_global_properties()
-    fund = convertShares(dgp["total_vesting_fund_viz"])
+    fund = convertShares(dgp["total_vesting_fund"])
     shares = convertShares(dgp["total_vesting_shares"])
     return fund / shares if shares else 0.0
 
