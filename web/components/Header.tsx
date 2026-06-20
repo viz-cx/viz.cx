@@ -6,6 +6,8 @@ const NAV = [
   { href: "/dashboard", label: "Network" },
   { href: "/validators", label: "Validators" },
   { href: "/richlist", label: "Richlist" },
+  { href: "/dev", label: "Docs" },
+  { href: "/learn", label: "Learn" },
 ];
 
 /** Persistent global header: logo + smart search + nav + live head-block ticker. */
