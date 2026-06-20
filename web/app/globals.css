@@ -1,26 +1,97 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/*
+ * "Data Terminal" design system — dark, dense, monospace, power-user-first.
+ * Near-black canvas, surfaces one step lighter, hairline borders instead of
+ * shadows. Color = meaning (green=positive/awards, blue=transfer/neutral,
+ * amber=governance/warning, red=negative), used sparingly.
+ */
+@theme {
+  --color-canvas: #0a0e14;
+  --color-surface: #11161f;
+  --color-surface-2: #161c26;
+  --color-surface-3: #1b222d;
+  --color-border: #1f2730;
+  --color-border-strong: #2b3543;
+
+  --color-fg: #e6edf3;
+  --color-fg-muted: #8b98a9;
+  --color-fg-dim: #5a6675;
+
+  --color-acc-green: #3fb950;
+  --color-acc-blue: #58a6ff;
+  --color-acc-amber: #d6a427;
+  --color-acc-red: #f85149;
+  --color-acc-violet: #a371f7;
 }
 
+/* Map next/font variables (set on <html>) into Tailwind's font utilities. */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, "SF Mono", Menlo, monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  color-scheme: dark;
+  background: var(--color-canvas);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-canvas);
+  color: var(--color-fg);
+  font-family: var(--font-mono);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Prose/labels/headings use the sans face; data stays mono by default. */
+.font-prose {
+  font-family: var(--font-sans);
+}
+
+::selection {
+  background: color-mix(in srgb, var(--color-acc-blue) 30%, transparent);
+}
+
+/* Thin terminal-style scrollbars. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-strong) transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--color-border-strong);
+  border-radius: 4px;
+}
+
+/* Live pulse on the head-block ticker. */
+@keyframes pulse-dot {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.35;
+    transform: scale(0.7);
+  }
+}
+.pulse-dot {
+  animation: pulse-dot 1.6s ease-in-out infinite;
+}
+
+/* New rows flash in the live feed. */
+@keyframes row-in {
+  from {
+    background: color-mix(in srgb, var(--color-acc-blue) 12%, transparent);
+  }
+  to {
+    background: transparent;
+  }
+}
+.row-in {
+  animation: row-in 1.2s ease-out;
 }
