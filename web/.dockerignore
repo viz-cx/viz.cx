@@ -1,0 +1,16 @@
+# Keep the Docker build context clean. Critically, never ship the local
+# node_modules (built for the host's arch — wrong native SWC binaries for the
+# linux/amd64 image) or .next (the image runs its own `next build`).
+node_modules
+.next
+out
+.git
+.gitignore
+Dockerfile
+.dockerignore
+npm-debug.log*
+yarn-error.log*
+.DS_Store
+*.pem
+.env*
+README.md
