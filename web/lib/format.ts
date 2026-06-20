@@ -49,7 +49,7 @@ export function formatAsset(
 
 /**
  * SHARES → VIZ at the current vesting rate. `fund` and `shares` are the chain's
- * total_vesting_fund_viz and total_vesting_shares (strings or numbers).
+ * total_vesting_fund and total_vesting_shares (strings or numbers).
  */
 export function sharesToViz(
   shares: string | number,

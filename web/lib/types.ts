@@ -25,7 +25,7 @@ export interface ChainInfo {
   time?: string;
   current_witness?: string;
   current_supply?: string;
-  total_vesting_fund_viz?: string;
+  total_vesting_fund?: string;
   total_vesting_shares?: string;
   total_reward_fund?: string;
   total_reward_shares?: string;

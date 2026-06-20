@@ -27,7 +27,7 @@ export default async function ValidatorsPage() {
 
   try {
     const info = await getChainInfo();
-    const fund = info?.total_vesting_fund_viz ?? "0";
+    const fund = info?.total_vesting_fund ?? "0";
     const totalShares = info?.total_vesting_shares ?? "0";
 
     const names = await withNode((api) => api.getActiveValidators());

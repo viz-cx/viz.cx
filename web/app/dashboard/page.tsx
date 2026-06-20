@@ -14,7 +14,7 @@ export default async function DashboardPage() {
   const head = info?.head_block_number ?? latest?._id;
 
   const supply = assetAmount(info?.current_supply as string | undefined);
-  const capital = assetAmount(info?.total_vesting_fund_viz as string | undefined);
+  const capital = assetAmount(info?.total_vesting_fund as string | undefined);
   const dao = assetAmount(info?.committee_fund as string | undefined);
   const rewards = assetAmount(info?.total_reward_fund as string | undefined);
   const liquid = Math.max(0, supply - capital - dao - rewards);

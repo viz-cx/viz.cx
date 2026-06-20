@@ -12,7 +12,7 @@ export default async function Home() {
   const info = await getChainInfo();
   const head = info?.head_block_number;
   const supply = assetAmount(info?.current_supply as string | undefined);
-  const vestFund = assetAmount(info?.total_vesting_fund_viz as string | undefined);
+  const vestFund = assetAmount(info?.total_vesting_fund as string | undefined);
   const witness = (info?.current_witness as string | undefined) ?? null;
 
   return (
