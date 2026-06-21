@@ -1,0 +1,189 @@
+'use client'
+import { useEffect, useState } from 'react'
+import { createHttpTransport, createReadApi } from '@viz-cx/core'
+import { useWallet } from '@/lib/wallet'
+import { NODE_ENDPOINTS } from '@/lib/config'
+
+function summarizeOp(type: string, data: Record<string, unknown>): string {
+  switch (type) {
+    case 'award': return `award → ${data.receiver}`
+    case 'receive_award': return `received from ${data.initiator}`
+    case 'transfer': return `${data.amount} → ${data.to}`
+    case 'account_create': return `created ${data.new_account_name}`
+    case 'delegate_vesting_shares': return `delegate ${data.vesting_shares} → ${data.delegatee}`
+    default: return type.replace(/_/g, ' ')
+  }
+}
+
+interface AccountSnapshot {
+  balance: string
+  vesting_shares: string
+  energy: number
+}
+
+interface HistoryRow {
+  idx: number
+  timestamp: string
+  type: string
+  data: Record<string, unknown>
+}
+
+export default function WalletPage() {
+  const wallet = useWallet()
+  const [snapshot, setSnapshot] = useState<AccountSnapshot | null>(null)
+  const [history, setHistory] = useState<HistoryRow[]>([])
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    if (!wallet.connected || !wallet.account) return
+    setLoading(true)
+    const transport = createHttpTransport(NODE_ENDPOINTS[0])
+    const api = createReadApi(transport)
+    Promise.all([
+      api.getAccounts([wallet.account]),
+      api.getAccountHistory(wallet.account, -1, 20),
+    ])
+      .then(([[acc], hist]) => {
+        if (acc) {
+          setSnapshot({
+            balance: acc.balance as string,
+            vesting_shares: acc.vesting_shares as string,
+            energy: acc.energy,
+          })
+        }
+        const rows = (hist as unknown as Array<[number, { op: [string, unknown]; timestamp: string }]>)
+          .map(([idx, item]) => ({
+            idx,
+            timestamp: item.timestamp,
+            type: (item.op as [string, unknown])[0] as string,
+            data: (item.op as [string, unknown])[1] as Record<string, unknown>,
+          }))
+          .reverse()
+        setHistory(rows)
+      })
+      .catch((err) => { console.warn('[WalletPage] fetch failed:', err) })
+      .finally(() => setLoading(false))
+  }, [wallet.connected, wallet.account])
+
+  if (!wallet.connected) {
+    return (
+      <div className="flex flex-col items-center gap-6 py-24">
+        <h1 className="text-2xl font-semibold tracking-tight">Wallet</h1>
+        <p className="font-prose text-sm text-fg-muted">
+          Connect your VIZ key to view your wallet.
+        </p>
+        <button
+          onClick={() => wallet.openModal('connect')}
+          className="rounded-md bg-acc-green px-6 py-2 font-prose text-sm font-semibold text-canvas transition-opacity hover:opacity-90"
+        >
+          Connect
+        </button>
+      </div>
+    )
+  }
+
+  const energyPct = snapshot ? Math.min(100, Math.max(0, Math.round(snapshot.energy / 100))) : null
+
+  return (
+    <div className="flex flex-col gap-8">
+      {/* Account header */}
+      <div className="flex items-start justify-between">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-2xl font-semibold tracking-tight">{wallet.account}</h1>
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-[10px] text-acc-green">● connected</span>
+            {(Object.entries(wallet.walletKeys) as [string, unknown][])
+              .filter(([, v]) => v)
+              .map(([role]) => (
+                <span
+                  key={role}
+                  className="rounded border border-border px-1.5 py-0.5 font-mono text-[10px] text-fg-dim"
+                >
+                  {role}
+                </span>
+              ))}
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={() => wallet.openModal('add-key')}
+            className="rounded border border-border px-3 py-1.5 font-prose text-xs text-fg-muted transition-colors hover:text-fg"
+          >
+            Add key
+          </button>
+          <button
+            onClick={wallet.disconnect}
+            className="rounded border border-border px-3 py-1.5 font-prose text-xs text-fg-muted transition-colors hover:text-fg"
+          >
+            Disconnect
+          </button>
+        </div>
+      </div>
+
+      {/* Stat cards */}
+      <div className="grid grid-cols-3 gap-4">
+        <div className="rounded-lg border border-border bg-surface p-4">
+          <div className="mb-1 text-[10px] font-prose font-semibold uppercase tracking-widest text-fg-dim">
+            Liquid
+          </div>
+          <div className="font-mono text-sm text-fg">{snapshot?.balance ?? '—'}</div>
+        </div>
+        <div className="rounded-lg border border-border bg-surface p-4">
+          <div className="mb-1 text-[10px] font-prose font-semibold uppercase tracking-widest text-fg-dim">
+            Capital
+          </div>
+          <div className="font-mono text-sm text-fg">{snapshot?.vesting_shares ?? '—'}</div>
+        </div>
+        <div className="rounded-lg border border-border bg-surface p-4">
+          <div className="mb-1 text-[10px] font-prose font-semibold uppercase tracking-widest text-fg-dim">
+            Energy
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-surface-3">
+              <div
+                className="h-full rounded-full bg-acc-green transition-all"
+                style={{ width: `${energyPct ?? 0}%` }}
+              />
+            </div>
+            <span className="shrink-0 font-mono text-sm text-acc-green">
+              {energyPct !== null ? `${energyPct}%` : '—'}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Recent transactions */}
+      <div className="flex flex-col gap-3">
+        <h2 className="text-[10px] font-prose font-semibold uppercase tracking-widest text-fg-dim">
+          Recent transactions
+        </h2>
+        {loading && <p className="font-prose text-sm text-fg-dim">Loading…</p>}
+        {!loading && history.length === 0 && (
+          <p className="font-prose text-sm text-fg-dim">No transactions found.</p>
+        )}
+        {!loading && history.length > 0 && (
+          <div className="overflow-hidden rounded-lg border border-border">
+            {history.map((row) => {
+              const ts = new Date(row.timestamp + 'Z')
+              return (
+                <div
+                  key={row.idx}
+                  className="flex items-center gap-4 border-b border-border px-4 py-2.5 last:border-0"
+                >
+                  <span className="w-32 shrink-0 font-mono text-[10px] text-fg-dim">
+                    {ts.toLocaleDateString()}{' '}
+                    {ts.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                  <span className="shrink-0 font-mono text-xs text-acc-blue">{row.type}</span>
+                  <span className="truncate font-prose text-xs text-fg-muted">
+                    {summarizeOp(row.type, row.data)}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
