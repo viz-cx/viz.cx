@@ -19,7 +19,7 @@ export function ConnectModal({ open, onClose, mode }: Props) {
 
   const isWif = keys.isWif(input)
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setError(null)
     setLoading(true)
