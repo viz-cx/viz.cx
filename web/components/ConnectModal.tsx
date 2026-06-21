@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { keys } from '@viz-cx/core'
 import { useWallet } from '@/lib/wallet'
 
@@ -19,6 +19,15 @@ export function ConnectModal({ open, onClose, mode }: Props) {
 
   const isWif = keys.isWif(input)
 
+  // Clear sensitive state whenever the modal closes
+  useEffect(() => {
+    if (!open) {
+      setAccount('')
+      setInput('')
+      setError(null)
+    }
+  }, [open])
+
   async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault()
     setError(null)
@@ -34,8 +43,6 @@ export function ConnectModal({ open, onClose, mode }: Props) {
         )
       }
       onClose()
-      setAccount('')
-      setInput('')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to connect')
     } finally {
@@ -45,11 +52,22 @@ export function ConnectModal({ open, onClose, mode }: Props) {
 
   if (!open) return null
 
+  const titleId = 'connect-modal-title'
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-canvas/80 backdrop-blur-sm">
-      <div className="w-full max-w-sm rounded-xl border border-border bg-surface p-6 shadow-xl">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-canvas/80 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        className="w-full max-w-sm rounded-xl border border-border bg-surface p-6 shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="mb-5 flex items-center justify-between">
-          <h2 className="font-prose text-base font-semibold text-fg">
+          <h2 id={titleId} className="font-prose text-base font-semibold text-fg">
             {mode === 'add-key' ? 'Add key' : 'Connect wallet'}
           </h2>
           <button
@@ -64,10 +82,14 @@ export function ConnectModal({ open, onClose, mode }: Props) {
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           {mode === 'connect' && (
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-prose font-semibold uppercase tracking-widest text-fg-dim">
+              <label
+                htmlFor="modal-account"
+                className="text-[10px] font-prose font-semibold uppercase tracking-widest text-fg-dim"
+              >
                 Account
               </label>
               <input
+                id="modal-account"
                 type="text"
                 value={account}
                 onChange={(e) => setAccount(e.target.value)}
@@ -80,10 +102,14 @@ export function ConnectModal({ open, onClose, mode }: Props) {
           )}
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-[10px] font-prose font-semibold uppercase tracking-widest text-fg-dim">
+            <label
+              htmlFor="modal-key"
+              className="text-[10px] font-prose font-semibold uppercase tracking-widest text-fg-dim"
+            >
               Master password or WIF key
             </label>
             <input
+              id="modal-key"
               type="password"
               value={input}
               onChange={(e) => setInput(e.target.value)}
@@ -97,12 +123,18 @@ export function ConnectModal({ open, onClose, mode }: Props) {
             )}
           </div>
 
-          {isWif && (
+          {/* In add-key mode, role is always needed (password path derives one key per role).
+              In connect mode, role only applies when a WIF is provided. */}
+          {(mode === 'add-key' || isWif) && (
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-prose font-semibold uppercase tracking-widest text-fg-dim">
+              <label
+                htmlFor="modal-role"
+                className="text-[10px] font-prose font-semibold uppercase tracking-widest text-fg-dim"
+              >
                 Role
               </label>
               <select
+                id="modal-role"
                 value={role}
                 onChange={(e) => setRole(e.target.value as 'regular' | 'active')}
                 className="rounded border border-border bg-surface-2 px-3 py-2 text-sm text-fg focus:border-border-strong focus:outline-none"
