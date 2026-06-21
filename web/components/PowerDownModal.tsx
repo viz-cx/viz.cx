@@ -1,0 +1,190 @@
+'use client'
+import { useState, useEffect, useRef } from 'react'
+import { createHttpTransport, createReadApi, type Wif } from '@viz-cx/core'
+import { useWallet } from '@/lib/wallet'
+import { powerDown } from '@/lib/actions'
+import { NODE_ENDPOINTS } from '@/lib/config'
+import { formatUTC } from '@/lib/format'
+
+interface Props {
+  open: boolean
+  onClose: () => void
+}
+
+type Step = 'form' | 'confirm'
+
+interface PowerDownStatus {
+  rate: string
+  nextPayout: string
+}
+
+export function PowerDownModal({ open, onClose }: Props) {
+  const wallet = useWallet()
+  const [amount, setAmount] = useState('')
+  const [step, setStep] = useState<Step>('form')
+  const [activeStatus, setActiveStatus] = useState<PowerDownStatus | null>(null)
+  const [loadingStatus, setLoadingStatus] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [done, setDone] = useState(false)
+  const doneTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    if (!open) {
+      if (doneTimerRef.current) { clearTimeout(doneTimerRef.current); doneTimerRef.current = null }
+      setAmount(''); setStep('form'); setError(null); setDone(false); setActiveStatus(null)
+    }
+  }, [open])
+
+  useEffect(() => {
+    if (!open || !wallet.account) return
+    let cancelled = false
+    setLoadingStatus(true)
+    const transport = createHttpTransport(NODE_ENDPOINTS[0])
+    const api = createReadApi(transport)
+    api.getAccounts([wallet.account])
+      .then(([acc]) => {
+        if (!acc || cancelled) return
+        const rate = acc['vesting_withdraw_rate'] as string | undefined
+        const next = acc['next_vesting_withdrawal'] as string | undefined
+        if (rate && rate !== '0.000000 SHARES') {
+          setActiveStatus({ rate, nextPayout: next ?? '' })
+        }
+      })
+      .catch(() => {/* non-fatal */})
+      .finally(() => { if (!cancelled) setLoadingStatus(false) })
+    return () => { cancelled = true }
+  }, [open, wallet.account])
+
+  useEffect(() => {
+    if (!open) return
+    const h = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', h)
+    return () => document.removeEventListener('keydown', h)
+  }, [open, onClose])
+
+  async function handleCancel() {
+    const wif = wallet.walletKeys.active as Wif | undefined
+    if (!wif) { setError('Active key required'); return }
+    setLoading(true); setError(null)
+    try {
+      await powerDown(wif, wallet.account!, '0.000000 SHARES')
+      setDone(true)
+      doneTimerRef.current = setTimeout(onClose, 1500)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Transaction failed')
+    } finally { setLoading(false) }
+  }
+
+  function handleFormSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
+    e.preventDefault()
+    const n = parseFloat(amount)
+    if (isNaN(n) || n <= 0) { setError('Enter a valid amount'); return }
+    setError(null)
+    setStep('confirm')
+  }
+
+  async function handleConfirm() {
+    const wif = wallet.walletKeys.active as Wif | undefined
+    if (!wif) { setError('Active key required'); return }
+    setLoading(true); setError(null)
+    try {
+      await powerDown(wif, wallet.account!, `${parseFloat(amount).toFixed(6)} SHARES`)
+      setDone(true)
+      doneTimerRef.current = setTimeout(onClose, 1500)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Transaction failed')
+      setStep('form')
+    } finally { setLoading(false) }
+  }
+
+  if (!open) return null
+
+  const sharesPerWeek = amount ? (parseFloat(amount) / 4).toFixed(6) : null
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-canvas/80 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="powerdown-modal-title"
+        className="w-full max-w-sm rounded-xl border border-border bg-surface p-6 shadow-xl"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="mb-5 flex items-center justify-between">
+          <h2 id="powerdown-modal-title" className="font-prose text-base font-semibold text-fg">Power Down (SHARES → VIZ)</h2>
+          <button onClick={onClose} className="text-xl leading-none text-fg-dim hover:text-fg" aria-label="Close">×</button>
+        </div>
+
+        {done ? (
+          <p className="py-6 text-center font-mono text-sm text-acc-green">✓ Done</p>
+        ) : (
+          <div className="flex flex-col gap-4">
+            {loadingStatus && <p className="font-prose text-xs text-fg-dim">Checking status…</p>}
+
+            {activeStatus && (
+              <div className="rounded border border-border bg-surface-2 p-3">
+                <p className="font-prose text-xs text-fg-muted">
+                  Active: <span className="font-mono text-fg">{activeStatus.rate}/week</span>
+                </p>
+                {activeStatus.nextPayout && (
+                  <p className="font-prose text-[10px] text-fg-dim">Next payout: {formatUTC(activeStatus.nextPayout)}</p>
+                )}
+                <button
+                  onClick={handleCancel}
+                  disabled={loading}
+                  className="mt-2 rounded border border-acc-red px-3 py-1 font-prose text-xs text-acc-red hover:bg-acc-red/10 disabled:opacity-50"
+                >
+                  {loading ? 'Cancelling…' : 'Cancel power-down'}
+                </button>
+              </div>
+            )}
+
+            {step === 'confirm' ? (
+              <div className="flex flex-col gap-3">
+                <p className="font-prose text-sm text-fg">
+                  Withdraw <span className="font-mono text-acc-green">{parseFloat(amount).toFixed(6)} SHARES</span> over 28 days?
+                </p>
+                <p className="font-prose text-xs text-fg-dim">≈ {sharesPerWeek} SHARES / week for 4 weeks</p>
+                {error && <p className="font-prose text-xs text-acc-red">{error}</p>}
+                <div className="flex gap-2">
+                  <button onClick={() => setStep('form')} className="flex-1 rounded border border-border py-2 font-prose text-sm text-fg-muted hover:text-fg">Back</button>
+                  <button onClick={handleConfirm} disabled={loading} className="flex-1 rounded bg-acc-green py-2 font-prose text-sm font-semibold text-canvas disabled:opacity-50">
+                    {loading ? 'Processing…' : 'Confirm'}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <form onSubmit={handleFormSubmit} className="flex flex-col gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="powerdown-amount" className="text-[10px] font-prose font-semibold uppercase tracking-widest text-fg-dim">SHARES to withdraw</label>
+                  <input
+                    id="powerdown-amount"
+                    type="number"
+                    min="0.000001"
+                    step="0.000001"
+                    value={amount}
+                    onChange={e => setAmount(e.target.value)}
+                    placeholder="1000.000000"
+                    required
+                    className="rounded border border-border bg-surface-2 px-3 py-2 font-mono text-sm text-fg placeholder:text-fg-dim focus:border-border-strong focus:outline-none"
+                  />
+                  {sharesPerWeek && (
+                    <p className="font-prose text-[10px] text-fg-dim">≈ {sharesPerWeek} SHARES / week for 4 weeks</p>
+                  )}
+                </div>
+                {error && <p className="font-prose text-xs text-acc-red">{error}</p>}
+                <button type="submit" className="w-full rounded bg-acc-green py-2 font-prose text-sm font-semibold text-canvas hover:opacity-90">
+                  Review
+                </button>
+              </form>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
