@@ -54,19 +54,25 @@ export async function saveWallet(
 export async function loadWallet(): Promise<StoredWallet | null> {
   const raw = localStorage.getItem(WALLET_KEY)
   if (!raw) return null
-  const { account, keys } = JSON.parse(raw) as {
-    account: string
-    keys: { regular?: string; active?: string }
+  let parsed: { account: string; keys: { regular?: string; active?: string } }
+  try {
+    parsed = JSON.parse(raw) as typeof parsed
+  } catch {
+    return null
   }
+  const { account, keys } = parsed
+  if (!account || typeof account !== 'string') return null
   const ek = await getOrCreateEk()
   const decrypted: { regular?: string; active?: string } = {}
   if (keys.regular) {
     const dec = await decryptWif(keys.regular, ek)
-    if (dec) decrypted.regular = dec
+    if (!dec) return null
+    decrypted.regular = dec
   }
   if (keys.active) {
     const dec = await decryptWif(keys.active, ek)
-    if (dec) decrypted.active = dec
+    if (!dec) return null
+    decrypted.active = dec
   }
   return { account, keys: decrypted }
 }
