@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { encryptWif, decryptWif } from '@/lib/wallet-storage'
 
 // localStorage mock for Node environment
