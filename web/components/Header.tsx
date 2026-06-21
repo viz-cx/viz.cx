@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { SearchBox } from "./SearchBox";
 import { HeadBlockTicker } from "./HeadBlockTicker";
+import { WalletChip } from "./WalletChip";
 
 const NAV = [
   { href: "/dashboard", label: "Network" },
@@ -40,6 +41,9 @@ export function Header() {
 
         <div className="shrink-0">
           <HeadBlockTicker />
+        </div>
+        <div className="shrink-0">
+          <WalletChip />
         </div>
       </div>
 
