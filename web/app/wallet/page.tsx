@@ -1,8 +1,9 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { createHttpTransport, createReadApi } from '@viz-cx/core'
+import { createHttpTransport, createReadApi, type AccountHistoryItem } from '@viz-cx/core'
 import { useWallet } from '@/lib/wallet'
 import { NODE_ENDPOINTS } from '@/lib/config'
+import { currentEnergy, formatUTC } from '@/lib/format'
 
 function summarizeOp(type: string, data: Record<string, unknown>): string {
   switch (type) {
@@ -19,6 +20,7 @@ interface AccountSnapshot {
   balance: string
   vesting_shares: string
   energy: number
+  last_vote_time: string | undefined
 }
 
 interface HistoryRow {
@@ -36,6 +38,7 @@ export default function WalletPage() {
 
   useEffect(() => {
     if (!wallet.connected || !wallet.account) return
+    let cancelled = false
     setLoading(true)
     const transport = createHttpTransport(NODE_ENDPOINTS[0])
     const api = createReadApi(transport)
@@ -44,25 +47,28 @@ export default function WalletPage() {
       api.getAccountHistory(wallet.account, -1, 20),
     ])
       .then(([[acc], hist]) => {
+        if (cancelled) return
         if (acc) {
           setSnapshot({
-            balance: acc.balance as string,
-            vesting_shares: acc.vesting_shares as string,
+            balance: acc.balance,
+            vesting_shares: acc.vesting_shares,
             energy: acc.energy,
+            last_vote_time: acc['last_vote_time'] as string | undefined,
           })
         }
-        const rows = (hist as unknown as Array<[number, { op: [string, unknown]; timestamp: string }]>)
+        const rows = (hist as Array<readonly [number, AccountHistoryItem]>)
           .map(([idx, item]) => ({
             idx,
             timestamp: item.timestamp,
-            type: (item.op as [string, unknown])[0] as string,
-            data: (item.op as [string, unknown])[1] as Record<string, unknown>,
+            type: item.op[0],
+            data: item.op[1],
           }))
           .reverse()
         setHistory(rows)
       })
       .catch((err) => { console.warn('[WalletPage] fetch failed:', err) })
-      .finally(() => setLoading(false))
+      .finally(() => { if (!cancelled) setLoading(false) })
+    return () => { cancelled = true }
   }, [wallet.connected, wallet.account])
 
   if (!wallet.connected) {
@@ -82,7 +88,9 @@ export default function WalletPage() {
     )
   }
 
-  const energyPct = snapshot ? Math.min(100, Math.max(0, Math.round(snapshot.energy / 100))) : null
+  const energyPct = snapshot
+    ? Math.round(currentEnergy(snapshot.energy, snapshot.last_vote_time))
+    : null
 
   return (
     <div className="flex flex-col gap-8">
@@ -113,6 +121,7 @@ export default function WalletPage() {
           </button>
           <button
             onClick={wallet.disconnect}
+            aria-label="Disconnect wallet"
             className="rounded border border-border px-3 py-1.5 font-prose text-xs text-fg-muted transition-colors hover:text-fg"
           >
             Disconnect
@@ -163,24 +172,20 @@ export default function WalletPage() {
         )}
         {!loading && history.length > 0 && (
           <div className="overflow-hidden rounded-lg border border-border">
-            {history.map((row) => {
-              const ts = new Date(row.timestamp + 'Z')
-              return (
-                <div
-                  key={row.idx}
-                  className="flex items-center gap-4 border-b border-border px-4 py-2.5 last:border-0"
-                >
-                  <span className="w-32 shrink-0 font-mono text-[10px] text-fg-dim">
-                    {ts.toLocaleDateString()}{' '}
-                    {ts.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </span>
-                  <span className="shrink-0 font-mono text-xs text-acc-blue">{row.type}</span>
-                  <span className="truncate font-prose text-xs text-fg-muted">
-                    {summarizeOp(row.type, row.data)}
-                  </span>
-                </div>
-              )
-            })}
+            {history.map((row) => (
+              <div
+                key={row.idx}
+                className="flex items-center gap-4 border-b border-border px-4 py-2.5 last:border-0"
+              >
+                <span className="w-32 shrink-0 font-mono text-[10px] text-fg-dim">
+                  {formatUTC(row.timestamp)}
+                </span>
+                <span className="shrink-0 font-mono text-xs text-acc-blue">{row.type}</span>
+                <span className="truncate font-prose text-xs text-fg-muted">
+                  {summarizeOp(row.type, row.data)}
+                </span>
+              </div>
+            ))}
           </div>
         )}
       </div>
