@@ -7,6 +7,7 @@ import { currentEnergy, formatUTC } from '@/lib/format'
 import { TransferModal } from '@/components/TransferModal'
 import { PowerUpModal } from '@/components/PowerUpModal'
 import { PowerDownModal } from '@/components/PowerDownModal'
+import { DelegateModal } from '@/components/DelegateModal'
 
 function summarizeOp(type: string, data: Record<string, unknown>): string {
   switch (type) {
@@ -41,6 +42,7 @@ export default function WalletPage() {
   const [transferOpen, setTransferOpen] = useState(false)
   const [powerUpOpen, setPowerUpOpen] = useState(false)
   const [powerDownOpen, setPowerDownOpen] = useState(false)
+  const [delegateOpen, setDelegateOpen] = useState(false)
 
   useEffect(() => {
     if (!wallet.connected || !wallet.account) return
@@ -167,12 +169,22 @@ export default function WalletPage() {
         >
           {wallet.connected && !wallet.walletKeys.active ? 'Power Down (needs active key)' : 'Power Down'}
         </button>
-        {/* Delegate button added in next task */}
+        <button
+          onClick={() => {
+            if (!wallet.connected) { wallet.openModal('connect'); return }
+            if (!wallet.walletKeys.active) { wallet.openModal('add-key'); return }
+            setDelegateOpen(true)
+          }}
+          className="rounded border border-border px-3 py-1.5 font-prose text-xs text-fg-muted transition-colors hover:border-border-strong hover:text-fg"
+        >
+          {wallet.connected && !wallet.walletKeys.active ? 'Delegate (needs active key)' : 'Delegate'}
+        </button>
       </div>
 
       <TransferModal open={transferOpen} onClose={() => setTransferOpen(false)} />
       <PowerUpModal open={powerUpOpen} onClose={() => setPowerUpOpen(false)} />
       <PowerDownModal open={powerDownOpen} onClose={() => setPowerDownOpen(false)} />
+      <DelegateModal open={delegateOpen} onClose={() => setDelegateOpen(false)} />
 
       {/* Stat cards */}
       <div className="grid grid-cols-3 gap-4">
