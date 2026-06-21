@@ -6,6 +6,7 @@ import { Card, DefRow, SectionTitle, StatTile, StatStrip } from "@/components/ui
 import { EnergyMeter } from "@/components/EnergyMeter";
 import { AccountHistory } from "@/components/AccountHistory";
 import { AccountChip } from "@/components/AccountChip";
+import { AwardButton } from "@/components/AwardButton";
 import {
   assetAmount,
   bareAccount,
@@ -59,7 +60,10 @@ export default async function AccountPage({ params }: { params: Promise<{ accoun
       <div className="flex items-start gap-4">
         <Avatar name={user} size={56} />
         <div className="min-w-0">
-          <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">@{user}</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-semibold tracking-tight">@{user}</h1>
+            <AwardButton receiver={user} />
+          </div>
           {displayName && <p className="font-prose text-sm text-fg-muted">{displayName}</p>}
           <p className="mt-0.5 font-prose text-xs text-fg-dim">
             {profile.created ? (
