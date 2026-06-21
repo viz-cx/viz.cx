@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createHttpTransport, createReadApi, type Wif } from '@viz-cx/core'
 import { useWallet } from '@/lib/wallet'
 import { awardAccount } from '@/lib/actions'
@@ -23,9 +23,11 @@ export function AwardModal({ open, onClose, receiver }: Props) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [done, setDone] = useState(false)
+  const doneTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     if (!open) {
+      if (doneTimerRef.current) { clearTimeout(doneTimerRef.current); doneTimerRef.current = null }
       setCustomInput(''); setMemo(''); setError(null); setDone(false)
       setEnergyPct(25); setAvailableEnergy(null)
     }
@@ -33,15 +35,16 @@ export function AwardModal({ open, onClose, receiver }: Props) {
 
   useEffect(() => {
     if (!open || !wallet.account) return
+    let cancelled = false
     const transport = createHttpTransport(NODE_ENDPOINTS[0])
     const api = createReadApi(transport)
     api.getAccounts([wallet.account])
       .then(([acc]) => {
-        if (acc) {
+        if (!cancelled && acc)
           setAvailableEnergy(Math.round(currentEnergy(acc.energy, acc['last_vote_time'] as string | undefined)))
-        }
       })
       .catch(() => {/* non-fatal */})
+    return () => { cancelled = true }
   }, [open, wallet.account])
 
   useEffect(() => {
@@ -64,7 +67,7 @@ export function AwardModal({ open, onClose, receiver }: Props) {
     try {
       await awardAccount(wif, wallet.account!, receiver, clampedPct, memo || undefined)
       setDone(true)
-      setTimeout(onClose, 1500)
+      doneTimerRef.current = setTimeout(onClose, 1500)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Transaction failed')
     } finally { setLoading(false) }
