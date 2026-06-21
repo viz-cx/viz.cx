@@ -17,7 +17,7 @@ export function WalletChip() {
     api
       .getAccounts([wallet.account])
       .then(([acc]) => { if (acc) setEnergy(acc.energy) })
-      .catch(() => {})
+      .catch((err) => { console.warn('[WalletChip] energy fetch failed:', err) })
   }, [wallet.connected, wallet.account])
 
   if (!wallet.connected) {
@@ -32,7 +32,8 @@ export function WalletChip() {
   }
 
   const initials = (wallet.account ?? '').slice(0, 2).toUpperCase()
-  const energyPct = energy !== null ? Math.round(energy / 100) : null
+  // energy is stored as 0–10000 basis points on-chain
+  const energyPct = energy !== null ? Math.min(100, Math.max(0, Math.round(energy / 100))) : null
 
   return (
     <button
