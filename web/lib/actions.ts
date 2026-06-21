@@ -84,3 +84,41 @@ export async function voteValidator(
     .sign(wif)
     .broadcast()
 }
+
+export async function createProposal(
+  wif: Wif,
+  creator: string,
+  worker: string,
+  url: string,
+  requiredAmountMin: string,
+  requiredAmountMax: string,
+  duration: number
+): Promise<void> {
+  await makeBuilder()
+    .committeeWorkerCreateRequest({ creator: account(creator), worker: account(worker), url, requiredAmountMin, requiredAmountMax, duration })
+    .sign(wif)
+    .broadcast()
+}
+
+export async function voteProposal(
+  wif: Wif,
+  voter: string,
+  requestId: number,
+  votePercent: number
+): Promise<void> {
+  await makeBuilder()
+    .committeeVoteRequest({ voter: account(voter), requestId, votePercent })
+    .sign(wif)
+    .broadcast()
+}
+
+export async function cancelProposal(
+  wif: Wif,
+  creator: string,
+  requestId: number
+): Promise<void> {
+  await makeBuilder()
+    .committeeWorkerCancelRequest({ creator: account(creator), requestId })
+    .sign(wif)
+    .broadcast()
+}

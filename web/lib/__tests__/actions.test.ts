@@ -9,6 +9,9 @@ const mockTransferToVesting = vi.fn().mockReturnValue({ sign: mockSign })
 const mockWithdrawVesting = vi.fn().mockReturnValue({ sign: mockSign })
 const mockDelegateVestingShares = vi.fn().mockReturnValue({ sign: mockSign })
 const mockAccountValidatorVote = vi.fn().mockReturnValue({ sign: mockSign })
+const mockCommitteeWorkerCreateRequest = vi.fn().mockReturnValue({ sign: mockSign })
+const mockCommitteeVoteRequest = vi.fn().mockReturnValue({ sign: mockSign })
+const mockCommitteeWorkerCancelRequest = vi.fn().mockReturnValue({ sign: mockSign })
 const mockBuilder = {
   award: mockAward,
   transfer: mockTransfer,
@@ -16,6 +19,9 @@ const mockBuilder = {
   withdrawVesting: mockWithdrawVesting,
   delegateVestingShares: mockDelegateVestingShares,
   accountValidatorVote: mockAccountValidatorVote,
+  committeeWorkerCreateRequest: mockCommitteeWorkerCreateRequest,
+  committeeVoteRequest: mockCommitteeVoteRequest,
+  committeeWorkerCancelRequest: mockCommitteeWorkerCancelRequest,
 }
 const mockCreateTxBuilder = vi.fn().mockReturnValue(mockBuilder)
 
@@ -120,5 +126,43 @@ describe('actions', () => {
     mockBroadcast.mockRejectedValueOnce(new Error('broadcast failed'))
     const { awardAccount } = await import('@/lib/actions')
     await expect(awardAccount(TEST_WIF, 'alice', 'bob', 10)).rejects.toThrow('broadcast failed')
+  })
+
+  it('createProposal calls committeeWorkerCreateRequest with correct params', async () => {
+    const { createProposal } = await import('@/lib/actions')
+    await createProposal(TEST_WIF, 'alice', 'alice', 'https://example.com', '0.000 VIZ', '500.000 VIZ', 1209600)
+    expect(mockCommitteeWorkerCreateRequest).toHaveBeenCalledWith({
+      creator: 'alice',
+      worker: 'alice',
+      url: 'https://example.com',
+      requiredAmountMin: '0.000 VIZ',
+      requiredAmountMax: '500.000 VIZ',
+      duration: 1209600,
+    })
+    expect(mockSign).toHaveBeenCalledWith(TEST_WIF)
+    expect(mockBroadcast).toHaveBeenCalled()
+  })
+
+  it('voteProposal calls committeeVoteRequest with requestId and votePercent', async () => {
+    const { voteProposal } = await import('@/lib/actions')
+    await voteProposal(TEST_WIF, 'alice', 42, 10000)
+    expect(mockCommitteeVoteRequest).toHaveBeenCalledWith({
+      voter: 'alice',
+      requestId: 42,
+      votePercent: 10000,
+    })
+    expect(mockSign).toHaveBeenCalledWith(TEST_WIF)
+    expect(mockBroadcast).toHaveBeenCalled()
+  })
+
+  it('cancelProposal calls committeeWorkerCancelRequest', async () => {
+    const { cancelProposal } = await import('@/lib/actions')
+    await cancelProposal(TEST_WIF, 'alice', 42)
+    expect(mockCommitteeWorkerCancelRequest).toHaveBeenCalledWith({
+      creator: 'alice',
+      requestId: 42,
+    })
+    expect(mockSign).toHaveBeenCalledWith(TEST_WIF)
+    expect(mockBroadcast).toHaveBeenCalled()
   })
 })
