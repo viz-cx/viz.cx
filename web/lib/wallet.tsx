@@ -7,8 +7,9 @@ import {
   useCallback,
   type ReactNode,
 } from 'react'
-import { keys, createHttpTransport, createReadApi, type Wif } from '@viz-cx/core'
+import { keys, createHttpTransport, createReadApi, type Authority, type Wif } from '@viz-cx/core'
 import { saveWallet, loadWallet, clearWallet } from './wallet-storage'
+import { NODE_ENDPOINTS } from './config'
 
 export type ModalMode = 'connect' | 'add-key'
 
@@ -38,13 +39,13 @@ async function validateKey(
   wif: Wif,
   role: 'regular' | 'active'
 ): Promise<void> {
-  const transport = createHttpTransport('https://node.viz.cx')
+  const transport = createHttpTransport(NODE_ENDPOINTS[0])
   const api = createReadApi(transport)
-  const [accountData] = await api.getAccounts([acc])
+  const [accountData] = await api.lookupAccountNames([acc])
   if (!accountData) throw new Error('Account not found')
   const pub = String(keys.toPublic(wif))
-  const authority = (accountData[role] as { key_auths?: [string, number][] } | null)
-  const authorizedKeys = authority?.key_auths?.map(([k]) => k) ?? []
+  const authority = accountData[role] as Authority | null
+  const authorizedKeys = authority?.keyAuths?.map(([k]) => String(k)) ?? []
   if (!authorizedKeys.includes(pub)) throw new Error('Key does not match this account')
 }
 
@@ -65,7 +66,10 @@ export function WalletProvider({ children }: { children: ReactNode }) {
           })
         }
       })
-      .catch(() => {})
+      .catch((err) => {
+        console.warn('[wallet] Failed to restore wallet, clearing corrupted state:', err)
+        clearWallet()
+      })
   }, [])
 
   const connect = useCallback(
