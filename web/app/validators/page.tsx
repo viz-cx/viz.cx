@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { withNode } from "@/lib/core";
+import { NULL_SIGNING_KEY } from "@/lib/validator";
 import { getChainInfo } from "@/lib/api";
 import { Card, Empty, SectionTitle } from "@/components/ui";
 import { ValidatorsTable, type ValidatorRow } from "@/components/tables/ValidatorsTable";
@@ -7,9 +8,6 @@ import { assetAmount, sharesToViz } from "@/lib/format";
 
 export const revalidate = 30;
 export const metadata: Metadata = { title: "Validators" };
-
-// The on-chain "null" signing key marks a disabled (idle) validator.
-const NULL_KEY = "VIZ1111111111111111111111111111111114T1Anm";
 
 interface RawValidator {
   owner?: string;
@@ -45,7 +43,7 @@ export default async function ValidatorsPage() {
           voteWeight: sharesToViz(votesShares, fund, totalShares),
           version: v.running_version ?? "—",
           missed: v.total_missed ?? 0,
-          running: (v.signing_key ?? NULL_KEY) !== NULL_KEY,
+          running: (v.signing_key ?? NULL_SIGNING_KEY) !== NULL_SIGNING_KEY,
           url: v.url ?? "",
         };
       })
