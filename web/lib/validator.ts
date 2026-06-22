@@ -7,6 +7,7 @@
  * node-failover read pattern this builds on.
  */
 import { withNode } from "./core";
+import type { ChainProperties } from "@viz-cx/core";
 
 /** The on-chain "null" signing key marks a disabled (idle) validator. */
 export const NULL_SIGNING_KEY = "VIZ1111111111111111111111111111111114T1Anm";
@@ -36,7 +37,7 @@ export async function fetchValidator(account: string): Promise<RawValidator | nu
 export type PropsFieldKind = "percent" | "asset-viz" | "asset-shares" | "uint";
 
 export interface PropsField {
-  key: keyof import("@viz-cx/core").ChainProperties;
+  key: keyof ChainProperties;
   label: string;
   kind: PropsFieldKind;
   unit?: string;
@@ -122,7 +123,7 @@ export function validatePropsField(field: PropsField, rawValue: number): string 
 }
 
 /** Validates a full ChainProperties object: per-field bounds plus cross-field rules. */
-export function validateProps(props: import("@viz-cx/core").ChainProperties): string[] {
+export function validateProps(props: ChainProperties): string[] {
   const errors: string[] = [];
   for (const group of PROPS_GROUPS) {
     for (const field of group.fields) {
@@ -135,7 +136,11 @@ export function validateProps(props: import("@viz-cx/core").ChainProperties): st
       if (err) errors.push(err);
     }
   }
-  if (props.minCurationPercent > props.maxCurationPercent) {
+  if (
+    props.minCurationPercent !== undefined &&
+    props.maxCurationPercent !== undefined &&
+    props.minCurationPercent > props.maxCurationPercent
+  ) {
     errors.push("minCurationPercent must be less than or equal to maxCurationPercent");
   }
   return errors;
