@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { keys } from '@viz-cx/core'
 import { useWallet } from '@/lib/wallet'
+import { ModalShell } from './ModalShell'
 
 interface Props {
   open: boolean
@@ -28,14 +29,6 @@ export function ConnectModal({ open, onClose, mode }: Props) {
     }
   }, [open])
 
-  // Dismiss on Escape key
-  useEffect(() => {
-    if (!open) return
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
-    document.addEventListener('keydown', handler)
-    return () => document.removeEventListener('keydown', handler)
-  }, [open, onClose])
-
   async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault()
     setError(null)
@@ -58,35 +51,8 @@ export function ConnectModal({ open, onClose, mode }: Props) {
     }
   }
 
-  if (!open) return null
-
-  const titleId = 'connect-modal-title'
-
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-canvas/80 backdrop-blur-sm"
-      onClick={onClose}
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        className="w-full max-w-sm rounded-xl border border-border bg-surface p-6 shadow-xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="mb-5 flex items-center justify-between">
-          <h2 id={titleId} className="font-prose text-base font-semibold text-fg">
-            {mode === 'add-key' ? 'Add key' : 'Connect wallet'}
-          </h2>
-          <button
-            onClick={onClose}
-            className="text-xl leading-none text-fg-dim hover:text-fg"
-            aria-label="Close"
-          >
-            ×
-          </button>
-        </div>
-
+    <ModalShell open={open} onClose={onClose} title={mode === 'add-key' ? 'Add key' : 'Connect wallet'}>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           {mode === 'connect' && (
             <div className="flex flex-col gap-1.5">
@@ -170,7 +136,6 @@ export function ConnectModal({ open, onClose, mode }: Props) {
             {loading ? 'Connecting…' : mode === 'add-key' ? 'Add key' : 'Connect'}
           </button>
         </form>
-      </div>
-    </div>
+    </ModalShell>
   )
 }

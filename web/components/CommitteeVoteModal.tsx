@@ -4,6 +4,7 @@ import { type Wif } from '@viz-cx/core'
 import { useWallet } from '@/lib/wallet'
 import { voteProposal } from '@/lib/actions'
 import { truncateUrl, type CommitteeRequest } from '@/lib/committee'
+import { ModalShell } from './ModalShell'
 
 interface Props {
   open: boolean
@@ -26,13 +27,6 @@ export function CommitteeVoteModal({ open, onClose, proposal, votePercent }: Pro
     }
   }, [open])
 
-  useEffect(() => {
-    if (!open) return
-    const h = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
-    document.addEventListener('keydown', h)
-    return () => document.removeEventListener('keydown', h)
-  }, [open, onClose])
-
   async function handleConfirm() {
     const wif = wallet.walletKeys.regular as Wif | undefined
     if (!wif) { setError('Regular key required'); return }
@@ -45,8 +39,6 @@ export function CommitteeVoteModal({ open, onClose, proposal, votePercent }: Pro
       setError(err instanceof Error ? err.message : 'Transaction failed')
     } finally { setLoading(false) }
   }
-
-  if (!open) return null
 
   const title = votePercent > 0 ? 'Approve proposal'
     : votePercent < 0 ? 'Reject proposal'
@@ -62,21 +54,7 @@ export function CommitteeVoteModal({ open, onClose, proposal, votePercent }: Pro
     : 'flex-1 rounded bg-acc-green py-2 font-prose text-sm font-semibold text-canvas disabled:opacity-50'
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-canvas/80 backdrop-blur-sm"
-      onClick={onClose}
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="committee-vote-modal-title"
-        className="w-full max-w-sm rounded-xl border border-border bg-surface p-6 shadow-xl"
-        onClick={e => e.stopPropagation()}
-      >
-        <div className="mb-5 flex items-center justify-between">
-          <h2 id="committee-vote-modal-title" className="font-prose text-base font-semibold text-fg">{title}</h2>
-          <button onClick={onClose} className="text-xl leading-none text-fg-dim hover:text-fg" aria-label="Close">×</button>
-        </div>
+    <ModalShell open={open} onClose={onClose} title={title}>
         {done ? (
           <p className="py-6 text-center font-mono text-sm text-acc-green">✓ Done</p>
         ) : (
@@ -92,7 +70,6 @@ export function CommitteeVoteModal({ open, onClose, proposal, votePercent }: Pro
             </div>
           </div>
         )}
-      </div>
-    </div>
+    </ModalShell>
   )
 }

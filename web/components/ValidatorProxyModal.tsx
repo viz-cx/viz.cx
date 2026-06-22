@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import { type Wif } from '@viz-cx/core'
 import { useWallet } from '@/lib/wallet'
 import { setValidatorProxy } from '@/lib/actions'
+import { ModalShell } from './ModalShell'
 
 interface Props {
   open: boolean
@@ -29,13 +30,6 @@ export function ValidatorProxyModal({ open, onClose, mode, currentProxy }: Props
     }
   }, [open])
 
-  useEffect(() => {
-    if (!open) return
-    const h = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
-    document.addEventListener('keydown', h)
-    return () => document.removeEventListener('keydown', h)
-  }, [open, onClose])
-
   function handleNext() {
     const name = target.trim().toLowerCase()
     if (!name) { setError('Enter an account name'); return }
@@ -58,28 +52,11 @@ export function ValidatorProxyModal({ open, onClose, mode, currentProxy }: Props
     } finally { setLoading(false) }
   }
 
-  if (!open) return null
-
   const showReview = mode === 'clear' || review
   const title = mode === 'clear' ? 'Clear vote proxy' : 'Set vote proxy'
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-canvas/80 backdrop-blur-sm"
-      onClick={onClose}
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="validator-proxy-modal-title"
-        className="w-full max-w-sm rounded-xl border border-border bg-surface p-6 shadow-xl"
-        onClick={e => e.stopPropagation()}
-      >
-        <div className="mb-5 flex items-center justify-between">
-          <h2 id="validator-proxy-modal-title" className="font-prose text-base font-semibold text-fg">{title}</h2>
-          <button onClick={onClose} className="text-xl leading-none text-fg-dim hover:text-fg" aria-label="Close">×</button>
-        </div>
-
+    <ModalShell open={open} onClose={onClose} title={title}>
         {done ? (
           <p className="py-6 text-center font-mono text-sm text-acc-green">✓ Done</p>
         ) : !showReview ? (
@@ -127,7 +104,6 @@ export function ValidatorProxyModal({ open, onClose, mode, currentProxy }: Props
             </div>
           </div>
         )}
-      </div>
-    </div>
+    </ModalShell>
   )
 }

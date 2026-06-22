@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import { type Wif } from '@viz-cx/core'
 import { useWallet } from '@/lib/wallet'
 import { voteValidator } from '@/lib/actions'
+import { ModalShell } from './ModalShell'
 
 interface Props {
   open: boolean
@@ -25,13 +26,6 @@ export function ValidatorVoteModal({ open, onClose, validator, currentlyVoted }:
     }
   }, [open])
 
-  useEffect(() => {
-    if (!open) return
-    const h = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
-    document.addEventListener('keydown', h)
-    return () => document.removeEventListener('keydown', h)
-  }, [open, onClose])
-
   async function handleConfirm() {
     const wif = wallet.walletKeys.active as Wif | undefined
     if (!wif) { setError('Active key required'); return }
@@ -45,27 +39,8 @@ export function ValidatorVoteModal({ open, onClose, validator, currentlyVoted }:
     } finally { setLoading(false) }
   }
 
-  if (!open) return null
-
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-canvas/80 backdrop-blur-sm"
-      onClick={onClose}
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="validator-vote-modal-title"
-        className="w-full max-w-sm rounded-xl border border-border bg-surface p-6 shadow-xl"
-        onClick={e => e.stopPropagation()}
-      >
-        <div className="mb-5 flex items-center justify-between">
-          <h2 id="validator-vote-modal-title" className="font-prose text-base font-semibold text-fg">
-            {currentlyVoted ? 'Remove vote' : 'Vote for validator'}
-          </h2>
-          <button onClick={onClose} className="text-xl leading-none text-fg-dim hover:text-fg" aria-label="Close">×</button>
-        </div>
-
+    <ModalShell open={open} onClose={onClose} title={currentlyVoted ? 'Remove vote' : 'Vote for validator'}>
         {done ? (
           <p className="py-6 text-center font-mono text-sm text-acc-green">✓ Done</p>
         ) : (
@@ -89,7 +64,6 @@ export function ValidatorVoteModal({ open, onClose, validator, currentlyVoted }:
             </div>
           </div>
         )}
-      </div>
-    </div>
+    </ModalShell>
   )
 }

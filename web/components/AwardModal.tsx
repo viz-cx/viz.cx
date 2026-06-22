@@ -5,6 +5,7 @@ import { useWallet } from '@/lib/wallet'
 import { awardAccount } from '@/lib/actions'
 import { NODE_ENDPOINTS } from '@/lib/config'
 import { currentEnergy } from '@/lib/format'
+import { ModalShell } from './ModalShell'
 
 interface Props {
   open: boolean
@@ -47,13 +48,6 @@ export function AwardModal({ open, onClose, receiver }: Props) {
     return () => { cancelled = true }
   }, [open, wallet.account])
 
-  useEffect(() => {
-    if (!open) return
-    const h = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
-    document.addEventListener('keydown', h)
-    return () => document.removeEventListener('keydown', h)
-  }, [open, onClose])
-
   const effectivePct = customInput !== '' ? Number(customInput) : energyPct
   const maxPct = availableEnergy ?? 100
   const clampedPct = Math.min(effectivePct, maxPct)
@@ -73,27 +67,8 @@ export function AwardModal({ open, onClose, receiver }: Props) {
     } finally { setLoading(false) }
   }
 
-  if (!open) return null
-
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-canvas/80 backdrop-blur-sm"
-      onClick={onClose}
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="award-modal-title"
-        className="w-full max-w-sm rounded-xl border border-border bg-surface p-6 shadow-xl"
-        onClick={e => e.stopPropagation()}
-      >
-        <div className="mb-5 flex items-center justify-between">
-          <h2 id="award-modal-title" className="font-prose text-base font-semibold text-fg">
-            Award @{receiver}
-          </h2>
-          <button onClick={onClose} className="text-xl leading-none text-fg-dim hover:text-fg" aria-label="Close">×</button>
-        </div>
-
+    <ModalShell open={open} onClose={onClose} title={`Award @${receiver}`}>
         {done ? (
           <p className="py-6 text-center font-mono text-sm text-acc-green">✓ Done</p>
         ) : (
@@ -155,7 +130,6 @@ export function AwardModal({ open, onClose, receiver }: Props) {
             </button>
           </form>
         )}
-      </div>
-    </div>
+    </ModalShell>
   )
 }
