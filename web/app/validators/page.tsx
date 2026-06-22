@@ -5,6 +5,7 @@ import { getChainInfo } from "@/lib/api";
 import { Card, Empty, SectionTitle } from "@/components/ui";
 import { ValidatorsTable, type ValidatorRow } from "@/components/tables/ValidatorsTable";
 import { assetAmount, sharesToViz } from "@/lib/format";
+import { ManageValidatorLink } from "@/components/ManageValidatorLink";
 
 export const revalidate = 30;
 export const metadata: Metadata = { title: "Validators" };
@@ -55,11 +56,14 @@ export default async function ValidatorsPage() {
 
   return (
     <div className="flex flex-col gap-5">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Validators</h1>
-        <p className="mt-1 font-prose text-sm text-fg-dim">
-          The active validator set producing blocks on VIZ (DPoS). Click a column to sort.
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Validators</h1>
+          <p className="mt-1 font-prose text-sm text-fg-dim">
+            The active validator set producing blocks on VIZ (DPoS). Click a column to sort.
+          </p>
+        </div>
+        <ManageValidatorLink />
       </div>
 
       {failed || rows.length === 0 ? (
