@@ -12,6 +12,8 @@ const mockAccountValidatorVote = vi.fn().mockReturnValue({ sign: mockSign })
 const mockCommitteeWorkerCreateRequest = vi.fn().mockReturnValue({ sign: mockSign })
 const mockCommitteeVoteRequest = vi.fn().mockReturnValue({ sign: mockSign })
 const mockCommitteeWorkerCancelRequest = vi.fn().mockReturnValue({ sign: mockSign })
+const mockValidatorUpdate = vi.fn().mockReturnValue({ sign: mockSign })
+const mockVersionedChainPropertiesUpdate = vi.fn().mockReturnValue({ sign: mockSign })
 const mockBuilder = {
   award: mockAward,
   transfer: mockTransfer,
@@ -22,6 +24,8 @@ const mockBuilder = {
   committeeWorkerCreateRequest: mockCommitteeWorkerCreateRequest,
   committeeVoteRequest: mockCommitteeVoteRequest,
   committeeWorkerCancelRequest: mockCommitteeWorkerCancelRequest,
+  validatorUpdate: mockValidatorUpdate,
+  versionedChainPropertiesUpdate: mockVersionedChainPropertiesUpdate,
 }
 const mockCreateTxBuilder = vi.fn().mockReturnValue(mockBuilder)
 
@@ -161,6 +165,40 @@ describe('actions', () => {
     expect(mockCommitteeWorkerCancelRequest).toHaveBeenCalledWith({
       creator: 'alice',
       requestId: 42,
+    })
+    expect(mockSign).toHaveBeenCalledWith(TEST_WIF)
+    expect(mockBroadcast).toHaveBeenCalled()
+  })
+
+  it('updateValidator calls validatorUpdate with url and signing key', async () => {
+    const { updateValidator } = await import('@/lib/actions')
+    await updateValidator(TEST_WIF, 'alice', 'https://example.com', 'VIZ79AT1EVFf2yu8oj6mTmFbW5KdDSdySsxdkACKcZ9moWgZDeEXq')
+    expect(mockValidatorUpdate).toHaveBeenCalledWith({
+      owner: 'alice',
+      url: 'https://example.com',
+      blockSigningKey: 'VIZ79AT1EVFf2yu8oj6mTmFbW5KdDSdySsxdkACKcZ9moWgZDeEXq',
+    })
+    expect(mockSign).toHaveBeenCalledWith(TEST_WIF)
+    expect(mockBroadcast).toHaveBeenCalled()
+  })
+
+  it('goIdleValidator calls validatorUpdate with the null signing key', async () => {
+    const { goIdleValidator } = await import('@/lib/actions')
+    await goIdleValidator(TEST_WIF, 'alice', 'https://example.com')
+    expect(mockValidatorUpdate).toHaveBeenCalledWith({
+      owner: 'alice',
+      url: 'https://example.com',
+      blockSigningKey: 'VIZ1111111111111111111111111111111114T1Anm',
+    })
+  })
+
+  it('updateChainProperties calls versionedChainPropertiesUpdate with index 4', async () => {
+    const { updateChainProperties } = await import('@/lib/actions')
+    const props = { accountCreationFee: '1.000 VIZ', maximumBlockSize: 131072 } as Parameters<typeof updateChainProperties>[2]
+    await updateChainProperties(TEST_WIF, 'alice', props)
+    expect(mockVersionedChainPropertiesUpdate).toHaveBeenCalledWith({
+      owner: 'alice',
+      props: [4, props],
     })
     expect(mockSign).toHaveBeenCalledWith(TEST_WIF)
     expect(mockBroadcast).toHaveBeenCalled()

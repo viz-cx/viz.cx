@@ -3,6 +3,9 @@ import {
   createHttpTransport,
   createTxBuilder,
   DEFAULT_EXPIRATION_SEC,
+  HF13_PROPS_VERSION,
+  type ChainProperties,
+  type PublicKey,
   type Wif,
 } from '@viz-cx/core'
 import { NODE_ENDPOINTS } from './config'
@@ -119,6 +122,33 @@ export async function cancelProposal(
 ): Promise<void> {
   await makeBuilder()
     .committeeWorkerCancelRequest({ creator: account(creator), requestId })
+    .sign(wif)
+    .broadcast()
+}
+
+export async function updateValidator(
+  wif: Wif,
+  owner: string,
+  url: string,
+  blockSigningKey: string
+): Promise<void> {
+  await makeBuilder()
+    .validatorUpdate({ owner: account(owner), url, blockSigningKey: blockSigningKey as PublicKey })
+    .sign(wif)
+    .broadcast()
+}
+
+export async function goIdleValidator(wif: Wif, owner: string, url: string): Promise<void> {
+  await updateValidator(wif, owner, url, 'VIZ1111111111111111111111111111111114T1Anm')
+}
+
+export async function updateChainProperties(
+  wif: Wif,
+  owner: string,
+  props: ChainProperties
+): Promise<void> {
+  await makeBuilder()
+    .versionedChainPropertiesUpdate({ owner: account(owner), props: [HF13_PROPS_VERSION, props] })
     .sign(wif)
     .broadcast()
 }
