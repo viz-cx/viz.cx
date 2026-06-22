@@ -14,6 +14,7 @@ const mockCommitteeVoteRequest = vi.fn().mockReturnValue({ sign: mockSign })
 const mockCommitteeWorkerCancelRequest = vi.fn().mockReturnValue({ sign: mockSign })
 const mockValidatorUpdate = vi.fn().mockReturnValue({ sign: mockSign })
 const mockVersionedChainPropertiesUpdate = vi.fn().mockReturnValue({ sign: mockSign })
+const mockAccountValidatorProxy = vi.fn().mockReturnValue({ sign: mockSign })
 const mockBuilder = {
   award: mockAward,
   transfer: mockTransfer,
@@ -26,6 +27,7 @@ const mockBuilder = {
   committeeWorkerCancelRequest: mockCommitteeWorkerCancelRequest,
   validatorUpdate: mockValidatorUpdate,
   versionedChainPropertiesUpdate: mockVersionedChainPropertiesUpdate,
+  accountValidatorProxy: mockAccountValidatorProxy,
 }
 const mockCreateTxBuilder = vi.fn().mockReturnValue(mockBuilder)
 
@@ -124,6 +126,20 @@ describe('actions', () => {
       validator: 'validator1',
       approve: true,
     })
+  })
+
+  it('setValidatorProxy sets a proxy account', async () => {
+    const { setValidatorProxy } = await import('@/lib/actions')
+    await setValidatorProxy(TEST_WIF, 'alice', 'bob')
+    expect(mockAccountValidatorProxy).toHaveBeenCalledWith({ account: 'alice', proxy: 'bob' })
+    expect(mockSign).toHaveBeenCalledWith(TEST_WIF)
+    expect(mockBroadcast).toHaveBeenCalled()
+  })
+
+  it('setValidatorProxy with empty string clears the proxy', async () => {
+    const { setValidatorProxy } = await import('@/lib/actions')
+    await setValidatorProxy(TEST_WIF, 'alice', '')
+    expect(mockAccountValidatorProxy).toHaveBeenCalledWith({ account: 'alice', proxy: '' })
   })
 
   it('propagates errors from broadcast', async () => {

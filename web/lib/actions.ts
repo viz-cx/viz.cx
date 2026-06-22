@@ -89,6 +89,20 @@ export async function voteValidator(
     .broadcast()
 }
 
+export async function setValidatorProxy(
+  wif: Wif,
+  accountName: string,
+  proxy: string
+): Promise<void> {
+  await makeBuilder()
+    .accountValidatorProxy({
+      account: account(accountName),
+      proxy: proxy === '' ? '' : account(proxy),
+    })
+    .sign(wif)
+    .broadcast()
+}
+
 export async function createProposal(
   wif: Wif,
   creator: string,
