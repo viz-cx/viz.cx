@@ -9,6 +9,7 @@ import {
   type Wif,
 } from '@viz-cx/core'
 import { NODE_ENDPOINTS } from './config'
+import { NULL_SIGNING_KEY } from './validator'
 
 function makeBuilder() {
   const transport = createHttpTransport(NODE_ENDPOINTS[0])
@@ -139,7 +140,7 @@ export async function updateValidator(
 }
 
 export async function goIdleValidator(wif: Wif, owner: string, url: string): Promise<void> {
-  await updateValidator(wif, owner, url, 'VIZ1111111111111111111111111111111114T1Anm')
+  await updateValidator(wif, owner, url, NULL_SIGNING_KEY)
 }
 
 export async function updateChainProperties(
