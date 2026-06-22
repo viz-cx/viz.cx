@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import type { ChainProperties, Wif } from '@viz-cx/core'
+import { publicKey, type ChainProperties, type Wif } from '@viz-cx/core'
 import { useWallet } from '@/lib/wallet'
 import { fetchValidator, propsFromRaw, type RawValidator } from '@/lib/validator'
 import { updateValidator, goIdleValidator, updateChainProperties } from '@/lib/actions'
@@ -83,6 +83,12 @@ export default function ValidatorManagePage() {
   function handleRegisterSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault()
     if (!url || !signingKey) { setError('URL and signing key are required'); return }
+    try {
+      publicKey(signingKey)
+    } catch {
+      setError('Invalid block-signing public key format')
+      return
+    }
     goStep('confirm-register')
   }
 
