@@ -6,10 +6,11 @@ import { ValidatorVoteModal } from './ValidatorVoteModal'
 interface Props {
   validator: string
   currentlyVoted: boolean
+  disabled?: boolean
   onVote?: () => void
 }
 
-export function ValidatorVoteButton({ validator, currentlyVoted, onVote }: Props) {
+export function ValidatorVoteButton({ validator, currentlyVoted, disabled, onVote }: Props) {
   const wallet = useWallet()
   const [open, setOpen] = useState(false)
 
@@ -17,6 +18,14 @@ export function ValidatorVoteButton({ validator, currentlyVoted, onVote }: Props
     if (!wallet.connected) { wallet.openModal('connect'); return }
     if (!wallet.walletKeys.active) { wallet.openModal('add-key'); return }
     setOpen(true)
+  }
+
+  if (disabled) {
+    return (
+      <span className="font-prose text-xs text-fg-dim" title="Clear your vote proxy to vote directly">
+        proxied
+      </span>
+    )
   }
 
   return (
