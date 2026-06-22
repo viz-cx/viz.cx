@@ -76,6 +76,7 @@ export function ValidatorsTable({
     {
       key: "status",
       header: "Status",
+      hideOnMobile: true,
       cell: (r) => (
         <span className={`inline-flex items-center gap-1.5 ${r.running ? "text-acc-green" : "text-fg-dim"}`}>
           <span className={`h-2 w-2 rounded-full ${r.running ? "bg-acc-green" : "bg-fg-dim"}`} />
@@ -94,6 +95,7 @@ export function ValidatorsTable({
     {
       key: "missed",
       header: "Missed",
+      hideOnMobile: true,
       align: "right",
       cell: (r) => <span className={r.missed > 0 ? "text-acc-amber" : ""}>{r.missed.toLocaleString("en-US")}</span>,
       sort: (r) => r.missed,
@@ -101,6 +103,7 @@ export function ValidatorsTable({
     {
       key: "version",
       header: "Version",
+      hideOnMobile: true,
       align: "right",
       cell: (r) => <span className="text-fg-muted">{r.version}</span>,
       sort: (r) => r.version,

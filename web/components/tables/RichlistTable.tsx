@@ -32,6 +32,7 @@ export function RichlistTable({ rows }: { rows: RichlistRow[] }) {
     {
       key: "liquid",
       header: "Liquid VIZ",
+      hideOnMobile: true,
       align: "right",
       cell: (r) => num(r.liquid, 0),
       sort: (r) => r.liquid,
@@ -39,6 +40,7 @@ export function RichlistTable({ rows }: { rows: RichlistRow[] }) {
     {
       key: "capital_viz",
       header: "Capital (VIZ)",
+      hideOnMobile: true,
       align: "right",
       cell: (r) => <span className={metric === "capital_viz" ? "text-acc-green" : ""}>{num(r.capital_viz, 0)}</span>,
       sort: (r) => r.capital_viz,
@@ -46,6 +48,7 @@ export function RichlistTable({ rows }: { rows: RichlistRow[] }) {
     {
       key: "effective_viz",
       header: "Effective (VIZ)",
+      hideOnMobile: true,
       align: "right",
       cell: (r) => <span className={metric === "effective_viz" ? "text-acc-green" : ""}>{num(r.effective_viz, 0)}</span>,
       sort: (r) => r.effective_viz,

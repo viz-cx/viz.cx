@@ -11,6 +11,8 @@ export interface Column<T> {
   sort?: (row: T) => number | string;
   align?: "left" | "right";
   className?: string;
+  /** When true, the column is hidden below the `sm` breakpoint. */
+  hideOnMobile?: boolean;
 }
 
 /**
@@ -60,7 +62,7 @@ export function DataTable<T>({
                 key={c.key}
                 className={`px-3 py-2 font-prose text-[10px] font-semibold tracking-widest text-fg-muted uppercase select-none ${
                   c.align === "right" ? "text-right" : "text-left"
-                } ${c.sort ? "cursor-pointer hover:text-fg" : ""}`}
+                } ${c.sort ? "cursor-pointer hover:text-fg" : ""} ${c.hideOnMobile ? "hidden sm:table-cell" : ""}`}
                 onClick={c.sort ? () => toggle(c.key) : undefined}
               >
                 <span className="inline-flex items-center gap-1">
@@ -80,7 +82,7 @@ export function DataTable<T>({
                   key={c.key}
                   className={`px-3 py-2 align-middle ${c.align === "right" ? "text-right tabular-nums" : ""} ${
                     c.className ?? ""
-                  }`}
+                  } ${c.hideOnMobile ? "hidden sm:table-cell" : ""}`}
                 >
                   {c.cell(row, i)}
                 </td>
