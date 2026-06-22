@@ -26,7 +26,7 @@ export default async function DashboardPage() {
   return (
     <div className="flex flex-col gap-8">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Network dashboard</h1>
+        <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">Network dashboard</h1>
         <p className="mt-1 font-prose text-sm text-fg-dim">Live state of the VIZ chain.</p>
       </div>
 

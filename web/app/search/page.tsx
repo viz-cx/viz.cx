@@ -27,7 +27,7 @@ export default async function SearchPage({
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Search</h1>
+        <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">Search</h1>
         <p className="mt-1 font-prose text-sm text-fg-dim">
           {query ? <>Results for “{query}”</> : "Enter a block number, @account, or transaction id."}
         </p>

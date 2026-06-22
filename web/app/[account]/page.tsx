@@ -61,7 +61,7 @@ export default async function AccountPage({ params }: { params: Promise<{ accoun
         <Avatar name={user} size={56} />
         <div className="min-w-0">
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-semibold tracking-tight">@{user}</h1>
+            <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">@{user}</h1>
             <AwardButton receiver={user} />
           </div>
           {displayName && <p className="font-prose text-sm text-fg-muted">{displayName}</p>}

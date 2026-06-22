@@ -140,7 +140,7 @@ export default function ValidatorManagePage() {
   if (!wallet.connected) {
     return (
       <div className="flex flex-col items-center gap-6 py-24">
-        <h1 className="text-2xl font-semibold tracking-tight">Manage My Validator</h1>
+        <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">Manage My Validator</h1>
         <p className="font-prose text-sm text-fg-muted">Connect your VIZ key to manage your validator.</p>
         <button
           onClick={() => wallet.openModal('connect')}
@@ -155,7 +155,7 @@ export default function ValidatorManagePage() {
   if (!wallet.walletKeys.active) {
     return (
       <div className="flex flex-col items-center gap-6 py-24">
-        <h1 className="text-2xl font-semibold tracking-tight">Manage My Validator</h1>
+        <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">Manage My Validator</h1>
         <p className="font-prose text-sm text-fg-muted">An active key is required to manage a validator.</p>
         <button
           onClick={() => wallet.openModal('add-key')}
@@ -169,7 +169,7 @@ export default function ValidatorManagePage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-semibold tracking-tight">Manage My Validator</h1>
+      <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">Manage My Validator</h1>
 
       {loading ? (
         <p className="font-prose text-sm text-fg-dim">Loading…</p>

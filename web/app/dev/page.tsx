@@ -34,7 +34,7 @@ export default function DevPage() {
   return (
     <div className="flex flex-col gap-8">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Dev Hub</h1>
+        <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">Dev Hub</h1>
         <p className="mt-1 font-prose text-sm text-fg-dim">
           The English-first developer gateway to VIZ.
         </p>

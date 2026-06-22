@@ -42,7 +42,7 @@ export default async function TutorialPage({ params }: Props) {
         <Link href="/learn" className="font-prose text-xs text-fg-dim hover:text-fg">
           ← Learn
         </Link>
-        <h1 className="text-2xl font-semibold tracking-tight">{meta.title}</h1>
+        <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{meta.title}</h1>
         <div className="flex items-center gap-3">
           <span className="text-xs text-acc-green font-mono">{meta.time}</span>
           <span className="rounded border border-border px-1.5 py-0.5 text-[10px] text-fg-dim font-prose">

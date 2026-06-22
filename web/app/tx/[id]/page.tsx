@@ -39,7 +39,7 @@ export default async function TxPage({
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Transaction</h1>
+        <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">Transaction</h1>
         <div className="mt-1">
           <Hash value={id} head={16} tail={12} />
         </div>

@@ -45,7 +45,7 @@ export default async function RestPage() {
       <DocNav active="/dev/rest" />
 
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">REST API Reference</h1>
+        <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">REST API Reference</h1>
         <p className="mt-1 font-prose text-sm text-fg-dim">
           Endpoints served by{' '}
           <a href="https://api.viz.cx" className="text-acc-blue hover:underline" rel="noreferrer">

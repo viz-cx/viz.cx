@@ -61,7 +61,7 @@ export default async function BlockPage({ params }: { params: Promise<{ n: strin
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-semibold tracking-tight">Block #{num.toLocaleString("en-US")}</h1>
+          <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">Block #{num.toLocaleString("en-US")}</h1>
           {timestamp && (
             <span className="font-prose text-sm text-fg-dim" title={formatUTC(timestamp)}>
               {timeAgo(timestamp)}

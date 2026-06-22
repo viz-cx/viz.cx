@@ -14,7 +14,7 @@ export default async function RichlistPage() {
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Richlist</h1>
+        <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">Richlist</h1>
         <p className="mt-1 font-prose text-sm text-fg-dim">
           Top accounts by holdings. Capital is staked SHARES valued in VIZ; effective is
           delegation-adjusted vote weight; wallet is liquid + capital.

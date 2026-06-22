@@ -82,7 +82,7 @@ export default function WalletPage() {
   if (!wallet.connected) {
     return (
       <div className="flex flex-col items-center gap-6 py-24">
-        <h1 className="text-2xl font-semibold tracking-tight">Wallet</h1>
+        <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">Wallet</h1>
         <p className="font-prose text-sm text-fg-muted">
           Connect your VIZ key to view your wallet.
         </p>
@@ -105,7 +105,7 @@ export default function WalletPage() {
       {/* Account header */}
       <div className="flex items-start justify-between">
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold tracking-tight">{wallet.account}</h1>
+          <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{wallet.account}</h1>
           <div className="flex items-center gap-2">
             <span className="font-mono text-[10px] text-acc-green">● connected</span>
             {(Object.entries(wallet.walletKeys) as [string, unknown][])
@@ -187,7 +187,7 @@ export default function WalletPage() {
       <DelegateModal open={delegateOpen} onClose={() => setDelegateOpen(false)} />
 
       {/* Stat cards */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div className="rounded-lg border border-border bg-surface p-4">
           <div className="mb-1 text-[10px] font-prose font-semibold uppercase tracking-widest text-fg-dim">
             Liquid

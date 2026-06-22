@@ -83,7 +83,7 @@ export default function CommitteePage() {
       {/* header */}
       <div className="mb-6 flex items-center justify-between">
         <div className="flex items-baseline gap-3">
-          <h1 className="font-prose text-2xl font-semibold tracking-tight text-fg">Committee</h1>
+          <h1 className="font-prose text-xl font-semibold tracking-tight sm:text-2xl text-fg">Committee</h1>
           {fund && <span className="font-mono text-sm text-fg-dim">{fund} fund</span>}
         </div>
         <button

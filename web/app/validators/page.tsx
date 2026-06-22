@@ -60,7 +60,7 @@ export default async function ValidatorsPage() {
     <div className="flex flex-col gap-5">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Validators</h1>
+          <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">Validators</h1>
           <p className="mt-1 font-prose text-sm text-fg-dim">
             The active validator set producing blocks on VIZ (DPoS). Click a column to sort.
           </p>

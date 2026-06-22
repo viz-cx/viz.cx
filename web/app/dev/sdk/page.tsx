@@ -77,7 +77,7 @@ export default function SdkPage() {
       <DocNav active="/dev/sdk" />
 
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">SDK Reference</h1>
+        <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">SDK Reference</h1>
         <p className="mt-1 font-prose text-sm text-fg-dim">
           <code>@viz-cx/core</code> — TypeScript client for the VIZ blockchain.
         </p>

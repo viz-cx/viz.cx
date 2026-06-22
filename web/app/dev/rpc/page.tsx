@@ -33,7 +33,7 @@ export default async function RpcPage({ searchParams }: Props) {
       <DocNav active="/dev/rpc" />
 
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">VIZ RPC Reference</h1>
+        <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">VIZ RPC Reference</h1>
         <p className="mt-1 font-prose text-sm text-fg-dim">
           JSON-RPC 2.0 methods served by{' '}
           <a href="https://node.viz.cx" className="text-acc-blue hover:underline" rel="noreferrer">
