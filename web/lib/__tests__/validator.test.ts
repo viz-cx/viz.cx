@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { validatePropsField, validateProps, PROPS_GROUPS, NULL_SIGNING_KEY } from '@/lib/validator'
+import { validatePropsField, validateProps, propsFromRaw, PROPS_GROUPS, NULL_SIGNING_KEY } from '@/lib/validator'
 import type { ChainProperties } from '@viz-cx/core'
 
 const VALID_PROPS: ChainProperties = {
@@ -70,5 +70,33 @@ describe('validateProps', () => {
   it('flags minCurationPercent > maxCurationPercent', () => {
     const errors = validateProps({ ...VALID_PROPS, minCurationPercent: 2000, maxCurationPercent: 1000 })
     expect(errors.some((e) => /min.*max.*curation/i.test(e))).toBe(true)
+  })
+})
+
+describe('propsFromRaw', () => {
+  it('maps snake_case wire keys to camelCase ChainProperties fields', () => {
+    const raw = {
+      account_creation_fee: '1.000 VIZ',
+      maximum_block_size: 131072,
+      min_delegation: '0.001 VIZ',
+      min_curation_percent: 1600,
+      data_operations_cost_additional_bandwidth: 0,
+      create_invite_min_balance: '10.000 VIZ',
+      distribution_epoch_length: 28800,
+    }
+    const mapped = propsFromRaw(raw)
+    expect(mapped.accountCreationFee).toBe('1.000 VIZ')
+    expect(mapped.maximumBlockSize).toBe(131072)
+    expect(mapped.minDelegation).toBe('0.001 VIZ')
+    expect(mapped.minCurationPercent).toBe(1600)
+    expect(mapped.dataOperationsCostAdditionalBandwidth).toBe(0)
+    expect(mapped.createInviteMinBalance).toBe('10.000 VIZ')
+    expect(mapped.distributionEpochLength).toBe(28800)
+  })
+
+  it('leaves absent fields unset', () => {
+    const mapped = propsFromRaw({ account_creation_fee: '1.000 VIZ' })
+    expect(mapped.accountCreationFee).toBe('1.000 VIZ')
+    expect(mapped.maximumBlockSize).toBeUndefined()
   })
 })

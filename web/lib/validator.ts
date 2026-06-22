@@ -145,3 +145,24 @@ export function validateProps(props: ChainProperties): string[] {
   }
   return errors;
 }
+
+/** camelCase → snake_case, matching the chain's wire field names. */
+function toSnakeKey(key: string): string {
+  return key.replace(/[A-Z]/g, (m) => "_" + m.toLowerCase());
+}
+
+/**
+ * Maps a raw `props` object from validator_api (snake_case wire keys, e.g.
+ * `account_creation_fee`) into a camelCase ChainProperties the form can pre-fill
+ * from. Fields absent from the raw object are left unset.
+ */
+export function propsFromRaw(raw: Record<string, unknown>): ChainProperties {
+  const out: Record<string, unknown> = {};
+  for (const group of PROPS_GROUPS) {
+    for (const field of group.fields) {
+      const wireKey = toSnakeKey(field.key);
+      if (raw[wireKey] !== undefined) out[field.key] = raw[wireKey];
+    }
+  }
+  return out as unknown as ChainProperties;
+}

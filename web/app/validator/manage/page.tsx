@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import type { ChainProperties, Wif } from '@viz-cx/core'
 import { useWallet } from '@/lib/wallet'
-import { fetchValidator, type RawValidator } from '@/lib/validator'
+import { fetchValidator, propsFromRaw, type RawValidator } from '@/lib/validator'
 import { updateValidator, goIdleValidator, updateChainProperties } from '@/lib/actions'
 import { ValidatorStatusCard } from '@/components/ValidatorStatusCard'
 import { ChainPropertiesForm } from '@/components/ChainPropertiesForm'
@@ -73,17 +73,23 @@ export default function ValidatorManagePage() {
     return () => { cancelled = true }
   }, [wallet.connected, wallet.account])
 
-  async function handleRegisterSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
+  /** Navigate between steps, clearing any stale success/error feedback. */
+  function goStep(s: Step) {
+    setError(null)
+    setDone(false)
+    setStep(s)
+  }
+
+  function handleRegisterSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault()
     if (!url || !signingKey) { setError('URL and signing key are required'); return }
-    setError(null)
-    setStep('confirm-register')
+    goStep('confirm-register')
   }
 
   async function handleConfirmRegister() {
     const wif = wallet.walletKeys.active as Wif | undefined
     if (!wif) { setError('Active key required'); return }
-    setBusy(true); setError(null)
+    setBusy(true); setError(null); setDone(false)
     try {
       await updateValidator(wif, wallet.account!, url, signingKey)
       setDone(true)
@@ -97,7 +103,7 @@ export default function ValidatorManagePage() {
   async function handleConfirmIdle() {
     const wif = wallet.walletKeys.active as Wif | undefined
     if (!wif) { setError('Active key required'); return }
-    setBusy(true); setError(null)
+    setBusy(true); setError(null); setDone(false)
     try {
       await goIdleValidator(wif, wallet.account!, url)
       setDone(true)
@@ -110,13 +116,13 @@ export default function ValidatorManagePage() {
 
   function handlePropsSubmit(props: ChainProperties) {
     setPendingProps(props)
-    setStep('confirm-props')
+    goStep('confirm-props')
   }
 
   async function handleConfirmProps() {
     const wif = wallet.walletKeys.active as Wif | undefined
     if (!wif || !pendingProps) { setError('Active key required'); return }
-    setBusy(true); setError(null)
+    setBusy(true); setError(null); setDone(false)
     try {
       await updateChainProperties(wif, wallet.account!, pendingProps)
       setDone(true)
@@ -176,7 +182,7 @@ export default function ValidatorManagePage() {
             <span className="font-mono text-fg-muted">{signingKey}</span>?
           </p>
           <div className="flex gap-2">
-            <button onClick={() => setStep('idle')} className="flex-1 rounded border border-border py-2 font-prose text-sm text-fg-muted hover:text-fg">Back</button>
+            <button onClick={() => goStep('idle')} className="flex-1 rounded border border-border py-2 font-prose text-sm text-fg-muted hover:text-fg">Back</button>
             <button onClick={handleConfirmRegister} disabled={busy} className="flex-1 rounded bg-acc-green py-2 font-prose text-sm font-semibold text-canvas disabled:opacity-50">
               {busy ? 'Processing…' : 'Confirm'}
             </button>
@@ -188,7 +194,7 @@ export default function ValidatorManagePage() {
             This stops block production for <span className="font-mono text-fg-muted">{wallet.account}</span>. Continue?
           </p>
           <div className="flex gap-2">
-            <button onClick={() => setStep('idle')} className="flex-1 rounded border border-border py-2 font-prose text-sm text-fg-muted hover:text-fg">Back</button>
+            <button onClick={() => goStep('idle')} className="flex-1 rounded border border-border py-2 font-prose text-sm text-fg-muted hover:text-fg">Back</button>
             <button onClick={handleConfirmIdle} disabled={busy} className="flex-1 rounded bg-acc-red py-2 font-prose text-sm font-semibold text-canvas disabled:opacity-50">
               {busy ? 'Processing…' : 'Go idle'}
             </button>
@@ -200,7 +206,7 @@ export default function ValidatorManagePage() {
             Submit a new chain-properties vote for <span className="font-mono text-fg-muted">{wallet.account}</span>? This affects network-wide consensus parameters via median.
           </p>
           <div className="flex gap-2">
-            <button onClick={() => setStep('idle')} className="flex-1 rounded border border-border py-2 font-prose text-sm text-fg-muted hover:text-fg">Back</button>
+            <button onClick={() => goStep('idle')} className="flex-1 rounded border border-border py-2 font-prose text-sm text-fg-muted hover:text-fg">Back</button>
             <button onClick={handleConfirmProps} disabled={busy} className="flex-1 rounded bg-acc-green py-2 font-prose text-sm font-semibold text-canvas disabled:opacity-50">
               {busy ? 'Processing…' : 'Confirm'}
             </button>
@@ -240,7 +246,7 @@ export default function ValidatorManagePage() {
             {validator && (
               <button
                 type="button"
-                onClick={() => setStep('confirm-idle')}
+                onClick={() => goStep('confirm-idle')}
                 className="w-full rounded border border-acc-red/40 py-2 font-prose text-sm text-acc-red hover:bg-acc-red/10"
               >
                 Go idle
@@ -250,7 +256,7 @@ export default function ValidatorManagePage() {
 
           {validator && (
             <ChainPropertiesForm
-              initial={(validator.props as unknown as ChainProperties) ?? DEFAULT_PROPS}
+              initial={validator.props ? propsFromRaw(validator.props) : DEFAULT_PROPS}
               onSubmit={handlePropsSubmit}
               submitting={busy}
             />
