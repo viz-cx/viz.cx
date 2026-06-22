@@ -6,6 +6,7 @@ import {
   type CommitteeVote,
   fetchCommitteeVotes,
   truncateUrl,
+  safeHttpUrl,
   daysLeft,
   STATUS_ACTIVE,
   STATUS_LABEL,
@@ -73,7 +74,7 @@ export function CommitteeRequestRow({ request }: Props) {
 
             {/* full URL + meta */}
             <div className="flex flex-col gap-0.5">
-              <a href={request.url} target="_blank" rel="noopener noreferrer"
+              <a href={safeHttpUrl(request.url)} target="_blank" rel="noopener noreferrer"
                 className="break-all font-mono text-xs text-acc-green hover:underline"
               >{request.url}</a>
               <p className="font-prose text-xs text-fg-dim">

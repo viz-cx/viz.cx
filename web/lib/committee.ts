@@ -105,6 +105,20 @@ export async function fetchCommitteeVotes(requestId: number): Promise<CommitteeV
   return r.votes;
 }
 
+/**
+ * Returns the URL only if it is a plain http(s) link, else "#". Committee
+ * request URLs are arbitrary attacker-controlled on-chain strings, so a raw
+ * `javascript:`/`data:` value must never reach an anchor href (stored XSS).
+ */
+export function safeHttpUrl(url: string): string {
+  try {
+    const u = new URL(url);
+    return u.protocol === "http:" || u.protocol === "https:" ? url : "#";
+  } catch {
+    return "#";
+  }
+}
+
 /** Truncates a URL to maxLen characters for collapsed row display. */
 export function truncateUrl(url: string, maxLen = 40): string {
   if (url.length <= maxLen) return url;
