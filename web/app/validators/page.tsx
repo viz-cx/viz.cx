@@ -23,11 +23,13 @@ interface RawValidator {
 export default async function ValidatorsPage() {
   let rows: ValidatorRow[] = [];
   let failed = false;
+  let fund: string | number = "0";
+  let totalShares: string | number = "0";
 
   try {
     const info = await getChainInfo();
-    const fund = info?.total_vesting_fund ?? "0";
-    const totalShares = info?.total_vesting_shares ?? "0";
+    fund = info?.total_vesting_fund ?? "0";
+    totalShares = info?.total_vesting_shares ?? "0";
 
     const names = await withNode((api) => api.getActiveValidators());
     const unique = [...new Set(names.filter(Boolean))];
@@ -77,7 +79,7 @@ export default async function ValidatorsPage() {
       ) : (
         <>
           <SectionTitle>{rows.length} active validators</SectionTitle>
-          <ValidatorsTable rows={rows} />
+          <ValidatorsTable rows={rows} fund={fund} totalShares={totalShares} />
         </>
       )}
     </div>
