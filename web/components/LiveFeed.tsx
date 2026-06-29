@@ -106,7 +106,9 @@ export function LiveFeed() {
       <div className="max-h-[640px] min-h-[320px] overflow-y-auto">
         {ops.length === 0 ? (
           <div className="px-4 py-16 text-center text-sm text-fg-dim">
-            Waiting for the next block…
+            {status === "down"
+              ? "Reconnecting to the live stream…"
+              : "Quiet on-chain — waiting for the next transaction…"}
           </div>
         ) : (
           ops.map((op, i) => (
