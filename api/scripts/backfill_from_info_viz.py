@@ -244,7 +244,7 @@ def _diff(ops: list[dict], gold_block: list[dict]) -> list[str]:
     issues = []
     if len(ops) != len(gold_block):
         issues.append(f"op count: scraped {len(ops)} vs golden {len(gold_block)}")
-    for i, (r, g) in enumerate(zip(ops, gold_block)):
+    for i, (r, g) in enumerate(zip(ops, gold_block, strict=False)):
         for k in ("op", "trx_id", "trx_in_block", "op_in_trx", "virtual_op", "timestamp"):
             if r.get(k) != g.get(k):
                 issues.append(f"op[{i}].{k}: {r.get(k)!r} vs {g.get(k)!r}")
@@ -270,8 +270,8 @@ def main() -> int:
     print(f"{mode}: blocks {start:,}–{end:,} ({end - start + 1:,}); "
           f"sleep={sleep_s}s tx_sleep={tx_sleep}s", flush=True)
 
-    # Writers need the DB + present-id set for idempotency.
-    coll = present = None
+    # Writers need the DB handle; readers (validate) never touch Mongo.
+    coll = None
     if not validate:
         from helpers.mongo import coll as _coll  # noqa: PLC0415
         coll = _coll
