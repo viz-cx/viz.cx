@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createApiClient } from "@viz-cx/api";
 import { OpRow } from "./OpRow";
 import { WS_URL } from "@/lib/config";
 
@@ -14,8 +15,9 @@ interface FeedOp {
 const MAX_ROWS = 50;
 
 /**
- * Live op feed over wss://…/ws/ops. Auto-reconnects with capped backoff,
- * pauses buffering on hover, and degrades gracefully when the socket drops.
+ * Live op feed over wss://…/ws/ops. Auto-reconnects with capped backoff via
+ * the @viz-cx/api streamOps helper, pauses buffering on hover, and degrades
+ * gracefully when the socket drops.
  */
 export function LiveFeed() {
   const [ops, setOps] = useState<FeedOp[]>([]);
@@ -24,62 +26,43 @@ export function LiveFeed() {
   const bufferRef = useRef<FeedOp[]>([]);
 
   useEffect(() => {
-    let ws: WebSocket | null = null;
-    let closed = false;
-    let backoff = 1000;
-    let flushTimer: ReturnType<typeof setInterval>;
+    const client = createApiClient({ wsUrl: WS_URL });
+    const stream = client.streamOps();
 
-    function connect() {
-      setStatus("connecting");
-      try {
-        ws = new WebSocket(WS_URL);
-      } catch {
-        scheduleReconnect();
-        return;
-      }
-      ws.onopen = () => {
-        backoff = 1000;
-        setStatus("live");
-      };
-      ws.onmessage = (ev) => {
-        try {
-          const op = JSON.parse(ev.data) as FeedOp;
-          if (!op.op_type) return;
-          bufferRef.current.unshift(op);
-          if (bufferRef.current.length > MAX_ROWS) bufferRef.current.length = MAX_ROWS;
-        } catch {
-          /* ignore malformed frame */
-        }
-      };
-      ws.onclose = () => {
-        if (!closed) scheduleReconnect();
-      };
-      ws.onerror = () => ws?.close();
-    }
+    const offStatus = stream.onStatus((s) => {
+      if (s === "open") setStatus("live");
+      else if (s === "reconnecting") setStatus("down");
+      // 'closed' = explicit close() — ignore
+    });
 
-    function scheduleReconnect() {
-      setStatus("down");
-      backoff = Math.min(backoff * 2, 15000);
-      setTimeout(() => !closed && connect(), backoff);
-    }
+    const offMsg = stream.on((msg) => {
+      if (!msg.opType) return;
+      bufferRef.current.unshift({
+        op_id: msg.opId ?? undefined,
+        timestamp: msg.timestamp ?? undefined,
+        op_type: msg.opType,
+        body: msg.body,
+      });
+      if (bufferRef.current.length > MAX_ROWS) bufferRef.current.length = MAX_ROWS;
+    });
 
     // Flush the buffer into state on an interval so we don't re-render per frame.
     // Snapshot and clear the buffer *before* scheduling setOps: React 18 batches
     // setState from intervals, so the functional updater runs after this callback
     // returns — reading bufferRef.current inside it would see the already-cleared
     // array and drop every frame.
-    flushTimer = setInterval(() => {
+    const flushTimer = setInterval(() => {
       if (pausedRef.current || bufferRef.current.length === 0) return;
       const batch = bufferRef.current;
       bufferRef.current = [];
       setOps((prev) => [...batch, ...prev].slice(0, MAX_ROWS));
     }, 400);
 
-    connect();
     return () => {
-      closed = true;
+      offStatus();
+      offMsg();
       clearInterval(flushTimer);
-      ws?.close();
+      stream.close();
     };
   }, []);
 
