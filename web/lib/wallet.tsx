@@ -9,6 +9,7 @@ import {
 } from 'react'
 import { keys, createHttpTransport, createReadApi, type Wif } from '@viz-cx/core'
 import { saveWallet, loadWallet, clearWallet } from './wallet-storage'
+import { resolveRoleMap, type WalletRole } from './wallet-roles'
 import { NODE_ENDPOINTS } from './config'
 
 export type ModalMode = 'connect' | 'add-key'
@@ -19,8 +20,8 @@ export interface WalletState {
   connected: boolean
   modalOpen: boolean
   modalMode: ModalMode
-  connect(account: string, input: string, role?: 'regular' | 'active'): Promise<void>
-  addKey(input: string, role: 'regular' | 'active'): Promise<void>
+  connect(account: string, input: string): Promise<WalletRole[]>
+  addKey(input: string): Promise<WalletRole[]>
   disconnect(): void
   openModal(mode?: ModalMode): void
   closeModal(): void
@@ -34,25 +35,27 @@ export function useWallet(): WalletState {
   return ctx
 }
 
-async function validateKey(
-  acc: string,
-  wif: Wif,
-  role: 'regular' | 'active'
-): Promise<void> {
+// Build candidate keys from raw input: a WIF is itself the only candidate; a
+// master password derives one key per signing-capable role (memo can't sign).
+function inputCandidates(acc: string, input: string): Wif[] {
+  if (keys.isWif(input)) return [input as Wif]
+  const ks = keys.fromPassword(acc, input)
+  return [ks.owner, ks.active, ks.regular]
+}
+
+async function resolveKeyRoles(acc: string, input: string): Promise<Map<WalletRole, Wif>> {
   const transport = createHttpTransport(NODE_ENDPOINTS[0])
   const api = createReadApi(transport)
   const [accountData] = await api.lookupAccountNames([acc])
   if (!accountData) throw new Error('Account not found')
-  const pub = String(keys.toPublic(wif))
-  // lookupAccountNames returns the raw RPC payload: authorities are exposed as
-  // `<role>_authority` with snake_case `key_auths` (NOT the camelCase Authority type).
-  const raw = accountData as unknown as Record<
-    string,
-    { key_auths?: Array<[string, number]> } | null
-  >
-  const authority = raw[`${role}_authority`]
-  const authorizedKeys = authority?.key_auths?.map(([k]) => String(k)) ?? []
-  if (!authorizedKeys.includes(pub)) throw new Error('Key does not match this account')
+  const raw = accountData as unknown as Record<string, unknown>
+  const candidates = inputCandidates(acc, input).map((wif) => ({
+    wif,
+    pub: String(keys.toPublic(wif)),
+  }))
+  const map = resolveRoleMap(raw, candidates)
+  if (map.size === 0) throw new Error(`This key doesn't belong to @${acc}`)
+  return map
 }
 
 export function WalletProvider({ children }: { children: ReactNode }) {
@@ -78,37 +81,26 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       })
   }, [])
 
-  const connect = useCallback(
-    async (acc: string, input: string, role?: 'regular' | 'active') => {
-      let keysToStore: { regular?: Wif; active?: Wif }
-
-      if (keys.isWif(input)) {
-        const r = role ?? 'regular'
-        await validateKey(acc, input as Wif, r)
-        keysToStore = { [r]: input as Wif }
-      } else {
-        const keySet = keys.fromPassword(acc, input)
-        await validateKey(acc, keySet.regular, 'regular')
-        keysToStore = { regular: keySet.regular, active: keySet.active }
-      }
-
-      await saveWallet(acc, keysToStore as { regular?: string; active?: string })
-      setAccount(acc)
-      setWalletKeys(keysToStore)
-    },
-    []
-  )
+  const connect = useCallback(async (acc: string, input: string): Promise<WalletRole[]> => {
+    const map = await resolveKeyRoles(acc, input)
+    const keysToStore = Object.fromEntries(map) as { regular?: Wif; active?: Wif }
+    await saveWallet(acc, keysToStore as { regular?: string; active?: string })
+    setAccount(acc)
+    setWalletKeys(keysToStore)
+    return [...map.keys()]
+  }, [])
 
   const addKey = useCallback(
-    async (input: string, role: 'regular' | 'active') => {
+    async (input: string): Promise<WalletRole[]> => {
       if (!account) throw new Error('Not connected')
-      const wif = keys.isWif(input)
-        ? (input as Wif)
-        : keys.fromPassword(account, input, role)
-      await validateKey(account, wif, role)
-      const newKeys = { ...walletKeys, [role]: wif }
+      const map = await resolveKeyRoles(account, input)
+      const newKeys = { ...walletKeys, ...Object.fromEntries(map) } as {
+        regular?: Wif
+        active?: Wif
+      }
       await saveWallet(account, newKeys as { regular?: string; active?: string })
       setWalletKeys(newKeys)
+      return [...map.keys()]
     },
     [account, walletKeys]
   )
