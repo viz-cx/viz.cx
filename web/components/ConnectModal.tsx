@@ -14,9 +14,9 @@ export function ConnectModal({ open, onClose, mode }: Props) {
   const wallet = useWallet()
   const [account, setAccount] = useState('')
   const [input, setInput] = useState('')
-  const [role, setRole] = useState<'regular' | 'active'>('regular')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
 
   const isWif = keys.isWif(input)
 
@@ -26,24 +26,28 @@ export function ConnectModal({ open, onClose, mode }: Props) {
       setAccount('')
       setInput('')
       setError(null)
+      setSuccess(null)
     }
   }, [open])
+
+  function describeRoles(roles: ('regular' | 'active')[], added: boolean): string {
+    const ordered = (['active', 'regular'] as const).filter((r) => roles.includes(r))
+    const label = ordered.join(' + ')
+    if (added) return `Added — ${label} key`
+    return `Connected — ${label} ${ordered.length > 1 ? 'detected' : 'only'}`
+  }
 
   async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault()
     setError(null)
     setLoading(true)
     try {
-      if (mode === 'add-key') {
-        await wallet.addKey(input, role)
-      } else {
-        await wallet.connect(
-          account.trim().toLowerCase(),
-          input,
-          isWif ? role : undefined
-        )
-      }
-      onClose()
+      const roles =
+        mode === 'add-key'
+          ? await wallet.addKey(input)
+          : await wallet.connect(account.trim().toLowerCase(), input)
+      setSuccess(describeRoles(roles, mode === 'add-key'))
+      setTimeout(onClose, 1200)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to connect')
     } finally {
@@ -97,30 +101,11 @@ export function ConnectModal({ open, onClose, mode }: Props) {
             )}
           </div>
 
-          {/* In add-key mode, role is always needed (password path derives one key per role).
-              In connect mode, role only applies when a WIF is provided. */}
-          {(mode === 'add-key' || isWif) && (
-            <div className="flex flex-col gap-1.5">
-              <label
-                htmlFor="modal-role"
-                className="text-[10px] font-prose font-semibold uppercase tracking-widest text-fg-dim"
-              >
-                Role
-              </label>
-              <select
-                id="modal-role"
-                value={role}
-                onChange={(e) => setRole(e.target.value as 'regular' | 'active')}
-                className="rounded border border-border bg-surface-2 px-3 py-2 text-sm text-fg focus:border-border-strong focus:outline-none"
-              >
-                <option value="regular">regular — awards &amp; social</option>
-                <option value="active">active — transfers &amp; delegation</option>
-              </select>
-            </div>
-          )}
-
           {error && (
             <p className="font-prose text-xs text-acc-red">{error}</p>
+          )}
+          {success && (
+            <p className="font-prose text-xs text-acc-green">{success}</p>
           )}
 
           <p className="font-prose text-[10px] leading-relaxed text-fg-dim">
@@ -130,7 +115,7 @@ export function ConnectModal({ open, onClose, mode }: Props) {
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || success !== null}
             className="w-full rounded bg-acc-green py-2 font-prose text-sm font-semibold text-canvas transition-opacity hover:opacity-90 disabled:opacity-50"
           >
             {loading ? 'Connecting…' : mode === 'add-key' ? 'Add key' : 'Connect'}
