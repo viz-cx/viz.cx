@@ -7,7 +7,7 @@ import {
   useCallback,
   type ReactNode,
 } from 'react'
-import { keys, createHttpTransport, createReadApi, type Authority, type Wif } from '@viz-cx/core'
+import { keys, createHttpTransport, createReadApi, type Wif } from '@viz-cx/core'
 import { saveWallet, loadWallet, clearWallet } from './wallet-storage'
 import { NODE_ENDPOINTS } from './config'
 
@@ -44,8 +44,14 @@ async function validateKey(
   const [accountData] = await api.lookupAccountNames([acc])
   if (!accountData) throw new Error('Account not found')
   const pub = String(keys.toPublic(wif))
-  const authority = accountData[role] as Authority | null
-  const authorizedKeys = authority?.keyAuths?.map(([k]) => String(k)) ?? []
+  // lookupAccountNames returns the raw RPC payload: authorities are exposed as
+  // `<role>_authority` with snake_case `key_auths` (NOT the camelCase Authority type).
+  const raw = accountData as unknown as Record<
+    string,
+    { key_auths?: Array<[string, number]> } | null
+  >
+  const authority = raw[`${role}_authority`]
+  const authorizedKeys = authority?.key_auths?.map(([k]) => String(k)) ?? []
   if (!authorizedKeys.includes(pub)) throw new Error('Key does not match this account')
 }
 
