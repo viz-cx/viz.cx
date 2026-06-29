@@ -64,10 +64,15 @@ export function LiveFeed() {
     }
 
     // Flush the buffer into state on an interval so we don't re-render per frame.
+    // Snapshot and clear the buffer *before* scheduling setOps: React 18 batches
+    // setState from intervals, so the functional updater runs after this callback
+    // returns — reading bufferRef.current inside it would see the already-cleared
+    // array and drop every frame.
     flushTimer = setInterval(() => {
       if (pausedRef.current || bufferRef.current.length === 0) return;
-      setOps((prev) => [...bufferRef.current, ...prev].slice(0, MAX_ROWS));
+      const batch = bufferRef.current;
       bufferRef.current = [];
+      setOps((prev) => [...batch, ...prev].slice(0, MAX_ROWS));
     }, 400);
 
     connect();
