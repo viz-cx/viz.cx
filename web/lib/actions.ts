@@ -6,13 +6,36 @@ import {
   HF13_PROPS_VERSION,
   type ChainProperties,
   type PublicKey,
+  type SignedTransaction,
+  type Transport,
+  type TransactionResult,
   type Wif,
 } from '@viz-cx/core'
 import { NODE_ENDPOINTS } from './config'
 import { NULL_SIGNING_KEY } from './validator'
 
+// The VIZ node's broadcast_transaction_synchronous hangs indefinitely for
+// non-expired transactions on this node setup. Use the async variant instead.
+function makeBroadcastTransport(inner: Transport): Transport {
+  return {
+    call: inner.call.bind(inner),
+    async broadcast(signed: SignedTransaction): Promise<TransactionResult> {
+      const wire = {
+        ref_block_num: signed.refBlockNum,
+        ref_block_prefix: signed.refBlockPrefix,
+        expiration: signed.expiration,
+        operations: signed.operations,
+        extensions: signed.extensions,
+        signatures: signed.signatures,
+      }
+      await inner.call('network_broadcast_api.broadcast_transaction', [wire])
+      return { id: '', blockNum: 0, expiration: signed.expiration }
+    },
+  }
+}
+
 function makeBuilder() {
-  const transport = createHttpTransport(NODE_ENDPOINTS[0])
+  const transport = makeBroadcastTransport(createHttpTransport(NODE_ENDPOINTS[0]))
   return createTxBuilder({ transport, expirationSec: DEFAULT_EXPIRATION_SEC })
 }
 
