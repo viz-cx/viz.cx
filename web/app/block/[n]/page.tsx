@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { getBlock } from "@/lib/api";
+import { getBlock, getChainInfo } from "@/lib/api";
 import { withNode } from "@/lib/core";
 import { isInHistoryHole } from "@/lib/config";
 import { Card, DefRow, Empty, SectionTitle } from "@/components/ui";
@@ -40,6 +40,54 @@ export default async function BlockPage({ params }: { params: Promise<{ n: strin
   ]);
 
   const inHole = isInHistoryHole(num);
+
+  // A block exists if any data source knows it, or it falls in the known archive
+  // gap (real past blocks whose ops were lost). Otherwise it's beyond the chain
+  // head (not yet produced) or otherwise unknown — show a distinct state, not an
+  // empty skeleton of em-dashes.
+  if (!inHole && doc === null && header === null) {
+    const head = (await getChainInfo())?.head_block_number;
+    const future = typeof head === "number" && num > head;
+    return (
+      <div className="flex flex-col gap-6">
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
+            Block #{num.toLocaleString("en-US")}
+          </h1>
+          <span className="rounded-md border border-acc-amber/40 bg-acc-amber/10 px-2 py-0.5 font-prose text-xs text-acc-amber">
+            {future ? "not yet produced" : "not found"}
+          </span>
+        </div>
+        <Card className="border-acc-amber/40 bg-acc-amber/5">
+          <p className="font-prose text-sm text-fg">
+            {future ? (
+              <>
+                This block doesn’t exist yet. The chain head is currently block{" "}
+                <Link href={`/block/${head}`} className="text-acc-blue hover:underline">
+                  #{head!.toLocaleString("en-US")}
+                </Link>
+                , so #{num.toLocaleString("en-US")} hasn’t been produced.
+              </>
+            ) : (
+              <>
+                No block #{num.toLocaleString("en-US")} was found on the chain or in the archive. It
+                may not exist, or no reachable node currently retains it.
+              </>
+            )}
+          </p>
+        </Card>
+        <div>
+          <Link
+            href={typeof head === "number" ? `/block/${head}` : "/dashboard"}
+            className="rounded-md border border-border px-3 py-1.5 text-sm text-fg-muted hover:border-border-strong hover:text-fg"
+          >
+            {typeof head === "number" ? "Go to chain head →" : "Back to dashboard →"}
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   const ops: OpRecord[] = doc?.block ?? [];
   const timestamp = ops[0]?.timestamp ?? header?.timestamp;
 
