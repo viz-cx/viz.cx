@@ -1,10 +1,10 @@
-"""Tests for parser start-block resolution and tip-emit behaviour.
+"""Tests for parser start-block resolution and block-storage behaviour.
 
 Covers resolve_start_block (jump-past-hole logic driven by PARSER_START_BLOCK)
-and _at_tip (lag-window check that gates TipReached events).
+and save_block. Real-time emission now lives in parser.live_stream and is
+covered by test_live_stream.
 """
 
-from parser import parser as parser_mod
 from parser.parser import resolve_start_block
 
 
@@ -21,17 +21,6 @@ def test_resolve_start_block_jumps_ahead(monkeypatch):
 def test_resolve_start_block_never_rewinds(monkeypatch):
     monkeypatch.setenv("PARSER_START_BLOCK", "50")
     assert resolve_start_block(100) == 100
-
-
-def test_at_tip_true_within_window(monkeypatch):
-    monkeypatch.setattr(parser_mod, "EMIT_TIP_LAG", 5)
-    assert parser_mod._at_tip(last_chain_block=100, block_num=96) is True
-    assert parser_mod._at_tip(last_chain_block=100, block_num=100) is True
-
-
-def test_at_tip_false_outside_window(monkeypatch):
-    monkeypatch.setattr(parser_mod, "EMIT_TIP_LAG", 5)
-    assert parser_mod._at_tip(last_chain_block=100, block_num=94) is False
 
 
 def test_save_block_empty_uses_explicit_number():

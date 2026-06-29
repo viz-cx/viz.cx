@@ -67,6 +67,16 @@ def get_ops_in_block(block: int, only_virtual: bool) -> Any:
     return client.rpc.get_ops_in_block(block, 1 if only_virtual else 0)
 
 
+def get_block(block: int) -> Any:
+    """Return a full block, including reversible (not-yet-irreversible) ones.
+
+    Unlike get_ops_in_block, this works for head/tip blocks but exposes only the
+    real transaction operations — virtual ops (rewards) don't exist until a
+    block is irreversible."""
+    client = get_client()
+    return client.rpc.get_block(block)
+
+
 def get_dgp() -> Any:
     client = get_client()
     assert client.rpc is not None
@@ -76,6 +86,11 @@ def get_dgp() -> Any:
 def get_last_block_in_chain() -> int:
     """Return number of last irreversible block from the VIZ blockchain."""
     return int(get_dgp()["last_irreversible_block_num"])
+
+
+def get_head_block_num() -> int:
+    """Return the current (reversible) head block number from the chain."""
+    return int(get_dgp()["head_block_number"])
 
 
 def convertShares(shares: str) -> float:
