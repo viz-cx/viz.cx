@@ -12,7 +12,10 @@ import { formatUTC, timeAgo } from "@/lib/format";
 import type { Block } from "@viz-cx/core";
 import type { OpRecord } from "@/lib/types";
 
-export const revalidate = 3600;
+// Finalized blocks are immutable, but a reversible block (served live from the
+// node, see below) is transient for the ~10-block confirmation window. Keep the
+// ISR window short so the tip stays fresh and converges to the indexed version.
+export const revalidate = 10;
 
 function parseNum(n: string): number | null {
   if (!/^\d+$/.test(n)) return null;
@@ -34,9 +37,16 @@ export default async function BlockPage({ params }: { params: Promise<{ n: strin
   const num = parseNum(n);
   if (num === null) notFound();
 
-  const [doc, header] = await Promise.all([
+  const [doc, header, nodeOps] = await Promise.all([
     getBlock(num),
     withNode((api) => api.getBlock(num)).catch(() => null as Block | null),
+    // The DB indexes only irreversible blocks (it trails the chain head by the
+    // ~10-block confirmation window). For a still-reversible block the REST doc
+    // is absent, so read its ops straight from the node — getOpsInBlock serves
+    // exactly that recent window and returns the same shape we store.
+    withNode((api) => api.getOpsInBlock(num, false))
+      .then((r) => r as unknown as OpRecord[])
+      .catch(() => [] as OpRecord[]),
   ]);
 
   const inHole = isInHistoryHole(num);
@@ -88,7 +98,10 @@ export default async function BlockPage({ params }: { params: Promise<{ n: strin
     );
   }
 
-  const ops: OpRecord[] = doc?.block ?? [];
+  // Indexed (irreversible) blocks come from the DB; a block the node knows but
+  // the DB hasn't indexed yet is still reversible — serve its ops live.
+  const reversible = doc === null && header !== null;
+  const ops: OpRecord[] = reversible ? nodeOps : (doc?.block ?? []);
   const timestamp = ops[0]?.timestamp ?? header?.timestamp;
 
   // Group ops by transaction (virtual ops have no trx_id).
@@ -113,6 +126,14 @@ export default async function BlockPage({ params }: { params: Promise<{ n: strin
           {timestamp && (
             <span className="font-prose text-sm text-fg-dim" title={formatUTC(timestamp)}>
               {timeAgo(timestamp)}
+            </span>
+          )}
+          {reversible && (
+            <span
+              className="rounded-md border border-acc-blue/40 bg-acc-blue/10 px-2 py-0.5 font-prose text-xs text-acc-blue"
+              title="Served live from the node; not yet irreversible / indexed."
+            >
+              reversible
             </span>
           )}
         </div>
