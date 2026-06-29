@@ -104,7 +104,7 @@ export function CommitteeRequestRow({ request }: Props) {
             {isOwner && isActive && (
               <button
                 onClick={() => {
-                  if (!wallet.walletKeys.regular) { wallet.openModal('add-key'); return }
+                  if (!wallet.keyFor('regular')) { wallet.openModal('add-key'); return }
                   setCancelOpen(true)
                 }}
                 className="w-fit rounded border border-acc-red px-3 py-1 font-prose text-xs text-acc-red hover:bg-acc-red/10"
@@ -118,7 +118,7 @@ export function CommitteeRequestRow({ request }: Props) {
                   disabled={myVote?.vote_percent === 10000}
                   onClick={() => {
                     if (!wallet.connected) { wallet.openModal('connect'); return }
-                    if (!wallet.walletKeys.regular) { wallet.openModal('add-key'); return }
+                    if (!wallet.keyFor('regular')) { wallet.openModal('add-key'); return }
                     setVotePercent(10000)
                   }}
                   className="rounded border border-border px-4 py-1.5 font-prose text-xs text-fg-muted hover:border-border-strong hover:text-fg disabled:cursor-not-allowed disabled:opacity-40"
@@ -127,7 +127,7 @@ export function CommitteeRequestRow({ request }: Props) {
                   disabled={myVote?.vote_percent === -10000}
                   onClick={() => {
                     if (!wallet.connected) { wallet.openModal('connect'); return }
-                    if (!wallet.walletKeys.regular) { wallet.openModal('add-key'); return }
+                    if (!wallet.keyFor('regular')) { wallet.openModal('add-key'); return }
                     setVotePercent(-10000)
                   }}
                   className="rounded border border-acc-red/50 px-4 py-1.5 font-prose text-xs text-acc-red/70 hover:border-acc-red hover:text-acc-red disabled:cursor-not-allowed disabled:opacity-40"

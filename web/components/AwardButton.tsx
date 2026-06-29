@@ -13,15 +13,8 @@ export function AwardButton({ receiver }: Props) {
 
   function handleClick() {
     if (!wallet.connected) { wallet.openModal('connect'); return }
-    if (!wallet.walletKeys.regular) { wallet.openModal('add-key'); return }
     setOpen(true)
   }
-
-  const label = !wallet.connected
-    ? 'Award'
-    : !wallet.walletKeys.regular
-    ? 'Award (needs regular key)'
-    : 'Award'
 
   return (
     <>
@@ -29,7 +22,7 @@ export function AwardButton({ receiver }: Props) {
         onClick={handleClick}
         className="rounded border border-border px-3 py-1.5 font-prose text-xs text-fg-muted transition-colors hover:border-border-strong hover:text-fg"
       >
-        {label}
+        Award
       </button>
       <AwardModal open={open} onClose={() => setOpen(false)} receiver={receiver} />
     </>

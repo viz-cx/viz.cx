@@ -89,7 +89,7 @@ export default function CommitteePage() {
         <button
           onClick={() => {
             if (!wallet.connected) { wallet.openModal('connect'); return }
-            if (!wallet.walletKeys.regular) { wallet.openModal('add-key'); return }
+            if (!wallet.keyFor('regular')) { wallet.openModal('add-key'); return }
             setCreateOpen(true)
           }}
           className="rounded border border-acc-green px-3 py-1.5 font-prose text-sm text-acc-green hover:bg-acc-green/10"

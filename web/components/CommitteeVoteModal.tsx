@@ -1,6 +1,5 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
-import { type Wif } from '@viz-cx/core'
 import { useWallet } from '@/lib/wallet'
 import { voteProposal } from '@/lib/actions'
 import { truncateUrl, type CommitteeRequest } from '@/lib/committee'
@@ -28,7 +27,7 @@ export function CommitteeVoteModal({ open, onClose, proposal, votePercent }: Pro
   }, [open])
 
   async function handleConfirm() {
-    const wif = wallet.walletKeys.regular as Wif | undefined
+    const wif = wallet.keyFor('regular')
     if (!wif) { setError('Regular key required'); return }
     setLoading(true); setError(null)
     try {

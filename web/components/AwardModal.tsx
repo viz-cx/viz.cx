@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
-import { createHttpTransport, createReadApi, type Wif } from '@viz-cx/core'
+import { createHttpTransport, createReadApi } from '@viz-cx/core'
 import { useWallet } from '@/lib/wallet'
 import { awardAccount } from '@/lib/actions'
 import { NODE_ENDPOINTS } from '@/lib/config'
@@ -55,7 +55,7 @@ export function AwardModal({ open, onClose, receiver }: Props) {
   async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault()
     if (clampedPct < 1) { setError('Energy must be at least 1%'); return }
-    const wif = wallet.walletKeys.regular as Wif | undefined
+    const wif = wallet.keyFor('regular')
     if (!wif) { setError('Regular key required'); return }
     setError(null); setLoading(true)
     try {

@@ -1,6 +1,5 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
-import { type Wif } from '@viz-cx/core'
 import { useWallet } from '@/lib/wallet'
 import { createProposal } from '@/lib/actions'
 import { ModalShell } from './ModalShell'
@@ -42,7 +41,7 @@ export function CreateProposalModal({ open, onClose }: Props) {
     if (isNaN(maxN) || maxN <= 0) { setError('Enter a valid maximum amount'); return }
     if (maxN < minN) { setError('Maximum must be ≥ minimum'); return }
     if (isNaN(daysN) || daysN < 5 || daysN > 30) { setError('Duration must be 5–30 days'); return }
-    const wif = wallet.walletKeys.regular as Wif | undefined
+    const wif = wallet.keyFor('regular')
     if (!wif) { setError('Regular key required'); return }
     setLoading(true); setError(null)
     try {
