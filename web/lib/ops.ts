@@ -107,7 +107,8 @@ const DECODERS: Record<string, Decoder> = {
     acc(b.delegatee),
   ],
   award: (b) => {
-    const parts = [acc(b.initiator), txt("awarded"), acc(b.receiver), txt(`(${s(b.energy)} energy)`)];
+    const pct = +(Number(b.energy) / 100).toFixed(2);
+    const parts = [acc(b.initiator), txt("awarded"), acc(b.receiver), txt(`(${pct}%)`)];
     if (b.memo) parts.push({ kind: "memo", text: s(b.memo) });
     return parts;
   },
