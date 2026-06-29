@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { withNode } from "@/lib/core";
 import { OpRow } from "./OpRow";
 import { decodeOp, type OpCategory } from "@/lib/ops";
@@ -30,6 +30,7 @@ export function AccountHistory({ account }: { account: string }) {
   const [error, setError] = useState(false);
   const [done, setDone] = useState(false);
   const [tab, setTab] = useState<"all" | OpCategory>("all");
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
 
   const load = useCallback(
     async (from: number) => {
@@ -65,6 +66,20 @@ export function AccountHistory({ account }: { account: string }) {
     setCursor(null);
     load(-1);
   }, [account, load]);
+
+  // Auto-load the next older page when the sentinel scrolls into view.
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el || done || error || loading || cursor === null) return;
+    const obs = new IntersectionObserver(
+      (es) => {
+        if (es[0].isIntersecting) load(cursor);
+      },
+      { rootMargin: "300px" },
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [load, cursor, done, error, loading]);
 
   const visible = entries.filter(
     ([, item]) => tab === "all" || decodeOp(item.op[0], item.op[1]).category === tab,
@@ -104,7 +119,11 @@ export function AccountHistory({ account }: { account: string }) {
         ))}
       </div>
 
-      <div className="flex items-center justify-center gap-3">
+      <div
+        ref={sentinelRef}
+        className="flex items-center justify-center gap-3 py-2"
+        aria-live="polite"
+      >
         {error && (
           <button
             onClick={() => load(cursor ?? -1)}
@@ -113,14 +132,8 @@ export function AccountHistory({ account }: { account: string }) {
             Retry
           </button>
         )}
-        {!done && !error && (
-          <button
-            onClick={() => load(cursor ?? -1)}
-            disabled={loading}
-            className="rounded-md border border-border px-4 py-1.5 text-sm text-fg-muted hover:border-border-strong hover:text-fg disabled:opacity-50"
-          >
-            {loading ? "Loading…" : "Load older"}
-          </button>
+        {!done && !error && loading && (
+          <span className="font-prose text-xs text-fg-dim">Loading…</span>
         )}
         {done && entries.length > 0 && (
           <span className="font-prose text-xs text-fg-dim">— beginning of history —</span>
