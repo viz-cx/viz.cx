@@ -42,9 +42,14 @@ def start_parsing() -> NoReturn:
             last_chain_block = get_last_block_in_chain()
             if last_chain_block - last_db_block > 0:
                 for _ in range(last_db_block + 1, last_chain_block + 1):
+                    # `_` is the authoritative block number. The node returns an
+                    # empty list for blocks with no ops (common) and for blocks
+                    # outside its short get_ops_in_block window; either way we
+                    # store an empty block and advance rather than crash, so the
+                    # parser can never re-stick on the same block.
                     block = get_ops_in_block(_, False)
-                    save_block(block)
-                    if _at_tip(last_chain_block, _):
+                    save_block(block, _)
+                    if block and _at_tip(last_chain_block, _):
                         emit_block_ops(_, block)
                     last_db_block = _
                     if last_db_block % 100 == 0:

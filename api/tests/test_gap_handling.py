@@ -32,3 +32,23 @@ def test_at_tip_true_within_window(monkeypatch):
 def test_at_tip_false_outside_window(monkeypatch):
     monkeypatch.setattr(parser_mod, "EMIT_TIP_LAG", 5)
     assert parser_mod._at_tip(last_chain_block=100, block_num=94) is False
+
+
+def test_save_block_empty_uses_explicit_number():
+    """An empty block (no ops to derive a number from) must store under the
+    caller-supplied number, not crash. This is what kept the parser stuck."""
+    from helpers import mongo
+
+    mongo.save_block([], 42)
+    assert mongo.get_block(42) == {"_id": 42, "block": []}
+    assert mongo.get_last_blocknum() == 42
+
+
+def test_save_block_nonempty_explicit_number_wins():
+    from helpers import mongo
+
+    block = [{"block": 7, "timestamp": "2026-06-29T08:00:00", "op": ["x", {}]}]
+    mongo.save_block(block, 7)
+    stored = mongo.get_block(7)
+    assert stored["_id"] == 7
+    assert "block" not in stored["block"][0]  # per-op block field stripped

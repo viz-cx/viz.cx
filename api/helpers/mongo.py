@@ -41,16 +41,22 @@ coll = _CollProxy("COLLECTION")
 acoll = _CollProxy("COLLECTION", db_getter=_adb)
 
 
-def save_block(block) -> None:
-    """Save block to MongoDB collection."""
-    blocknumber = block[0]["block"]
+def save_block(block, blocknum: int | None = None) -> None:
+    """Save block to MongoDB collection.
+
+    `blocknum` is the authoritative block number from the caller. It MUST be
+    supplied for empty blocks — a block with no ops carries no number to derive
+    from, and the chain produces such blocks routinely. When omitted (legacy
+    callers) the number is taken from the first op."""
+    if blocknum is None:
+        blocknum = block[0]["block"]
     for tx in block:
-        tx.pop("block")
+        tx.pop("block", None)
         if tx.get("trx_id") == "0000000000000000000000000000000000000000":
             tx.pop("trx_id")
         tx_t = dt.datetime.fromisoformat(tx.get("timestamp"))
         tx.update({"timestamp": tx_t})
-    coll.insert_one({"block": block, "_id": blocknumber})
+    coll.insert_one({"block": block, "_id": blocknum})
 
 
 def get_block(id: int) -> dict:
