@@ -24,11 +24,14 @@ export function DataTable<T>({
   rows,
   initialSort,
   rowKey,
+  rowClassName,
 }: {
   columns: Column<T>[];
   rows: T[];
   initialSort?: { key: string; dir: "asc" | "desc" };
   rowKey: (row: T, index: number) => string | number;
+  /** Extra classes per row (e.g. to highlight a subset). */
+  rowClassName?: (row: T) => string | undefined;
 }) {
   const [sort, setSort] = useState(initialSort ?? null);
 
@@ -76,7 +79,10 @@ export function DataTable<T>({
         </thead>
         <tbody>
           {sorted.map((row, i) => (
-            <tr key={rowKey(row, i)} className="border-b border-border last:border-0 hover:bg-surface-2">
+            <tr
+              key={rowKey(row, i)}
+              className={`border-b border-border last:border-0 hover:bg-surface-2 ${rowClassName?.(row) ?? ""}`}
+            >
               {columns.map((c) => (
                 <td
                   key={c.key}

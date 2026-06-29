@@ -67,7 +67,9 @@ export default async function ValidatorsPage() {
         <div>
           <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">Validators</h1>
           <p className="mt-1 font-prose text-sm text-fg-dim">
-            The active validator set producing blocks on VIZ (DPoS). Click a column to sort.
+            The active validator set producing blocks on VIZ (DPoS). The{" "}
+            <span className="text-acc-green">top 11</span> by vote weight form the consensus set. Click a
+            column to sort.
           </p>
         </div>
         <ManageValidatorLink />

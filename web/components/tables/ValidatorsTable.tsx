@@ -22,6 +22,9 @@ export interface ValidatorRow {
 
 const SHARES_PRECISION = 1_000_000;
 
+/** Top-voted validators that form the consensus block-producing set on VIZ. */
+const TOP_VALIDATORS = 11;
+
 export function ValidatorsTable({
   rows,
   fund,
@@ -64,7 +67,11 @@ export function ValidatorsTable({
     {
       key: "rank",
       header: "#",
-      cell: (r) => <span className="text-fg-dim">{r.rank}</span>,
+      cell: (r) => (
+        <span className={r.rank <= TOP_VALIDATORS ? "font-semibold text-acc-green" : "text-fg-dim"}>
+          {r.rank}
+        </span>
+      ),
       sort: (r) => r.rank,
     },
     {
@@ -135,6 +142,7 @@ export function ValidatorsTable({
         rows={rows}
         rowKey={(r) => r.name}
         initialSort={{ key: "votes", dir: "desc" }}
+        rowClassName={(r) => (r.rank <= TOP_VALIDATORS ? "bg-acc-green/5" : undefined)}
       />
     </div>
   );
