@@ -1,6 +1,5 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
-import { type Wif } from '@viz-cx/core'
 import { useWallet } from '@/lib/wallet'
 import { powerUp } from '@/lib/actions'
 import { ModalShell } from './ModalShell'
@@ -32,7 +31,7 @@ export function PowerUpModal({ open, onClose }: Props) {
     e.preventDefault()
     const n = parseFloat(amount)
     if (isNaN(n) || n <= 0) { setError('Enter a valid amount'); return }
-    const wif = wallet.walletKeys.active as Wif | undefined
+    const wif = wallet.keyFor('active')
     if (!wif) { setError('Active key required'); return }
     setError(null); setLoading(true)
     try {

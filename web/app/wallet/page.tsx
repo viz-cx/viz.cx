@@ -151,42 +151,42 @@ export default function WalletPage() {
         <button
           onClick={() => {
             if (!wallet.connected) { wallet.openModal('connect'); return }
-            if (!wallet.walletKeys.active) { wallet.openModal('add-key'); return }
+            if (!wallet.keyFor('active')) { wallet.openModal('add-key'); return }
             setTransferOpen(true)
           }}
           className="rounded border border-border px-3 py-1.5 font-prose text-xs text-fg-muted transition-colors hover:border-border-strong hover:text-fg"
         >
-          {wallet.connected && !wallet.walletKeys.active ? 'Transfer (needs active key)' : 'Transfer'}
+          {wallet.connected && !wallet.keyFor('active') ? 'Transfer (needs active key)' : 'Transfer'}
         </button>
         <button
           onClick={() => {
             if (!wallet.connected) { wallet.openModal('connect'); return }
-            if (!wallet.walletKeys.active) { wallet.openModal('add-key'); return }
+            if (!wallet.keyFor('active')) { wallet.openModal('add-key'); return }
             setPowerUpOpen(true)
           }}
           className="rounded border border-border px-3 py-1.5 font-prose text-xs text-fg-muted transition-colors hover:border-border-strong hover:text-fg"
         >
-          {wallet.connected && !wallet.walletKeys.active ? 'Power Up (needs active key)' : 'Power Up'}
+          {wallet.connected && !wallet.keyFor('active') ? 'Power Up (needs active key)' : 'Power Up'}
         </button>
         <button
           onClick={() => {
             if (!wallet.connected) { wallet.openModal('connect'); return }
-            if (!wallet.walletKeys.active) { wallet.openModal('add-key'); return }
+            if (!wallet.keyFor('active')) { wallet.openModal('add-key'); return }
             setPowerDownOpen(true)
           }}
           className="rounded border border-border px-3 py-1.5 font-prose text-xs text-fg-muted transition-colors hover:border-border-strong hover:text-fg"
         >
-          {wallet.connected && !wallet.walletKeys.active ? 'Power Down (needs active key)' : 'Power Down'}
+          {wallet.connected && !wallet.keyFor('active') ? 'Power Down (needs active key)' : 'Power Down'}
         </button>
         <button
           onClick={() => {
             if (!wallet.connected) { wallet.openModal('connect'); return }
-            if (!wallet.walletKeys.active) { wallet.openModal('add-key'); return }
+            if (!wallet.keyFor('active')) { wallet.openModal('add-key'); return }
             setDelegateOpen(true)
           }}
           className="rounded border border-border px-3 py-1.5 font-prose text-xs text-fg-muted transition-colors hover:border-border-strong hover:text-fg"
         >
-          {wallet.connected && !wallet.walletKeys.active ? 'Delegate (needs active key)' : 'Delegate'}
+          {wallet.connected && !wallet.keyFor('active') ? 'Delegate (needs active key)' : 'Delegate'}
         </button>
       </div>
 

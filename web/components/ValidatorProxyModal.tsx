@@ -1,6 +1,5 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
-import { type Wif } from '@viz-cx/core'
 import { useWallet } from '@/lib/wallet'
 import { setValidatorProxy } from '@/lib/actions'
 import { ModalShell } from './ModalShell'
@@ -39,7 +38,7 @@ export function ValidatorProxyModal({ open, onClose, mode, currentProxy }: Props
   }
 
   async function handleConfirm() {
-    const wif = wallet.walletKeys.active as Wif | undefined
+    const wif = wallet.keyFor('active')
     if (!wif) { setError('Active key required'); return }
     const proxy = mode === 'clear' ? '' : target.trim().toLowerCase()
     setLoading(true); setError(null)

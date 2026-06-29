@@ -1,6 +1,5 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
-import { type Wif } from '@viz-cx/core'
 import { useWallet } from '@/lib/wallet'
 import { sendTransfer } from '@/lib/actions'
 import { ModalShell } from './ModalShell'
@@ -40,7 +39,7 @@ export function TransferModal({ open, onClose }: Props) {
   }
 
   async function handleConfirm() {
-    const wif = wallet.walletKeys.active as Wif | undefined
+    const wif = wallet.keyFor('active')
     if (!wif) { setError('Active key required'); return }
     setLoading(true); setError(null)
     try {

@@ -1,6 +1,5 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
-import { type Wif } from '@viz-cx/core'
 import { useWallet } from '@/lib/wallet'
 import { delegateShares } from '@/lib/actions'
 import { ModalShell } from './ModalShell'
@@ -30,7 +29,7 @@ export function DelegateModal({ open, onClose }: Props) {
     e.preventDefault()
     const n = parseFloat(amount) || 0
     if (!delegatee.trim()) { setError('Enter a delegatee account name'); return }
-    const wif = wallet.walletKeys.active as Wif | undefined
+    const wif = wallet.keyFor('active')
     if (!wif) { setError('Active key required'); return }
     setLoading(true); setError(null)
     try {

@@ -16,7 +16,7 @@ export function ValidatorVoteButton({ validator, currentlyVoted, disabled, onVot
 
   function handleClick() {
     if (!wallet.connected) { wallet.openModal('connect'); return }
-    if (!wallet.walletKeys.active) { wallet.openModal('add-key'); return }
+    if (!wallet.keyFor('active')) { wallet.openModal('add-key'); return }
     setOpen(true)
   }
 

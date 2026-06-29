@@ -17,7 +17,7 @@ export function ValidatorProxyBanner({ currentProxy, proxiedWeightViz, onChanged
 
   function open(m: 'set' | 'clear') {
     if (!wallet.connected) { wallet.openModal('connect'); return }
-    if (!wallet.walletKeys.active) { wallet.openModal('add-key'); return }
+    if (!wallet.keyFor('active')) { wallet.openModal('add-key'); return }
     setMode(m)
   }
 

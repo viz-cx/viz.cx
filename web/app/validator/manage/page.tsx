@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { publicKey, type ChainProperties, type Wif } from '@viz-cx/core'
+import { publicKey, type ChainProperties } from '@viz-cx/core'
 import { useWallet } from '@/lib/wallet'
 import { fetchValidator, propsFromRaw, type RawValidator } from '@/lib/validator'
 import { updateValidator, goIdleValidator, updateChainProperties } from '@/lib/actions'
@@ -93,7 +93,7 @@ export default function ValidatorManagePage() {
   }
 
   async function handleConfirmRegister() {
-    const wif = wallet.walletKeys.active as Wif | undefined
+    const wif = wallet.keyFor('active')
     if (!wif) { setError('Active key required'); return }
     setBusy(true); setError(null); setDone(false)
     try {
@@ -107,7 +107,7 @@ export default function ValidatorManagePage() {
   }
 
   async function handleConfirmIdle() {
-    const wif = wallet.walletKeys.active as Wif | undefined
+    const wif = wallet.keyFor('active')
     if (!wif) { setError('Active key required'); return }
     setBusy(true); setError(null); setDone(false)
     try {
@@ -126,7 +126,7 @@ export default function ValidatorManagePage() {
   }
 
   async function handleConfirmProps() {
-    const wif = wallet.walletKeys.active as Wif | undefined
+    const wif = wallet.keyFor('active')
     if (!wif || !pendingProps) { setError('Active key required'); return }
     setBusy(true); setError(null); setDone(false)
     try {
@@ -152,7 +152,7 @@ export default function ValidatorManagePage() {
     )
   }
 
-  if (!wallet.walletKeys.active) {
+  if (!wallet.keyFor('active')) {
     return (
       <div className="flex flex-col items-center gap-6 py-24">
         <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">Manage My Validator</h1>

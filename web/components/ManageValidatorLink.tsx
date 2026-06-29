@@ -4,7 +4,7 @@ import { useWallet } from '@/lib/wallet'
 
 export function ManageValidatorLink() {
   const wallet = useWallet()
-  if (!wallet.connected || !wallet.walletKeys.active) return null
+  if (!wallet.connected || !wallet.keyFor('active')) return null
   return (
     <Link
       href="/validator/manage"

@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
-import { createHttpTransport, createReadApi, type Wif } from '@viz-cx/core'
+import { createHttpTransport, createReadApi } from '@viz-cx/core'
 import { useWallet } from '@/lib/wallet'
 import { powerDown } from '@/lib/actions'
 import { NODE_ENDPOINTS } from '@/lib/config'
@@ -58,7 +58,7 @@ export function PowerDownModal({ open, onClose }: Props) {
   }, [open, wallet.account])
 
   async function handleCancel() {
-    const wif = wallet.walletKeys.active as Wif | undefined
+    const wif = wallet.keyFor('active')
     if (!wif) { setError('Active key required'); return }
     setLoading(true); setError(null)
     try {
@@ -79,7 +79,7 @@ export function PowerDownModal({ open, onClose }: Props) {
   }
 
   async function handleConfirm() {
-    const wif = wallet.walletKeys.active as Wif | undefined
+    const wif = wallet.keyFor('active')
     if (!wif) { setError('Active key required'); return }
     setLoading(true); setError(null)
     try {
