@@ -47,3 +47,18 @@ export function resolveRoleMap(
 
   return map
 }
+
+/**
+ * Pick the lowest-privilege held key that satisfies the required authority.
+ * Hierarchy is `regular < active` (a master key already folds into the `active`
+ * slot in resolveRoleMap, so it covers both). A regular op prefers the regular
+ * key and falls back UP to active; an active op requires the active key and
+ * never climbs down to regular.
+ */
+export function keyForRole(
+  keys: { regular?: Wif; active?: Wif },
+  role: WalletRole
+): Wif | undefined {
+  if (role === 'active') return keys.active
+  return keys.regular ?? keys.active
+}

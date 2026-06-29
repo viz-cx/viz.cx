@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { keys, type Wif } from '@viz-cx/core'
-import { resolveRoleMap, type KeyCandidate } from '@/lib/wallet-roles'
+import { resolveRoleMap, keyForRole, type KeyCandidate } from '@/lib/wallet-roles'
 
 // Deterministic fixtures derived from a master password — no hardcoded pubkeys.
 const ACC = 'alice'
@@ -74,5 +74,32 @@ describe('resolveRoleMap', () => {
     const m = resolveRoleMap(rotated, [cand(masterWif), cand(activeWif), cand(regularWif)])
     expect(m.get('regular')).toBe(regularWif)
     expect(m.get('active')).toBe(masterWif) // active authority holds the master-derived pub
+  })
+})
+
+describe('keyForRole', () => {
+  it('prefers the regular key for a regular op (least privilege)', () => {
+    expect(keyForRole({ regular: regularWif, active: activeWif }, 'regular')).toBe(regularWif)
+  })
+
+  it('falls back UP to active for a regular op when no regular key is held', () => {
+    expect(keyForRole({ active: activeWif }, 'regular')).toBe(activeWif)
+  })
+
+  it('returns the regular key for a regular op when only regular is held', () => {
+    expect(keyForRole({ regular: regularWif }, 'regular')).toBe(regularWif)
+  })
+
+  it('never climbs DOWN: a regular-only wallet cannot satisfy an active op', () => {
+    expect(keyForRole({ regular: regularWif }, 'active')).toBeUndefined()
+  })
+
+  it('returns the active key for an active op', () => {
+    expect(keyForRole({ active: activeWif }, 'active')).toBe(activeWif)
+  })
+
+  it('returns undefined when no key is held', () => {
+    expect(keyForRole({}, 'regular')).toBeUndefined()
+    expect(keyForRole({}, 'active')).toBeUndefined()
   })
 })
