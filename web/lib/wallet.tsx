@@ -9,7 +9,7 @@ import {
 } from 'react'
 import { keys, createHttpTransport, createReadApi, type Wif } from '@viz-cx/core'
 import { saveWallet, loadWallet, clearWallet } from './wallet-storage'
-import { resolveRoleMap, type WalletRole } from './wallet-roles'
+import { resolveRoleMap, keyForRole, type WalletRole } from './wallet-roles'
 import { NODE_ENDPOINTS } from './config'
 
 export type ModalMode = 'connect' | 'add-key'
@@ -23,6 +23,7 @@ export interface WalletState {
   connect(account: string, input: string): Promise<WalletRole[]>
   addKey(input: string): Promise<WalletRole[]>
   disconnect(): void
+  keyFor(role: WalletRole): Wif | undefined
   openModal(mode?: ModalMode): void
   closeModal(): void
 }
@@ -111,6 +112,11 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     setWalletKeys({})
   }, [])
 
+  const keyFor = useCallback(
+    (role: WalletRole) => keyForRole(walletKeys, role),
+    [walletKeys]
+  )
+
   const openModal = useCallback((mode: ModalMode = 'connect') => {
     setModalMode(mode)
     setModalOpen(true)
@@ -129,6 +135,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         connect,
         addKey,
         disconnect,
+        keyFor,
         openModal,
         closeModal,
       }}
