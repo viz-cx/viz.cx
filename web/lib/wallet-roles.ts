@@ -18,8 +18,14 @@ function authorizedPubs(raw: Record<string, unknown>, authority: string): string
 
 /**
  * Match candidate keys against an account's on-chain authorities and return the
- * capability roles each grants. Owner authority grants `active` (owner ⊇ active);
- * a direct active match wins the `active` slot over an owner-derived one.
+ * capability roles each grants. VIZ's top authority is `master` (not `owner`);
+ * the chain accepts a master signature for any active-authority operation, so a
+ * master key grants `active` (master ⊇ active). A direct active match wins the
+ * `active` slot over a master-derived one.
+ *
+ * Note: @viz-cx/core derives the master key under the role name `owner`
+ * (`keys.fromPassword(acc, pw, 'owner')` / `KeySet.owner`) — that derived key is
+ * what populates `master_authority` on-chain.
  */
 export function resolveRoleMap(
   raw: Record<string, unknown>,
@@ -27,7 +33,7 @@ export function resolveRoleMap(
 ): Map<WalletRole, Wif> {
   const regularPubs = authorizedPubs(raw, 'regular')
   const activePubs = authorizedPubs(raw, 'active')
-  const ownerPubs = authorizedPubs(raw, 'owner')
+  const masterPubs = authorizedPubs(raw, 'master')
 
   const map = new Map<WalletRole, Wif>()
 
@@ -35,8 +41,8 @@ export function resolveRoleMap(
   if (regular) map.set('regular', regular.wif)
 
   const directActive = candidates.find((c) => activePubs.includes(c.pub))
-  const ownerActive = candidates.find((c) => ownerPubs.includes(c.pub))
-  const active = directActive ?? ownerActive
+  const masterActive = candidates.find((c) => masterPubs.includes(c.pub))
+  const active = directActive ?? masterActive
   if (active) map.set('active', active.wif)
 
   return map

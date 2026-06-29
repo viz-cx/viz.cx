@@ -7,24 +7,26 @@ const ACC = 'alice'
 const PW = 'hunter2hunter2'
 const regularWif = keys.fromPassword(ACC, PW, 'regular')
 const activeWif = keys.fromPassword(ACC, PW, 'active')
-const ownerWif = keys.fromPassword(ACC, PW, 'owner')
+// @viz-cx/core derives the master key under the role name 'owner'; on-chain it
+// populates `master_authority`.
+const masterWif = keys.fromPassword(ACC, PW, 'owner')
 const memoWif = keys.fromPassword(ACC, PW, 'memo')
 
 const pub = (w: Wif) => String(keys.toPublic(w))
 const cand = (w: Wif): KeyCandidate => ({ wif: w, pub: pub(w) })
 
 // Raw RPC-shaped account: each authority lists [pubkey, weight] pairs.
-function rawAccount(opts: { regular?: Wif; active?: Wif; owner?: Wif }) {
+function rawAccount(opts: { regular?: Wif; active?: Wif; master?: Wif }) {
   const auth = (w?: Wif) => (w ? { key_auths: [[pub(w), 1]] } : { key_auths: [] })
   return {
     regular_authority: auth(opts.regular),
     active_authority: auth(opts.active),
-    owner_authority: auth(opts.owner),
+    master_authority: auth(opts.master),
   } as Record<string, unknown>
 }
 
 describe('resolveRoleMap', () => {
-  const raw = rawAccount({ regular: regularWif, active: activeWif, owner: ownerWif })
+  const raw = rawAccount({ regular: regularWif, active: activeWif, master: masterWif })
 
   it('maps an active key to the active role', () => {
     const m = resolveRoleMap(raw, [cand(activeWif)])
@@ -38,18 +40,18 @@ describe('resolveRoleMap', () => {
     expect(m.has('active')).toBe(false)
   })
 
-  it('maps an owner key to the active role (owner grants active)', () => {
-    const m = resolveRoleMap(raw, [cand(ownerWif)])
-    expect(m.get('active')).toBe(ownerWif)
+  it('maps a master key to the active role (master grants active)', () => {
+    const m = resolveRoleMap(raw, [cand(masterWif)])
+    expect(m.get('active')).toBe(masterWif)
   })
 
-  it('prefers the direct active key over the owner key for the active slot', () => {
-    const m = resolveRoleMap(raw, [cand(ownerWif), cand(activeWif)])
+  it('prefers the direct active key over the master key for the active slot', () => {
+    const m = resolveRoleMap(raw, [cand(masterWif), cand(activeWif)])
     expect(m.get('active')).toBe(activeWif)
   })
 
   it('fills both slots from a full password derivation', () => {
-    const m = resolveRoleMap(raw, [cand(ownerWif), cand(activeWif), cand(regularWif)])
+    const m = resolveRoleMap(raw, [cand(masterWif), cand(activeWif), cand(regularWif)])
     expect(m.get('active')).toBe(activeWif)
     expect(m.get('regular')).toBe(regularWif)
   })
@@ -68,9 +70,9 @@ describe('resolveRoleMap', () => {
 
   it('only keeps password-derived keys that match (rotated keys)', () => {
     // Account whose on-chain active key is NOT the password-derived one.
-    const rotated = rawAccount({ regular: regularWif, active: ownerWif })
-    const m = resolveRoleMap(rotated, [cand(ownerWif), cand(activeWif), cand(regularWif)])
+    const rotated = rawAccount({ regular: regularWif, active: masterWif })
+    const m = resolveRoleMap(rotated, [cand(masterWif), cand(activeWif), cand(regularWif)])
     expect(m.get('regular')).toBe(regularWif)
-    expect(m.get('active')).toBe(ownerWif) // active authority holds the owner-derived pub
+    expect(m.get('active')).toBe(masterWif) // active authority holds the master-derived pub
   })
 })
