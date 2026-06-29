@@ -13,12 +13,16 @@ export const metadata: Metadata = { title: "Validators" };
 interface RawValidator {
   owner?: string;
   url?: string;
-  total_votes?: string | number;
+  votes?: string | number;
+  counted_votes?: string | number;
   running_version?: string;
   total_missed?: number;
   signing_key?: string;
   [k: string]: unknown;
 }
+
+/** Validator votes arrive as raw VESTS at 1e6 precision (e.g. "10165525698033"). */
+const SHARES_PRECISION = 1_000_000;
 
 export default async function ValidatorsPage() {
   let rows: ValidatorRow[] = [];
@@ -40,7 +44,8 @@ export default async function ValidatorsPage() {
     rows = vals
       .filter((v): v is RawValidator => !!v && !!v.owner)
       .map((v) => {
-        const votesShares = assetAmount(v.total_votes as string | number);
+        const votesShares =
+          assetAmount((v.counted_votes ?? v.votes) as string | number) / SHARES_PRECISION;
         return {
           name: v.owner!,
           voteWeight: sharesToViz(votesShares, fund, totalShares),

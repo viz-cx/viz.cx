@@ -3,7 +3,7 @@ import { SearchBox } from "./SearchBox";
 import { HeadBlockTicker } from "./HeadBlockTicker";
 import { WalletChip } from "./WalletChip";
 import { MobileNav } from "./MobileNav";
-import { NAV } from "@/lib/nav";
+import { DesktopNav } from "./DesktopNav";
 
 /** Persistent global header: logo + smart search + nav + live head-block ticker. */
 export function Header() {
@@ -21,17 +21,7 @@ export function Header() {
           <SearchBox />
         </div>
 
-        <nav className="hidden items-center gap-1 lg:flex">
-          {NAV.map((n) => (
-            <Link
-              key={n.href}
-              href={n.href}
-              className="rounded-md px-3 py-1.5 font-prose text-sm text-fg-muted hover:bg-surface-2 hover:text-fg"
-            >
-              {n.label}
-            </Link>
-          ))}
-        </nav>
+        <DesktopNav />
 
         <div className="shrink-0">
           <HeadBlockTicker />

@@ -11,3 +11,9 @@ export const NAV: NavItem[] = [
   { href: '/dev', label: 'Docs' },
   { href: '/learn', label: 'Learn' },
 ]
+
+/** Whether a nav item matches the current pathname (exact, or a sub-route). */
+export function isNavActive(pathname: string | null, href: string): boolean {
+  if (!pathname) return false
+  return pathname === href || pathname.startsWith(`${href}/`)
+}
