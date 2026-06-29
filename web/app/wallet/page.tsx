@@ -50,31 +50,40 @@ export default function WalletPage() {
     setLoading(true)
     const transport = createHttpTransport(NODE_ENDPOINTS[0])
     const api = createReadApi(transport)
-    Promise.all([
+    Promise.allSettled([
       api.getAccounts([wallet.account]),
       api.getAccountHistory(wallet.account, -1, 20),
     ])
-      .then(([[acc], hist]) => {
+      .then(([accountsResult, histResult]) => {
         if (cancelled) return
-        if (acc) {
-          setSnapshot({
-            balance: acc.balance,
-            vesting_shares: acc.vesting_shares,
-            energy: acc.energy,
-            last_vote_time: acc['last_vote_time'] as string | undefined,
-          })
+        if (accountsResult.status === 'fulfilled') {
+          const acc = accountsResult.value[0]
+          if (acc) {
+            setSnapshot({
+              balance: acc.balance,
+              vesting_shares: acc.vesting_shares,
+              energy: acc.energy,
+              last_vote_time: acc['last_vote_time'] as string | undefined,
+            })
+          }
+        } else {
+          console.warn('[WalletPage] getAccounts failed:', accountsResult.reason)
         }
-        const rows = (hist as Array<readonly [number, AccountHistoryItem]>)
-          .map(([idx, item]) => ({
-            idx,
-            timestamp: item.timestamp,
-            type: item.op[0],
-            data: item.op[1],
-          }))
-          .reverse()
-        setHistory(rows)
+        if (histResult.status === 'fulfilled') {
+          const hist = histResult.value
+          const rows = (hist as Array<readonly [number, AccountHistoryItem]>)
+            .map(([idx, item]) => ({
+              idx,
+              timestamp: item.timestamp,
+              type: item.op[0],
+              data: item.op[1],
+            }))
+            .reverse()
+          setHistory(rows)
+        } else {
+          console.warn('[WalletPage] getAccountHistory failed:', histResult.reason)
+        }
       })
-      .catch((err) => { console.warn('[WalletPage] fetch failed:', err) })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
   }, [wallet.connected, wallet.account])
