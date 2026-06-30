@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@viz-cx/api':
-        specifier: ^0.1.0
-        version: 0.1.0(@viz-cx/core@0.7.0)
+        specifier: ^0.1.3
+        version: 0.1.3(@viz-cx/core@0.7.0)
       '@viz-cx/core':
         specifier: ^0.7.0
         version: 0.7.0
@@ -942,11 +942,11 @@ packages:
   '@vitest/utils@4.1.9':
     resolution: {integrity: sha512-A51o8ymO5PpqlWNnBP9ZHPXDIpuMtTLlGSjN7la4US+LJzoUMyhwjA5QXlm39JexgwHKW4Xjs8Z2d3dLCXOeuA==}
 
-  '@viz-cx/api@0.1.0':
-    resolution: {integrity: sha512-bh2MaCBm0/kgRNvPRC6k6GyAXACKQNekqAb/BuasdWmj6pfzQaOCyjRlJgeDDfklDF8bpvoqTWgle78v7PxS7g==}
+  '@viz-cx/api@0.1.3':
+    resolution: {integrity: sha512-i2n1q9eGXi+gCfqDGSyZNC15g6HwFap2ZpKGq7+VS0Okh3hoPO43Un4vDm+SCYgD/3dOpJ/TTzm93sSCklYVsw==}
     engines: {node: '>=18'}
     peerDependencies:
-      '@viz-cx/core': ^0.6.1
+      '@viz-cx/core': ^0.7.0
     peerDependenciesMeta:
       '@viz-cx/core':
         optional: true
@@ -3245,7 +3245,7 @@ snapshots:
       convert-source-map: 2.0.0
       tinyrainbow: 3.1.0
 
-  '@viz-cx/api@0.1.0(@viz-cx/core@0.7.0)':
+  '@viz-cx/api@0.1.3(@viz-cx/core@0.7.0)':
     optionalDependencies:
       '@viz-cx/core': 0.7.0
 
