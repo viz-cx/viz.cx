@@ -35,7 +35,7 @@ vi.mock('@viz-cx/core', async (importOriginal) => {
   const real = await importOriginal() as Record<string, unknown>
   return {
     ...real,
-    createHttpTransport: vi.fn().mockReturnValue({}),
+    createHttpTransport: vi.fn().mockReturnValue({ call: vi.fn().mockResolvedValue(undefined) }),
     createTxBuilder: mockCreateTxBuilder,
   }
 })
