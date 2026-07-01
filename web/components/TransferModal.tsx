@@ -1,6 +1,7 @@
 'use client'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useWallet } from '@/lib/wallet'
+import { useToast } from '@/lib/toast'
 import { sendTransfer } from '@/lib/actions'
 import { ModalShell } from './ModalShell'
 
@@ -13,19 +14,17 @@ type Step = 'form' | 'confirm'
 
 export function TransferModal({ open, onClose }: Props) {
   const wallet = useWallet()
+  const toast = useToast()
   const [to, setTo] = useState('')
   const [amount, setAmount] = useState('')
   const [memo, setMemo] = useState('')
   const [step, setStep] = useState<Step>('form')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [done, setDone] = useState(false)
-  const doneTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     if (!open) {
-      if (doneTimerRef.current) { clearTimeout(doneTimerRef.current); doneTimerRef.current = null }
-      setTo(''); setAmount(''); setMemo(''); setStep('form'); setError(null); setDone(false)
+      setTo(''); setAmount(''); setMemo(''); setStep('form'); setError(null)
     }
   }, [open])
 
@@ -45,19 +44,16 @@ export function TransferModal({ open, onClose }: Props) {
     try {
       const formatted = `${parseFloat(amount).toFixed(3)} VIZ`
       await sendTransfer(wif, wallet.account!, to.trim(), formatted, memo || undefined)
-      setDone(true)
-      doneTimerRef.current = setTimeout(onClose, 1500)
+      toast.success(`Sent ${formatted} to @${to.trim()}`)
+      onClose()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Transaction failed')
-      setStep('form')
+      toast.error(err instanceof Error ? err.message : 'Transaction failed')
     } finally { setLoading(false) }
   }
 
   return (
     <ModalShell open={open} onClose={onClose} title="Transfer">
-        {done ? (
-          <p className="py-6 text-center font-mono text-sm text-acc-green">✓ Done</p>
-        ) : step === 'confirm' ? (
+        {step === 'confirm' ? (
           <div className="flex flex-col gap-4">
             <p className="font-prose text-sm text-fg">
               Send <span className="font-mono text-acc-green">{parseFloat(amount).toFixed(3)} VIZ</span> to{' '}
