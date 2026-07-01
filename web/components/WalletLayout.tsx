@@ -1,6 +1,7 @@
 'use client'
 import type { ReactNode } from 'react'
 import { WalletProvider, useWallet } from '@/lib/wallet'
+import { ToastProvider } from '@/lib/toast'
 import { ConnectModal } from './ConnectModal'
 
 function ModalMount() {
@@ -10,9 +11,11 @@ function ModalMount() {
 
 export function WalletLayout({ children }: { children: ReactNode }) {
   return (
-    <WalletProvider>
-      {children}
-      <ModalMount />
-    </WalletProvider>
+    <ToastProvider>
+      <WalletProvider>
+        {children}
+        <ModalMount />
+      </WalletProvider>
+    </ToastProvider>
   )
 }
