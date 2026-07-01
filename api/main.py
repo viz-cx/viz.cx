@@ -97,16 +97,6 @@ async def proxy_legacy_rpc_host(request: Request, call_next):
     if request.headers.get("host", "").split(":")[0] != LEGACY_RPC_HOST:
         return await call_next(request)
 
-    _cors = {
-        "access-control-allow-origin": "*",
-        "access-control-allow-methods": "GET, POST, OPTIONS",
-        "access-control-allow-headers": "*",
-    }
-
-    # Public RPC — respond to CORS preflight immediately without hitting upstream.
-    if request.method == "OPTIONS":
-        return Response(status_code=200, headers=_cors)
-
     url = RPC_UPSTREAM + request.url.path
     if request.url.query:
         url += "?" + request.url.query
@@ -126,7 +116,6 @@ async def proxy_legacy_rpc_host(request: Request, call_next):
         if k.lower() not in _HOP_BY_HOP
         and k.lower() not in ("content-length", "content-encoding")
     }
-    resp_headers.update(_cors)
     return Response(
         content=upstream.content,
         status_code=upstream.status_code,
@@ -194,11 +183,10 @@ if os.path.isdir(_playground_dir):
         name="playground",
     )
 
-origins = ["https://viz.cx", "http://localhost:3000"]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
