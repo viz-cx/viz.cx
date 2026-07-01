@@ -1,6 +1,7 @@
 'use client'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useWallet } from '@/lib/wallet'
+import { useToast } from '@/lib/toast'
 import { cancelProposal } from '@/lib/actions'
 import { truncateUrl, type CommitteeRequest } from '@/lib/committee'
 import { ModalShell } from './ModalShell'
@@ -13,15 +14,13 @@ interface Props {
 
 export function CancelProposalModal({ open, onClose, proposal }: Props) {
   const wallet = useWallet()
+  const toast = useToast()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [done, setDone] = useState(false)
-  const doneTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     if (!open) {
-      if (doneTimerRef.current) { clearTimeout(doneTimerRef.current); doneTimerRef.current = null }
-      setError(null); setDone(false)
+      setError(null)
     }
   }, [open])
 
@@ -31,19 +30,16 @@ export function CancelProposalModal({ open, onClose, proposal }: Props) {
     setLoading(true); setError(null)
     try {
       await cancelProposal(wif, wallet.account!, proposal.request_id)
-      setDone(true)
-      doneTimerRef.current = setTimeout(onClose, 1500)
+      toast.success(`Cancelled proposal #${proposal.request_id}`)
+      onClose()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Transaction failed')
+      toast.error(err instanceof Error ? err.message : 'Transaction failed')
     } finally { setLoading(false) }
   }
 
   return (
     <ModalShell open={open} onClose={onClose} title="Cancel proposal">
-        {done ? (
-          <p className="py-6 text-center font-mono text-sm text-acc-green">✓ Cancelled</p>
-        ) : (
-          <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4">
             <p className="font-prose text-sm text-fg-muted">Remove your proposal from the committee?</p>
             <p className="border-l-2 border-border pl-3 font-mono text-sm text-fg">{truncateUrl(proposal.url, 48)}</p>
             {error && <p className="font-prose text-xs text-acc-red">{error}</p>}
@@ -54,7 +50,6 @@ export function CancelProposalModal({ open, onClose, proposal }: Props) {
               </button>
             </div>
           </div>
-        )}
     </ModalShell>
   )
 }
