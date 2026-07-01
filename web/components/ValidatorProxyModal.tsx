@@ -1,6 +1,7 @@
 'use client'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useWallet } from '@/lib/wallet'
+import { useToast } from '@/lib/toast'
 import { setValidatorProxy } from '@/lib/actions'
 import { ModalShell } from './ModalShell'
 
@@ -15,17 +16,15 @@ const NAME_RE = /^[a-z][a-z0-9-.]{2,24}$/
 
 export function ValidatorProxyModal({ open, onClose, mode, currentProxy }: Props) {
   const wallet = useWallet()
+  const toast = useToast()
   const [target, setTarget] = useState('')
   const [review, setReview] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [done, setDone] = useState(false)
-  const doneTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     if (!open) {
-      if (doneTimerRef.current) { clearTimeout(doneTimerRef.current); doneTimerRef.current = null }
-      setTarget(''); setReview(false); setError(null); setDone(false); setLoading(false)
+      setTarget(''); setReview(false); setError(null); setLoading(false)
     }
   }, [open])
 
@@ -44,10 +43,10 @@ export function ValidatorProxyModal({ open, onClose, mode, currentProxy }: Props
     setLoading(true); setError(null)
     try {
       await setValidatorProxy(wif, wallet.account!, proxy)
-      setDone(true)
-      doneTimerRef.current = setTimeout(onClose, 1500)
+      toast.success(mode === 'clear' ? 'Vote proxy cleared' : `Proxy set to @${proxy}`)
+      onClose()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Transaction failed')
+      toast.error(err instanceof Error ? err.message : 'Transaction failed')
     } finally { setLoading(false) }
   }
 
@@ -56,9 +55,7 @@ export function ValidatorProxyModal({ open, onClose, mode, currentProxy }: Props
 
   return (
     <ModalShell open={open} onClose={onClose} title={title}>
-        {done ? (
-          <p className="py-6 text-center font-mono text-sm text-acc-green">✓ Done</p>
-        ) : !showReview ? (
+        {!showReview ? (
           <div className="flex flex-col gap-4">
             <label className="font-prose text-sm text-fg-muted">
               Delegate all your validator votes to:
