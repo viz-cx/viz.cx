@@ -1,7 +1,8 @@
 'use client'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { createHttpTransport, createReadApi } from '@viz-cx/core'
 import { useWallet } from '@/lib/wallet'
+import { useToast } from '@/lib/toast'
 import { awardAccount } from '@/lib/actions'
 import { NODE_ENDPOINTS } from '@/lib/config'
 import { currentEnergy } from '@/lib/format'
@@ -17,19 +18,17 @@ const PRESETS = [10, 25, 50, 100]
 
 export function AwardModal({ open, onClose, receiver }: Props) {
   const wallet = useWallet()
+  const toast = useToast()
   const [energyPct, setEnergyPct] = useState(25)
   const [customInput, setCustomInput] = useState('')
   const [memo, setMemo] = useState('')
   const [availableEnergy, setAvailableEnergy] = useState<number | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [done, setDone] = useState(false)
-  const doneTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     if (!open) {
-      if (doneTimerRef.current) { clearTimeout(doneTimerRef.current); doneTimerRef.current = null }
-      setCustomInput(''); setMemo(''); setError(null); setDone(false)
+      setCustomInput(''); setMemo(''); setError(null)
       setEnergyPct(25); setAvailableEnergy(null)
     }
   }, [open])
@@ -60,19 +59,16 @@ export function AwardModal({ open, onClose, receiver }: Props) {
     setError(null); setLoading(true)
     try {
       await awardAccount(wif, wallet.account!, receiver, clampedPct, memo || undefined)
-      setDone(true)
-      doneTimerRef.current = setTimeout(onClose, 1500)
+      toast.success(`Awarded ${clampedPct}% energy to @${receiver}`)
+      onClose()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Transaction failed')
+      toast.error(err instanceof Error ? err.message : 'Transaction failed')
     } finally { setLoading(false) }
   }
 
   return (
     <ModalShell open={open} onClose={onClose} title={`Award @${receiver}`}>
-        {done ? (
-          <p className="py-6 text-center font-mono text-sm text-acc-green">✓ Done</p>
-        ) : (
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
               <label htmlFor="award-energy" className="text-[10px] font-prose font-semibold uppercase tracking-widest text-fg-dim">
                 Energy %{availableEnergy !== null ? ` (${availableEnergy}% available)` : ''}
@@ -129,7 +125,6 @@ export function AwardModal({ open, onClose, receiver }: Props) {
               {loading ? 'Awarding…' : `Award ${clampedPct}%`}
             </button>
           </form>
-        )}
     </ModalShell>
   )
 }

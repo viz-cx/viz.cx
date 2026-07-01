@@ -1,6 +1,7 @@
 'use client'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useWallet } from '@/lib/wallet'
+import { useToast } from '@/lib/toast'
 import { powerUp } from '@/lib/actions'
 import { ModalShell } from './ModalShell'
 
@@ -11,17 +12,15 @@ interface Props {
 
 export function PowerUpModal({ open, onClose }: Props) {
   const wallet = useWallet()
+  const toast = useToast()
   const [amount, setAmount] = useState('')
   const [to, setTo] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [done, setDone] = useState(false)
-  const doneTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     if (!open) {
-      if (doneTimerRef.current) { clearTimeout(doneTimerRef.current); doneTimerRef.current = null }
-      setAmount(''); setError(null); setDone(false)
+      setAmount(''); setError(null)
     } else {
       setTo(wallet.account ?? '')
     }
@@ -36,19 +35,16 @@ export function PowerUpModal({ open, onClose }: Props) {
     setError(null); setLoading(true)
     try {
       await powerUp(wif, wallet.account!, to.trim() || wallet.account!, `${n.toFixed(3)} VIZ`)
-      setDone(true)
-      doneTimerRef.current = setTimeout(onClose, 1500)
+      toast.success(`Powered up ${n.toFixed(3)} VIZ`)
+      onClose()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Transaction failed')
+      toast.error(err instanceof Error ? err.message : 'Transaction failed')
     } finally { setLoading(false) }
   }
 
   return (
     <ModalShell open={open} onClose={onClose} title="Power Up (VIZ → SHARES)">
-        {done ? (
-          <p className="py-6 text-center font-mono text-sm text-acc-green">✓ Done</p>
-        ) : (
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
               <label htmlFor="powerup-amount" className="text-[10px] font-prose font-semibold uppercase tracking-widest text-fg-dim">Amount (VIZ)</label>
               <input
@@ -84,7 +80,6 @@ export function PowerUpModal({ open, onClose }: Props) {
               {loading ? 'Staking…' : 'Power Up'}
             </button>
           </form>
-        )}
     </ModalShell>
   )
 }

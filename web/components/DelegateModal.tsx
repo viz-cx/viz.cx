@@ -1,6 +1,7 @@
 'use client'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useWallet } from '@/lib/wallet'
+import { useToast } from '@/lib/toast'
 import { delegateShares } from '@/lib/actions'
 import { ModalShell } from './ModalShell'
 
@@ -11,17 +12,15 @@ interface Props {
 
 export function DelegateModal({ open, onClose }: Props) {
   const wallet = useWallet()
+  const toast = useToast()
   const [delegatee, setDelegatee] = useState('')
   const [amount, setAmount] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [done, setDone] = useState(false)
-  const doneTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     if (!open) {
-      if (doneTimerRef.current) { clearTimeout(doneTimerRef.current); doneTimerRef.current = null }
-      setDelegatee(''); setAmount(''); setError(null); setDone(false)
+      setDelegatee(''); setAmount(''); setError(null)
     }
   }, [open])
 
@@ -34,10 +33,10 @@ export function DelegateModal({ open, onClose }: Props) {
     setLoading(true); setError(null)
     try {
       await delegateShares(wif, wallet.account!, delegatee.trim(), `${n.toFixed(6)} SHARES`)
-      setDone(true)
-      doneTimerRef.current = setTimeout(onClose, 1500)
+      toast.success(`Delegated ${n.toFixed(6)} SHARES to @${delegatee.trim()}`)
+      onClose()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Transaction failed')
+      toast.error(err instanceof Error ? err.message : 'Transaction failed')
     } finally { setLoading(false) }
   }
 
@@ -46,10 +45,7 @@ export function DelegateModal({ open, onClose }: Props) {
 
   return (
     <ModalShell open={open} onClose={onClose} title="Delegate SHARES">
-        {done ? (
-          <p className="py-6 text-center font-mono text-sm text-acc-green">✓ Done</p>
-        ) : (
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
               <label htmlFor="delegate-delegatee" className="text-[10px] font-prose font-semibold uppercase tracking-widest text-fg-dim">Delegatee account</label>
               <input
@@ -85,7 +81,6 @@ export function DelegateModal({ open, onClose }: Props) {
               {loading ? 'Processing…' : isUndelegate ? 'Remove delegation' : `Delegate ${n.toFixed(6)} SHARES`}
             </button>
           </form>
-        )}
     </ModalShell>
   )
 }
