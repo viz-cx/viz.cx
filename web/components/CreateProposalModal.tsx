@@ -1,6 +1,7 @@
 'use client'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useWallet } from '@/lib/wallet'
+import { useToast } from '@/lib/toast'
 import { createProposal } from '@/lib/actions'
 import { ModalShell } from './ModalShell'
 
@@ -11,6 +12,7 @@ interface Props {
 
 export function CreateProposalModal({ open, onClose }: Props) {
   const wallet = useWallet()
+  const toast = useToast()
   const [url, setUrl] = useState('')
   const [amountMin, setAmountMin] = useState('0')
   const [amountMax, setAmountMax] = useState('')
@@ -18,8 +20,6 @@ export function CreateProposalModal({ open, onClose }: Props) {
   const [worker, setWorker] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [done, setDone] = useState(false)
-  const doneTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     if (open) setWorker(wallet.account ?? '')
@@ -27,9 +27,8 @@ export function CreateProposalModal({ open, onClose }: Props) {
 
   useEffect(() => {
     if (!open) {
-      if (doneTimerRef.current) { clearTimeout(doneTimerRef.current); doneTimerRef.current = null }
       setUrl(''); setAmountMin('0'); setAmountMax(''); setDays(''); setWorker('')
-      setError(null); setDone(false)
+      setError(null)
     }
   }, [open])
 
@@ -54,19 +53,16 @@ export function CreateProposalModal({ open, onClose }: Props) {
         `${maxN.toFixed(3)} VIZ`,
         daysN * 86400
       )
-      setDone(true)
-      doneTimerRef.current = setTimeout(onClose, 1500)
+      toast.success('Proposal created')
+      onClose()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Transaction failed')
+      toast.error(err instanceof Error ? err.message : 'Transaction failed')
     } finally { setLoading(false) }
   }
 
   return (
     <ModalShell open={open} onClose={onClose} title="New proposal">
-        {done ? (
-          <p className="py-6 text-center font-mono text-sm text-acc-green">✓ Submitted</p>
-        ) : (
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
               <label htmlFor="cp-url" className="text-[10px] font-prose font-semibold uppercase tracking-widest text-fg-dim">
                 Details URL <span className="text-acc-red">*</span>
@@ -112,7 +108,6 @@ export function CreateProposalModal({ open, onClose }: Props) {
               {loading ? 'Submitting…' : 'Submit proposal'}
             </button>
           </form>
-        )}
     </ModalShell>
   )
 }

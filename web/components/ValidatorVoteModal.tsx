@@ -1,6 +1,7 @@
 'use client'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useWallet } from '@/lib/wallet'
+import { useToast } from '@/lib/toast'
 import { voteValidator } from '@/lib/actions'
 import { ModalShell } from './ModalShell'
 
@@ -13,15 +14,13 @@ interface Props {
 
 export function ValidatorVoteModal({ open, onClose, validator, currentlyVoted }: Props) {
   const wallet = useWallet()
+  const toast = useToast()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [done, setDone] = useState(false)
-  const doneTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     if (!open) {
-      if (doneTimerRef.current) { clearTimeout(doneTimerRef.current); doneTimerRef.current = null }
-      setError(null); setDone(false)
+      setError(null)
     }
   }, [open])
 
@@ -31,19 +30,16 @@ export function ValidatorVoteModal({ open, onClose, validator, currentlyVoted }:
     setLoading(true); setError(null)
     try {
       await voteValidator(wif, wallet.account!, validator, !currentlyVoted)
-      setDone(true)
-      doneTimerRef.current = setTimeout(onClose, 1500)
+      toast.success(`${currentlyVoted ? 'Removed vote for' : 'Voted for'} @${validator}`)
+      onClose()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Transaction failed')
+      toast.error(err instanceof Error ? err.message : 'Transaction failed')
     } finally { setLoading(false) }
   }
 
   return (
     <ModalShell open={open} onClose={onClose} title={currentlyVoted ? 'Remove vote' : 'Vote for validator'}>
-        {done ? (
-          <p className="py-6 text-center font-mono text-sm text-acc-green">✓ Done</p>
-        ) : (
-          <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4">
             <p className="font-prose text-sm text-fg">
               {currentlyVoted
                 ? <><span>Remove vote for </span><span className="font-mono text-fg-muted">@{validator}</span><span>?</span></>
@@ -62,7 +58,6 @@ export function ValidatorVoteModal({ open, onClose, validator, currentlyVoted }:
               </button>
             </div>
           </div>
-        )}
     </ModalShell>
   )
 }

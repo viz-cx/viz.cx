@@ -1,6 +1,7 @@
 'use client'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useWallet } from '@/lib/wallet'
+import { useToast } from '@/lib/toast'
 import { voteProposal } from '@/lib/actions'
 import { truncateUrl, type CommitteeRequest } from '@/lib/committee'
 import { ModalShell } from './ModalShell'
@@ -14,15 +15,13 @@ interface Props {
 
 export function CommitteeVoteModal({ open, onClose, proposal, votePercent }: Props) {
   const wallet = useWallet()
+  const toast = useToast()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [done, setDone] = useState(false)
-  const doneTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     if (!open) {
-      if (doneTimerRef.current) { clearTimeout(doneTimerRef.current); doneTimerRef.current = null }
-      setError(null); setDone(false)
+      setError(null)
     }
   }, [open])
 
@@ -32,10 +31,10 @@ export function CommitteeVoteModal({ open, onClose, proposal, votePercent }: Pro
     setLoading(true); setError(null)
     try {
       await voteProposal(wif, wallet.account!, proposal.request_id, votePercent)
-      setDone(true)
-      doneTimerRef.current = setTimeout(onClose, 1500)
+      toast.success(`Voted on proposal #${proposal.request_id}`)
+      onClose()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Transaction failed')
+      toast.error(err instanceof Error ? err.message : 'Transaction failed')
     } finally { setLoading(false) }
   }
 
@@ -54,10 +53,7 @@ export function CommitteeVoteModal({ open, onClose, proposal, votePercent }: Pro
 
   return (
     <ModalShell open={open} onClose={onClose} title={title}>
-        {done ? (
-          <p className="py-6 text-center font-mono text-sm text-acc-green">✓ Done</p>
-        ) : (
-          <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4">
             <p className="font-prose text-sm text-fg-muted">{body}</p>
             <p className="border-l-2 border-border pl-3 font-mono text-sm text-fg">{truncateUrl(proposal.url, 48)}</p>
             {error && <p className="font-prose text-xs text-acc-red">{error}</p>}
@@ -68,7 +64,6 @@ export function CommitteeVoteModal({ open, onClose, proposal, votePercent }: Pro
               </button>
             </div>
           </div>
-        )}
     </ModalShell>
   )
 }
