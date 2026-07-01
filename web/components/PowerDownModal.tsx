@@ -1,7 +1,8 @@
 'use client'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { createHttpTransport, createReadApi } from '@viz-cx/core'
 import { useWallet } from '@/lib/wallet'
+import { useToast } from '@/lib/toast'
 import { powerDown } from '@/lib/actions'
 import { NODE_ENDPOINTS } from '@/lib/config'
 import { formatUTC } from '@/lib/format'
@@ -21,19 +22,17 @@ interface PowerDownStatus {
 
 export function PowerDownModal({ open, onClose }: Props) {
   const wallet = useWallet()
+  const toast = useToast()
   const [amount, setAmount] = useState('')
   const [step, setStep] = useState<Step>('form')
   const [activeStatus, setActiveStatus] = useState<PowerDownStatus | null>(null)
   const [loadingStatus, setLoadingStatus] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [done, setDone] = useState(false)
-  const doneTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     if (!open) {
-      if (doneTimerRef.current) { clearTimeout(doneTimerRef.current); doneTimerRef.current = null }
-      setAmount(''); setStep('form'); setError(null); setDone(false); setActiveStatus(null)
+      setAmount(''); setStep('form'); setError(null); setActiveStatus(null)
     }
   }, [open])
 
@@ -63,10 +62,10 @@ export function PowerDownModal({ open, onClose }: Props) {
     setLoading(true); setError(null)
     try {
       await powerDown(wif, wallet.account!, '0.000000 SHARES')
-      setDone(true)
-      doneTimerRef.current = setTimeout(onClose, 1500)
+      toast.success('Power-down stopped')
+      onClose()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Transaction failed')
+      toast.error(err instanceof Error ? err.message : 'Transaction failed')
     } finally { setLoading(false) }
   }
 
@@ -84,11 +83,10 @@ export function PowerDownModal({ open, onClose }: Props) {
     setLoading(true); setError(null)
     try {
       await powerDown(wif, wallet.account!, `${parseFloat(amount).toFixed(6)} SHARES`)
-      setDone(true)
-      doneTimerRef.current = setTimeout(onClose, 1500)
+      toast.success('Power-down started')
+      onClose()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Transaction failed')
-      setStep('form')
+      toast.error(err instanceof Error ? err.message : 'Transaction failed')
     } finally { setLoading(false) }
   }
 
@@ -96,10 +94,7 @@ export function PowerDownModal({ open, onClose }: Props) {
 
   return (
     <ModalShell open={open} onClose={onClose} title="Power Down (SHARES → VIZ)">
-        {done ? (
-          <p className="py-6 text-center font-mono text-sm text-acc-green">✓ Done</p>
-        ) : (
-          <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4">
             {loadingStatus && <p className="font-prose text-xs text-fg-dim">Checking status…</p>}
 
             {activeStatus && (
@@ -160,7 +155,6 @@ export function PowerDownModal({ open, onClose }: Props) {
               </form>
             )}
           </div>
-        )}
     </ModalShell>
   )
 }
