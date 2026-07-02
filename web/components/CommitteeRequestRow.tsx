@@ -13,6 +13,7 @@ import {
 } from '@/lib/committee'
 import { CommitteeVoteModal } from './CommitteeVoteModal'
 import { CancelProposalModal } from './CancelProposalModal'
+import { formatAsset } from '@/lib/format'
 
 interface Props {
   request: CommitteeRequest
@@ -59,7 +60,7 @@ export function CommitteeRequestRow({ request }: Props) {
           <span className="min-w-0 flex-1 truncate font-mono text-sm text-fg">{truncateUrl(request.url)}</span>
           <span className="shrink-0 font-prose text-xs text-fg-dim">@{request.creator}</span>
           <span className="shrink-0 whitespace-nowrap font-mono text-xs text-fg-dim">
-            {request.required_amount_max} · {isActive ? daysLeft(request.end_time) : statusLabel}
+            {formatAsset(request.required_amount_max)} · {isActive ? daysLeft(request.end_time) : statusLabel}
           </span>
           <span className="shrink-0 whitespace-nowrap font-mono text-xs text-fg-dim">
             {request.votes_count} {request.votes_count === 1 ? 'vote' : 'votes'}
@@ -78,7 +79,7 @@ export function CommitteeRequestRow({ request }: Props) {
                 className="break-all font-mono text-xs text-acc-green hover:underline"
               >{request.url}</a>
               <p className="font-prose text-xs text-fg-dim">
-                Amount: <span className="font-mono text-fg">{request.required_amount_min}–{request.required_amount_max}</span>
+                Amount: <span className="font-mono text-fg">{formatAsset(request.required_amount_min)}–{formatAsset(request.required_amount_max)}</span>
                 {' · '}Creator: <span className="font-mono text-fg">@{request.creator}</span>
                 {' · '}Worker: <span className="font-mono text-fg">@{request.worker}</span>
                 {' · '}Status: <span className="font-mono text-fg">{statusLabel}</span>
