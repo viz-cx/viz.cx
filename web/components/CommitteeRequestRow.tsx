@@ -13,7 +13,7 @@ import {
 } from '@/lib/committee'
 import { CommitteeVoteModal } from './CommitteeVoteModal'
 import { CancelProposalModal } from './CancelProposalModal'
-import { formatAsset } from '@/lib/format'
+import { formatAsset, formatAssetRange } from '@/lib/format'
 
 interface Props {
   request: CommitteeRequest
@@ -79,7 +79,7 @@ export function CommitteeRequestRow({ request }: Props) {
                 className="break-all font-mono text-xs text-acc-green hover:underline"
               >{request.url}</a>
               <p className="font-prose text-xs text-fg-dim">
-                Amount: <span className="font-mono text-fg">{formatAsset(request.required_amount_min)}–{formatAsset(request.required_amount_max)}</span>
+                Amount: <span className="font-mono text-fg">{formatAssetRange(request.required_amount_min, request.required_amount_max)}</span>
                 {' · '}Creator: <span className="font-mono text-fg">@{request.creator}</span>
                 {' · '}Worker: <span className="font-mono text-fg">@{request.worker}</span>
                 {' · '}Status: <span className="font-mono text-fg">{statusLabel}</span>

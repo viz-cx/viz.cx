@@ -47,6 +47,24 @@ export function formatAsset(
   return `${num(assetAmount(asset), fractionDigits)} ${symbol}`;
 }
 
+/** Group-separated number with trailing zeros trimmed ("500000.000" → "500,000", "1.5" → "1.5"). */
+export function numTrim(value: number, maxFractionDigits = 3): string {
+  if (!Number.isFinite(value)) return "0";
+  return value.toLocaleString("en-US", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: maxFractionDigits,
+  });
+}
+
+/** A min–max asset range with a single trailing symbol, e.g. "0–500,000 VIZ". */
+export function formatAssetRange(
+  min: string | number | null | undefined,
+  max: string | number | null | undefined,
+  symbol = "VIZ",
+): string {
+  return `${numTrim(assetAmount(min))}–${numTrim(assetAmount(max))} ${symbol}`;
+}
+
 /**
  * SHARES → VIZ at the current vesting rate. `fund` and `shares` are the chain's
  * total_vesting_fund and total_vesting_shares (strings or numbers).
