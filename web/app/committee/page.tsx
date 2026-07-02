@@ -11,6 +11,7 @@ import {
 } from '@/lib/committee'
 import { CommitteeRequestRow } from '@/components/CommitteeRequestRow'
 import { CreateProposalModal } from '@/components/CreateProposalModal'
+import { formatAsset } from '@/lib/format'
 
 type Tab = 'active' | 'history' | 'all'
 
@@ -84,7 +85,7 @@ export default function CommitteePage() {
       <div className="mb-6 flex items-center justify-between">
         <div className="flex items-baseline gap-3">
           <h1 className="font-prose text-xl font-semibold tracking-tight sm:text-2xl text-fg">Committee</h1>
-          {fund && <span className="font-mono text-sm text-fg-dim">{fund} fund</span>}
+          {fund && <span className="font-mono text-sm text-fg-dim">{formatAsset(fund)} fund</span>}
         </div>
         <button
           onClick={() => {
