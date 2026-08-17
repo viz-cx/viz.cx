@@ -30,7 +30,11 @@ function renderBlock(b: EditorBlock): string {
     case 'delimiter': return '<hr>'
     case 'embed': {
       const url = String(d.embed ?? '')
-      try { if (!EMBED_HOSTS.includes(new URL(url).hostname)) return '' } catch { return '' }
+      try {
+        const u = new URL(url)
+        if (u.protocol !== 'https:' && u.protocol !== 'http:') return ''
+        if (!EMBED_HOSTS.includes(u.hostname)) return ''
+      } catch { return '' }
       return `<iframe src="${escapeHtml(url)}" loading="lazy" allowfullscreen sandbox="allow-scripts allow-same-origin allow-presentation"></iframe>`
     }
     default: return '' // unknown types render nothing — never crash the page

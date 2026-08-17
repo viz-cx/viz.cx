@@ -18,6 +18,8 @@ describe('renderBlocks', () => {
     expect(renderBlocks(doc([{ type: 'image', data: { file: { url: '/media/a.png' }, caption: 'c' } }])))
       .toBe('<figure><img src="/media/a.png" alt="" loading="lazy"><figcaption>c</figcaption></figure>')
     expect(renderBlocks(doc([{ type: 'image', data: { file: { url: 'https://evil/x.png' } } }]))).toBe('')
+    expect(renderBlocks(doc([{ type: 'image', data: { file: { url: 'data:image/png;base64,iVBORw0KG' } } }]))).toBe('')
+    expect(renderBlocks(doc([{ type: 'image', data: { file: { url: 'javascript:alert(1)' } } }]))).toBe('')
   })
   it('quote, delimiter', () => {
     expect(renderBlocks(doc([{ type: 'quote', data: { text: 'q', caption: 'a' } }])))
@@ -28,6 +30,8 @@ describe('renderBlocks', () => {
     const y = renderBlocks(doc([{ type: 'embed', data: { service: 'youtube', embed: 'https://www.youtube.com/embed/dQw4' } }]))
     expect(y).toContain('<iframe src="https://www.youtube.com/embed/dQw4"')
     expect(renderBlocks(doc([{ type: 'embed', data: { service: 'x', embed: 'https://evil/e' } }]))).toBe('')
+    expect(renderBlocks(doc([{ type: 'embed', data: { service: 'youtube', embed: 'javascript://youtube.com/%0aalert(1)' } }]))).toBe('')
+    expect(renderBlocks(doc([{ type: 'embed', data: { service: 'youtube', embed: 'data:text/html,<script>alert(1)</script>' } }]))).toBe('')
   })
   it('unknown block renders nothing, never throws', () =>
     expect(renderBlocks(doc([{ type: 'wat', data: {} }, { type: 'paragraph', data: { text: 'x' } }]))).toBe('<p>x</p>'))
