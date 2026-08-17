@@ -14,6 +14,16 @@ const SECURITY_HEADERS = [
 ];
 
 const nextConfig: NextConfig = {
+  output: "standalone", // Docker: .next/standalone/server.js, see Dockerfile
+  // next/dist requires "@swc/helpers/_/_interop_require_default", which Node
+  // >=22.12 resolves through the `module-sync` condition to esm/*.js — but the
+  // output tracer only copies that package's cjs/, so the standalone server
+  // dies at boot with MODULE_NOT_FOUND. Force the esm files in. Path is the
+  // pnpm store layout (Docker installs with pnpm too); drop this if a future
+  // Next release traces the module-sync condition itself.
+  outputFileTracingIncludes: {
+    "**/*": ["node_modules/.pnpm/@swc+helpers*/node_modules/@swc/helpers/esm/**"],
+  },
   async headers() {
     return [{ source: "/:path*", headers: SECURITY_HEADERS }];
   },

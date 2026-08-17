@@ -1,0 +1,71 @@
+# Kamal deploy config for the viz.cx UGC platform — Next.js (standalone), the
+# whole app (SSR pages + API routes) in one container:
+#
+#   kamal deploy
+#
+# Same box as everything else VIZ (axveer). Separate Kamal app from the explorer
+# frontend (network.viz.cx repo, config/deploy.web.yml) and from the API
+# (network.viz.cx repo, config/deploy.yml) — three independent services.
+#
+# CUTOVER: starts on beta.viz.cx because kamal-proxy refuses duplicate hosts and
+# the explorer frontend still owns viz.cx. To take the apex: drop `viz.cx` from
+# the explorer's config/deploy.web.yml hosts + deploy it, then swap `host:` and
+# `SITE_URL` below to viz.cx and deploy this. Explorer deep links (/wallet,
+# /block/... etc.) 301 to network.viz.cx from proxy.ts, so the apex can move
+# without breaking them.
+#
+# Data: shared platform MongoDB, db `viz-cx-platform` (its own app user, not the
+# API's). Mongo is on platform_net, not Kamal's network — hostname `mongo`
+# resolves at container boot via platform-up.sh's bridge, and .kamal/hooks/
+# post-deploy attaches platform_net afterwards (same pattern as the API).
+
+service: viz-cx-platform
+image:   chiliec/viz-cx-platform    # GHCR: composed to ghcr.io/chiliec/viz-cx-platform via registry.server
+
+servers:
+  web:
+    hosts:
+      - 5.223.75.86               # axveer VPS public IPv4
+
+ssh:
+  user: deploy
+  port: 666                       # hardened sshd per infra inventory.yml
+
+proxy:
+  hosts:
+    - beta.viz.cx                 # needs an A record → 5.223.75.86 before first deploy
+  app_port: 3000
+  ssl: true
+  healthcheck:
+    path: /                       # home feed — hits mongo, so it fails closed if
+                                  # the platform_net bridge is broken
+
+registry:
+  server: ghcr.io
+  username: chiliec
+  password:
+    - KAMAL_REGISTRY_PASSWORD     # GHCR PAT (write:packages) — SOPS shared.enc.yaml docker_registry_password
+
+env:
+  clear:
+    NODE_ENV: production
+    MONGO_DB: viz-cx-platform     # must match the db MONGO_URL's user is authorised for
+    SITE_URL: https://beta.viz.cx # swap to https://viz.cx at cutover (OG tags, RSS, sitemap)
+    MEDIA_DIR: /app/media         # uploaded images — the volume below
+    ADMIN_ACCOUNTS: babin         # VIZ accounts allowed to edit/delete any post
+    # VIZ_RPC_HTTP / API_BASE use their code defaults (rpc.viz.cx / api.viz.cx).
+    # NEXT_PUBLIC_* are inlined at build time, so setting them here would do
+    # nothing — their defaults are already the production hosts.
+  secret:
+    - MONGO_URL                   # full mongodb:// URI incl. app-user creds
+
+volumes:
+  - /opt/viz-platform-media:/app/media   # uploads must outlive the container
+
+builder:
+  arch: amd64
+  remote: ssh://axveer-builder   # native amd64 build on martin, not the laptop. Bare
+  local: false                   # user/port fall back to ssh: above (deploy/666) +
+                                 # ~/.ssh/config axveer-builder host. See infra
+                                 # docs/runbook-remote-builder.md.
+                                 # context/dockerfile default to the repo root.

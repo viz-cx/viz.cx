@@ -1,0 +1,9 @@
+node_modules
+.next
+media
+.git
+.superpowers
+tests
+*.tsbuildinfo
+.env*
+!.env.example
