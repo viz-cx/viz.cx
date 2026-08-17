@@ -1,7 +1,8 @@
 import Link from 'next/link'
 import { t, langHref } from '@/lib/i18n'
 import type { Lang } from '@/lib/types'
-export default function Header({ lang }: { lang: Lang }) {
+import LogoutButton from './logout-button'
+export default function Header({ lang, account }: { lang: Lang; account: string | null }) {
   const other: Lang = lang === 'en' ? 'ru' : 'en'
   return (
     <header className="border-b border-neutral-800">
@@ -12,7 +13,14 @@ export default function Header({ lang }: { lang: Lang }) {
         <span className="ml-auto" />
         <Link href={langHref(lang, '/write')}>{t(lang, 'nav.write')}</Link>
         <Link href={langHref(other, '/')}>{other.toUpperCase()}</Link>
-        <Link href={langHref(lang, '/login')}>{t(lang, 'nav.login')}</Link>
+        {account ? (
+          <>
+            <span className="text-neutral-400">@{account}</span>
+            <LogoutButton lang={lang} />
+          </>
+        ) : (
+          <Link href={langHref(lang, '/login')}>{t(lang, 'nav.login')}</Link>
+        )}
       </nav>
     </header>
   )
