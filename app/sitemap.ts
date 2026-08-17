@@ -3,7 +3,7 @@ import { LANGS, langHref } from '@/lib/i18n'
 import { listPosts, publicPostFilter } from '@/lib/queries'
 import { posts } from '@/lib/db'
 
-export const revalidate = 3600
+export const dynamic = 'force-dynamic'
 
 const SITE_URL = process.env.SITE_URL ?? 'https://viz.cx'
 
