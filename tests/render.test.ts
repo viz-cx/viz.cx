@@ -11,6 +11,12 @@ describe('renderBlocks', () => {
   it('lists', () =>
     expect(renderBlocks(doc([{ type: 'list', data: { style: 'ordered', items: ['a', 'b'] } }])))
       .toBe('<ol><li>a</li><li>b</li></ol>'))
+  it('lists render {content} object items (actual @editorjs/list@2.0.9 saved shape), recursing into nested sub-lists', () =>
+    expect(renderBlocks(doc([{ type: 'list', data: { style: 'unordered', items: [
+      { content: 'a', items: [] },
+      { content: 'b', items: [{ content: 'nested', items: [] }] },
+    ] } }])))
+      .toBe('<ul><li>a</li><li>b<ul><li>nested</li></ul></li></ul>'))
   it('code is escaped', () =>
     expect(renderBlocks(doc([{ type: 'code', data: { code: '<script>' } }])))
       .toBe('<pre><code>&lt;script&gt;</code></pre>'))

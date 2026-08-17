@@ -25,4 +25,17 @@ describe('sanitizeDoc', () => {
     expect(out.blocks[0].data.items).toEqual(['a', '<b>b</b>'])
     expect(out.blocks[1].data.text).toBe('q')
   })
+  it('sanitizes {content} object list items (actual @editorjs/list@2.0.9 saved shape), recursing into nested items', () => {
+    const doc = { blocks: [
+      { type: 'list', data: { style: 'unordered', items: [
+        { content: '<script>alert(1)</script>a', items: [] },
+        { content: '<b>b</b>', items: [{ content: '<img src=x onerror=p()>nested', items: [] }] },
+      ] } },
+    ] }
+    const out = sanitizeDoc(doc)
+    const items = out.blocks[0].data.items as { content: string; items: { content: string }[] }[]
+    expect(items[0].content).toBe('a')
+    expect(items[1].content).toBe('<b>b</b>')
+    expect(items[1].items[0].content).toBe('nested')
+  })
 })

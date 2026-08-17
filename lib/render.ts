@@ -3,6 +3,26 @@ export function escapeHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 }
 const EMBED_HOSTS = ['www.youtube.com', 'youtube.com', 'player.vimeo.com']
+// @editorjs/list@2.0.9 saves items as { content: string; items: ListItem[] } objects (items nest for sub-lists),
+// not plain strings — render item.content and recurse into nested items as a sub-<ul>/<ol>.
+function renderList(items: unknown[], style: string): string {
+  const tag = style === 'ordered' ? 'ol' : 'ul'
+  return `<${tag}>${renderListItems(items, style)}</${tag}>`
+}
+function renderListItems(items: unknown[], parentStyle: string): string {
+  return items.map(i => {
+    if (typeof i === 'string') return `<li>${i}</li>`
+    if (i && typeof i === 'object') {
+      const item = i as Record<string, unknown>
+      const content = typeof item.content === 'string' ? item.content : ''
+      const subItems = Array.isArray(item.items) ? item.items : []
+      const style = typeof item.style === 'string' ? item.style : parentStyle
+      const sub = subItems.length ? renderList(subItems, style) : ''
+      return `<li>${content}${sub}</li>`
+    }
+    return '<li></li>'
+  }).join('')
+}
 function renderBlock(b: EditorBlock): string {
   const d = b.data as Record<string, unknown>
   switch (b.type) {
@@ -11,11 +31,7 @@ function renderBlock(b: EditorBlock): string {
       const l = Math.min(Math.max(Number(d.level) || 2, 2), 4)
       return `<h${l}>${String(d.text ?? '')}</h${l}>`
     }
-    case 'list': {
-      const tag = d.style === 'ordered' ? 'ol' : 'ul'
-      const items = (Array.isArray(d.items) ? d.items : []).map(i => `<li>${typeof i === 'string' ? i : ''}</li>`).join('')
-      return `<${tag}>${items}</${tag}>`
-    }
+    case 'list': return renderList(Array.isArray(d.items) ? d.items : [], typeof d.style === 'string' ? d.style : '')
     case 'code': return `<pre><code>${escapeHtml(String(d.code ?? ''))}</code></pre>`
     case 'quote': {
       const cite = d.caption ? `<cite>${String(d.caption)}</cite>` : ''
