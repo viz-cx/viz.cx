@@ -17,6 +17,12 @@ export const metadata: Metadata = {
   description: "viz.cx",
 };
 
+// Required for per-request CSP nonces (proxy.ts) — Next only stamps the nonce
+// from the request's Content-Security-Policy header onto framework/page
+// <script> tags when the page is dynamically rendered. Statically prerendered
+// HTML would carry no nonce and its inline scripts would be blocked by CSP.
+export const dynamic = "force-dynamic";
+
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
