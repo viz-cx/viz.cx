@@ -3,6 +3,8 @@ import type { Metadata } from 'next'
 import { isLang, langHref } from '@/lib/i18n'
 import { parseHandle, getPost } from '@/lib/queries'
 import { renderBlocks } from '@/lib/render'
+import { getSessionAccount } from '@/lib/session'
+import Comments from '@/components/comments'
 import Link from 'next/link'
 type Params = Promise<{ lang: string; handle: string; slug: string }>
 async function load(params: Params) {
@@ -24,6 +26,7 @@ export default async function PostPage({ params }: { params: Params }) {
   const r = await load(params)
   if (!r) notFound()
   const { post, lang } = r
+  const me = await getSessionAccount()
   return (
     <article>
       <h1 className="text-3xl font-bold">{post.title}</h1>
@@ -32,7 +35,8 @@ export default async function PostPage({ params }: { params: Params }) {
       </p>
       <div className="prose prose-invert mt-6" dangerouslySetInnerHTML={{ __html: renderBlocks(post.blocks) }} />
       <p className="mt-6 text-sm opacity-60">{post.tags.map(t => <Link key={t} href={langHref(lang, `/tag/${t}`)} className="mr-2">#{t}</Link>)}</p>
-      {/* AwardButton (Task 11) and Comments (Task 10) mount here */}
+      {/* AwardButton (Task 11) mounts here */}
+      <Comments postId={post._id!} lang={lang} me={me} />
     </article>
   )
 }
