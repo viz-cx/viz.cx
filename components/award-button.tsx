@@ -67,7 +67,7 @@ export default function AwardButton({ post, lang, totals }: {
           <input
             type="number" min={1} max={100} value={custom}
             onChange={e => setCustom(e.target.value)}
-            placeholder="custom %"
+            placeholder={t(lang, 'post.customPct')}
             className="rounded border border-neutral-700 bg-transparent p-2 text-sm"
           />
           {err && <p className="text-red-400 text-sm">{err}</p>}
