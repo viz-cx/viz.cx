@@ -5,9 +5,11 @@ import { validatePostInput } from '@/lib/post-io'
 import { sanitizeDoc } from '@/lib/sanitize'
 import { uniqueSlug } from '@/lib/slug'
 import { excerptOf } from '@/lib/excerpt'
+import { rateLimit } from '@/lib/rate-limit'
 export async function POST(req: NextRequest) {
   const author = await getSessionAccount()
   if (!author) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
+  if (!rateLimit(`post:${author}`, 5, 60_000)) return NextResponse.json({ error: 'rate limited' }, { status: 429 })
   const input = validatePostInput(await req.json().catch(() => null))
   if (!input) return NextResponse.json({ error: 'invalid post' }, { status: 400 })
   const blocks = sanitizeDoc(input.blocks)

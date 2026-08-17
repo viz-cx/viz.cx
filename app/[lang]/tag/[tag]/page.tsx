@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation'
-import { isLang } from '@/lib/i18n'
+import { isLang, t } from '@/lib/i18n'
 import { listPosts, publicPostFilter } from '@/lib/queries'
 import PostCard from '@/components/post-card'
 export default async function TagPage({ params }: { params: Promise<{ lang: string; tag: string }> }) {
@@ -9,7 +9,7 @@ export default async function TagPage({ params }: { params: Promise<{ lang: stri
   return (
     <div className="flex flex-col gap-3">
       <h1 className="text-2xl font-bold">#{tag}</h1>
-      {items.length === 0 ? <p className="opacity-60">No posts yet.</p> : items.map(p => <PostCard key={String(p._id)} post={p} lang={lang} />)}
+      {items.length === 0 ? <p className="opacity-60">{t(lang, 'tag.empty')}</p> : items.map(p => <PostCard key={String(p._id)} post={p} lang={lang} />)}
     </div>
   )
 }

@@ -3,6 +3,8 @@ import { LANGS, langHref } from '@/lib/i18n'
 import { listPosts, publicPostFilter } from '@/lib/queries'
 import { posts } from '@/lib/db'
 
+export const revalidate = 3600
+
 const SITE_URL = process.env.SITE_URL ?? 'https://viz.cx'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {

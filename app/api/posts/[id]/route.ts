@@ -5,6 +5,7 @@ import { getSessionAccount } from '@/lib/session'
 import { validatePostInput } from '@/lib/post-io'
 import { sanitizeDoc } from '@/lib/sanitize'
 import { excerptOf } from '@/lib/excerpt'
+import { rateLimit } from '@/lib/rate-limit'
 const isAdmin = (a: string) => (process.env.ADMIN_ACCOUNTS ?? '').split(',').includes(a)
 async function authorize(id: string) {
   const account = await getSessionAccount()
@@ -17,6 +18,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   const { id } = await params
   const auth = await authorize(id)
   if (!auth) return NextResponse.json({ error: 'not found' }, { status: 404 })
+  if (!rateLimit(`post-edit:${auth.account}`, 5, 60_000)) return NextResponse.json({ error: 'rate limited' }, { status: 429 })
   const input = validatePostInput(await req.json().catch(() => null))
   if (!input) return NextResponse.json({ error: 'invalid post' }, { status: 400 })
   const blocks = sanitizeDoc(input.blocks)
@@ -28,6 +30,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   const { id } = await params
   const auth = await authorize(id)
   if (!auth) return NextResponse.json({ error: 'not found' }, { status: 404 })
+  if (!rateLimit(`post-edit:${auth.account}`, 5, 60_000)) return NextResponse.json({ error: 'rate limited' }, { status: 429 })
   await posts().updateOne({ _id: auth.post._id }, { $set: { deletedAt: new Date() } })
   return new NextResponse(null, { status: 204 })
 }
