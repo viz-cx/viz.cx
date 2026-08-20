@@ -10,7 +10,7 @@ export default async function LangLayout({ children, params }: { children: React
   return (
     <WalletProvider>
       <Header lang={lang} account={account} />
-      <main className="mx-auto max-w-2xl px-4 py-6">{children}</main>
+      <main className="mx-auto max-w-4xl px-4 py-6">{children}</main>
     </WalletProvider>
   )
 }

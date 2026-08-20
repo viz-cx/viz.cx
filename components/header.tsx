@@ -6,7 +6,7 @@ export default function Header({ lang, account }: { lang: Lang; account: string 
   const other: Lang = lang === 'en' ? 'ru' : 'en'
   return (
     <header className="border-b border-neutral-800">
-      <nav className="mx-auto max-w-2xl flex items-center gap-4 px-4 py-3">
+      <nav className="mx-auto max-w-4xl flex items-center gap-4 px-4 py-3">
         <Link href={langHref(lang, '/')} className="font-bold">viz.cx</Link>
         <Link href={langHref(lang, '/')}>{t(lang, 'nav.latest')}</Link>
         <Link href={langHref(lang, '/feed')}>{t(lang, 'nav.feed')}</Link>
