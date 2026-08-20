@@ -25,7 +25,7 @@ export default function LoginForm({ lang }: { lang: Lang }) {
     } catch (e) { setErr(e instanceof Error ? e.message : 'failed') } finally { setBusy(false) }
   }
   return (
-    <form onSubmit={submit} className="flex flex-col gap-3 max-w-sm">
+    <form onSubmit={submit} className="mx-auto flex w-full max-w-sm flex-col gap-3">
       <input value={account} onChange={e => setAccount(e.target.value.trim().toLowerCase())} placeholder="account" className="rounded border border-neutral-700 bg-transparent p-2" autoComplete="username" />
       <input value={wif} onChange={e => setWif(e.target.value.trim())} placeholder="regular key (WIF)" type="password" className="rounded border border-neutral-700 bg-transparent p-2" autoComplete="current-password" />
       {err && <p className="text-red-400 text-sm">{err}</p>}
