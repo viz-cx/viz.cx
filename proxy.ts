@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-// Old explorer deep links 301 to network.viz.cx (migration spec step 5)
+// Old explorer deep links 301 to explorer.viz.cx (migration spec step 5)
 const EXPLORER = /^\/(block|tx|account|validators?|committee|wallet|richlist|dashboard|learn)(\/|$)/
+// Cert-only alias hosts (config/deploy.yml proxy.hosts) — 308 to the apex.
+// beta.viz.cx is the pre-cutover host, kept for a grace window.
+const ALIAS_HOSTS = new Set(['www.viz.cx', 'beta.viz.cx'])
 
 // Per-request Content-Security-Policy with a fresh nonce. A nonce lets us drop
 // 'unsafe-inline' from script-src while still allowing Next's own inline
@@ -44,8 +47,15 @@ export default function proxy(req: NextRequest) {
   const nonce = Buffer.from(crypto.randomUUID()).toString('base64')
   const csp = buildCsp(nonce, process.env.NODE_ENV === 'development')
 
+  const host = req.headers.get('host')
+  if (host && ALIAS_HOSTS.has(host)) {
+    const res = NextResponse.redirect(`https://viz.cx${p}${url.search}`, 308)
+    res.headers.set('Content-Security-Policy', csp)
+    return res
+  }
+
   if (EXPLORER.test(p)) {
-    const res = NextResponse.redirect(`https://network.viz.cx${p}${url.search}`, 301)
+    const res = NextResponse.redirect(`https://explorer.viz.cx${p}${url.search}`, 301)
     res.headers.set('Content-Security-Policy', csp)
     return res
   }

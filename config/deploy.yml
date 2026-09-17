@@ -7,12 +7,11 @@
 # frontend (network.viz.cx repo, config/deploy.web.yml) and from the API
 # (network.viz.cx repo, config/deploy.yml) — three independent services.
 #
-# CUTOVER: starts on beta.viz.cx because kamal-proxy refuses duplicate hosts and
-# the explorer frontend still owns viz.cx. To take the apex: drop `viz.cx` from
-# the explorer's config/deploy.web.yml hosts + deploy it, then swap `host:` and
-# `SITE_URL` below to viz.cx and deploy this. Explorer deep links (/wallet,
-# /block/... etc.) 301 to network.viz.cx from proxy.ts, so the apex can move
-# without breaking them.
+# Hosts: viz.cx apex (canonical) + www.viz.cx + beta.viz.cx. The two aliases are
+# cert-only — proxy.ts 308s them to the apex. beta.viz.cx is the pre-cutover
+# (2026-08 → 2026-09) host, kept for a grace window; drop it from here + DNS
+# once traffic is gone. Explorer deep links (/wallet, /block/... etc.) 301 to
+# explorer.viz.cx from proxy.ts.
 #
 # Data: shared platform MongoDB, db `viz-cx-platform` (its own app user, not the
 # API's). Mongo is on platform_net, not Kamal's network — hostname `mongo`
@@ -33,7 +32,9 @@ ssh:
 
 proxy:
   hosts:
-    - beta.viz.cx                 # needs an A record → 5.223.75.86 before first deploy
+    - viz.cx                      # canonical
+    - www.viz.cx                  # alias — proxy.ts 308s it to the apex
+    - beta.viz.cx                 # alias, grace window
   app_port: 3000
   ssl: true
   healthcheck:
@@ -50,7 +51,7 @@ env:
   clear:
     NODE_ENV: production
     MONGO_DB: viz-cx-platform     # must match the db MONGO_URL's user is authorised for
-    SITE_URL: https://beta.viz.cx # swap to https://viz.cx at cutover (OG tags, RSS, sitemap)
+    SITE_URL: https://viz.cx      # absolute URLs in OG tags, RSS, sitemap, robots
     MEDIA_DIR: /app/media         # uploaded images — the volume below
     ADMIN_ACCOUNTS: babin         # VIZ accounts allowed to edit/delete any post
     # VIZ_RPC_HTTP / API_BASE use their code defaults (rpc.viz.cx / api.viz.cx).
