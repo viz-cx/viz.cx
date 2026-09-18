@@ -26,7 +26,12 @@ export default function Editor({ lang: uiLang }: { lang: Lang }) {
     })()
     return () => { dead = true; editor.current?.destroy?.(); editor.current = null }
   }, [])
+  // `busy` drives the disabled attribute, but it is React state: two clicks in
+  // one tick both read the old value. The ref is the actual lock.
+  const inflight = useRef(false)
   async function save(status: 'draft' | 'published') {
+    if (inflight.current) return
+    inflight.current = true
     setBusy(true); setErr(null)
     try {
       const blocks = await editor.current!.save()
@@ -34,7 +39,10 @@ export default function Editor({ lang: uiLang }: { lang: Lang }) {
       const j = await res.json()
       if (!res.ok) throw new Error(j.error ?? 'save failed')
       router.push(status === 'published' ? langHref(postLang, `/@${j.author}/${j.slug}`) : langHref(uiLang, `/@${j.author}`))
-    } catch (e) { setErr(e instanceof Error ? e.message : 'failed') } finally { setBusy(false) }
+    // Deliberately not a `finally`: on success the post exists and router.push
+    // is still in flight, so unlocking would re-arm the button for the whole
+    // client-side navigation — that is what duplicated posts.
+    } catch (e) { setErr(e instanceof Error ? e.message : 'failed'); inflight.current = false; setBusy(false) }
   }
   return (
     <div className="flex flex-col gap-3">
