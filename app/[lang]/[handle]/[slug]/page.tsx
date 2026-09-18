@@ -39,7 +39,7 @@ export default async function PostPage({ params }: { params: Params }) {
       <div className="prose prose-invert mt-6" dangerouslySetInnerHTML={{ __html: renderBlocks(post.blocks) }} />
       <p className="mt-6 text-sm opacity-60">{post.tags.map(t => <Link key={t} href={langHref(lang, `/tag/${t}`)} className="mr-2">#{t}</Link>)}</p>
       <AwardButton post={post} lang={lang} totals={totals} />
-      <Comments postId={post._id!} lang={lang} me={me} />
+      <Comments postId={post.id} lang={lang} me={me} />
     </article>
   )
 }
