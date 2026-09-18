@@ -106,6 +106,13 @@ federation
     }))
     return { items }
   })
+  // Without a counter the collection carries no totalItems, and that is the
+  // only number Mastodon has to render a remote profile's follower count — it
+  // would sit at 0 no matter how many followers the account has.
+  .setCounter(async (_ctx, identifier) => {
+    const [row] = await sql<{ n: string }[]>`select count(*) as n from ap_followers where account = ${identifier}`
+    return Number(row.n)
+  })
 
 // The AP id of what a comment replies to: the remote Note when the parent came
 // from the fediverse, otherwise our own Note or Article. Shared with ap-send.
