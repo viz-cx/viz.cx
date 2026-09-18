@@ -7,7 +7,11 @@ import { CommentForm, ReplyToggle } from './comment-form'
 function CommentItem({ c }: { c: CommentDoc }) {
   return (
     <div className="rounded border border-neutral-800 p-3">
-      <p className="text-xs opacity-60">@{c.author} · {c.createdAt.toISOString().slice(0, 10)}</p>
+      {/* Remote handle is text only: no profile link, no avatar — nothing
+          remote is fetched or stored, so CSP img-src stays 'self' data:. */}
+      <p className="text-xs opacity-60">
+        {c.remoteActor ? c.remoteHandle : `@${c.author}`} · {c.createdAt.toISOString().slice(0, 10)}
+      </p>
       <p className="mt-1 text-sm whitespace-pre-wrap">{c.body}</p>
     </div>
   )

@@ -6,12 +6,14 @@ export const dict = {
         'post.award': 'Award VIZ', 'post.awardsLabel': 'awards', 'post.customPct': 'custom %', 'post.comments': 'Comments', 'post.follow': 'Follow', 'post.unfollow': 'Unfollow',
         'write.title': 'Title', 'write.publish': 'Publish', 'write.draft': 'Save draft', 'write.tags': 'Tags (comma-separated)',
         'comments.reply': 'Reply', 'comments.cancel': 'Cancel', 'comments.submit': 'Post', 'comments.placeholder': 'Write a comment…', 'comments.login': 'Log in to comment',
-        'nav.older': 'Older →', 'feed.empty': 'Follow some authors — their posts appear here.', 'tag.empty': 'No posts yet.', 'profile.drafts': 'Drafts' },
+        'nav.older': 'Older →', 'feed.empty': 'Follow some authors — their posts appear here.', 'tag.empty': 'No posts yet.', 'profile.drafts': 'Drafts',
+        'post.fediverse': '{likes} likes · {boosts} boosts from the fediverse' },
   ru: { 'nav.latest': 'Свежее', 'nav.feed': 'Лента', 'nav.write': 'Написать', 'nav.login': 'Войти', 'nav.logout': 'Выйти',
         'post.award': 'Наградить VIZ', 'post.awardsLabel': 'наград', 'post.customPct': 'свой %', 'post.comments': 'Комментарии', 'post.follow': 'Подписаться', 'post.unfollow': 'Отписаться',
         'write.title': 'Заголовок', 'write.publish': 'Опубликовать', 'write.draft': 'Сохранить черновик', 'write.tags': 'Теги (через запятую)',
         'comments.reply': 'Ответить', 'comments.cancel': 'Отмена', 'comments.submit': 'Отправить', 'comments.placeholder': 'Написать комментарий…', 'comments.login': 'Войдите, чтобы оставить комментарий',
-        'nav.older': 'Старее →', 'feed.empty': 'Подпишитесь на авторов — их посты появятся здесь.', 'tag.empty': 'Постов пока нет.', 'profile.drafts': 'Черновики' },
+        'nav.older': 'Старее →', 'feed.empty': 'Подпишитесь на авторов — их посты появятся здесь.', 'tag.empty': 'Постов пока нет.', 'profile.drafts': 'Черновики',
+        'post.fediverse': '{likes} лайков · {boosts} репостов из федивёрса' },
 } as const satisfies Record<Lang, Record<string, string>>
 export type DictKey = keyof typeof dict.en
 export const t = (lang: Lang, key: DictKey): string => dict[lang][key] ?? key
