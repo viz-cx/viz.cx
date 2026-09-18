@@ -1,10 +1,11 @@
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
-import { isLang, langHref } from '@/lib/i18n'
+import { isLang, langHref, t } from '@/lib/i18n'
 import { parseHandle, getPost } from '@/lib/queries'
 import { renderBlocks } from '@/lib/render'
 import { getSessionAccount } from '@/lib/session'
 import { awardMemo, fetchAwardTotals } from '@/lib/awards'
+import { reactionCounts } from '@/lib/ap-inbound'
 import AwardButton from '@/components/award-button'
 import Comments from '@/components/comments'
 import Link from 'next/link'
@@ -30,6 +31,7 @@ export default async function PostPage({ params }: { params: Params }) {
   const { post, lang } = r
   const me = await getSessionAccount()
   const totals = await fetchAwardTotals(awardMemo(post), post.author)
+  const reactions = await reactionCounts(post.id)
   return (
     <article>
       <h1 className="text-3xl font-bold">{post.title}</h1>
@@ -37,8 +39,13 @@ export default async function PostPage({ params }: { params: Params }) {
         <Link href={langHref(lang, `/@${post.author}`)}>@{post.author}</Link> · {post.createdAt.toISOString().slice(0, 10)}
       </p>
       <div className="prose prose-invert mt-6" dangerouslySetInnerHTML={{ __html: renderBlocks(post.blocks) }} />
-      <p className="mt-6 text-sm opacity-60">{post.tags.map(t => <Link key={t} href={langHref(lang, `/tag/${t}`)} className="mr-2">#{t}</Link>)}</p>
+      <p className="mt-6 text-sm opacity-60">{post.tags.map(tag => <Link key={tag} href={langHref(lang, `/tag/${tag}`)} className="mr-2">#{tag}</Link>)}</p>
       <AwardButton post={post} lang={lang} totals={totals} />
+      {(reactions.likes > 0 || reactions.boosts > 0) && (
+        <p className="mt-2 text-sm opacity-60">
+          {t(lang, 'post.fediverse').replace('{likes}', String(reactions.likes)).replace('{boosts}', String(reactions.boosts))}
+        </p>
+      )}
       <Comments postId={post.id} lang={lang} me={me} />
     </article>
   )

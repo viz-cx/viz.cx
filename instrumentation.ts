@@ -10,6 +10,14 @@ export async function register() {
     // scripts/ from. Idempotent; fails closed so a deploy that can't reach
     // Postgres never passes its healthcheck.
     await (await import('./lib/db')).ensureSchema()
+    // Fedify's own tables, then the single worker that drains outbound
+    // deliveries and inbox processing. createFederation(manuallyStartQueue)
+    // means nothing moves until this runs. startQueue() never resolves — do not
+    // await it, or register() blocks forever and the container never serves.
+    const { default: federation, kv, queue } = await import('./lib/federation')
+    await kv.initialize()
+    await queue.initialize()
+    void federation.startQueue().catch((e: unknown) => { Sentry.captureException(e) })
   }
   if (process.env.NEXT_RUNTIME === 'edge') {
     await import('./sentry.edge.config')

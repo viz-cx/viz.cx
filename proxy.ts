@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { fedifyWith, integrateFederation } from '@fedify/next'
+import federation from './lib/federation'
 
 // Old explorer deep links 301 to explorer.viz.cx (migration spec step 5)
 const EXPLORER = /^\/(block|tx|account|validators?|committee|wallet|richlist|dashboard|learn)(\/|$)/
@@ -40,7 +42,9 @@ function buildCsp(nonce: string, isDev: boolean): string {
   ].join('; ')
 }
 
-export default function proxy(req: NextRequest) {
+// The app's own logic. Not the export Next calls — `proxy` below wraps this in
+// Fedify. Exported so tests can exercise the redirect/rewrite rules directly.
+export function appProxy(req: NextRequest) {
   const url = req.nextUrl.clone()
   const p = url.pathname
   const nonce = Buffer.from(crypto.randomUUID()).toString('base64')
@@ -80,4 +84,34 @@ export default function proxy(req: NextRequest) {
   res.headers.set('Content-Security-Policy', csp)
   return res
 }
+// Federation requests (Accept / Content-Type of activity+json, ld+json,
+// jrd+json, xrd+xml, plus /.well-known/nodeinfo) are answered by Fedify before
+// the host redirect, the /en rewrite and the CSP nonce. Everything else falls
+// through to appProxy() unchanged. proxy.ts always runs on the Node runtime in
+// Next 16, so the Postgres-backed KV/queue is fine here.
+//
+// Next always calls this with a NextRequest; @fedify/next types the parameter
+// as the base Request, which does not satisfy appProxy()'s signature.
+const fedified = fedifyWith(federation)((request: Request) => appProxy(request as NextRequest))
+
+// Next 16 takes ONE proxy function per file, as `export default` or as a
+// function named `proxy` — and the named one wins when both are present.
+// Exporting the raw appProxy under this name would silently disable federation:
+// every request would still get its CSP and rewrite, and nothing would ever
+// reach Fedify. Keep the wrapper as the `proxy` export.
+// fedifyWith dispatches on the Accept/Content-Type header (plus the two nodeinfo
+// paths). WebFinger and host-meta are discovery endpoints that serve nothing but
+// federation, and RFC 7033 only says a client SHOULD send application/jrd+json —
+// a prober sending */* would otherwise get the HTML app and discovery would fail.
+// Route them to Fedify on the path alone.
+const WELL_KNOWN = /^\/\.well-known\/(webfinger|host-meta)/
+const fedFetch = integrateFederation(federation)
+
+// fedifyWith types the wrapped middleware's return as `unknown`; both branches
+// actually produce a Response (Fedify's own, or appProxy's NextResponse).
+export function proxy(req: NextRequest): Promise<Response> {
+  if (WELL_KNOWN.test(req.nextUrl.pathname)) return fedFetch(req) as Promise<Response>
+  return fedified(req) as Promise<Response>
+}
+
 export const config = { matcher: ['/((?!_next|api|media|favicon\\.ico|robots\\.txt|sitemap|rss).*)'] }

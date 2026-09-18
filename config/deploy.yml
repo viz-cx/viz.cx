@@ -16,7 +16,8 @@
 # user, not the API's). Postgres is on platform_net, not Kamal's network —
 # hostname `postgres` resolves at container boot via platform-up.sh's bridge,
 # and .kamal/hooks/post-deploy attaches platform_net afterwards (same pattern
-# as the API).
+# as the API). Fedify's KV + delivery queue (fedify_kv_v2, fedify_message_v2)
+# live in the same database.
 
 service: viz-cx-platform
 image:   chiliec/viz-cx-platform    # GHCR: composed to ghcr.io/chiliec/viz-cx-platform via registry.server
@@ -52,6 +53,7 @@ env:
     SITE_URL: https://viz.cx      # absolute URLs in OG tags, RSS, sitemap, robots
     MEDIA_DIR: /app/media         # uploaded images — the volume below
     ADMIN_ACCOUNTS: babin         # VIZ accounts allowed to edit/delete any post
+    AP_BLOCKED_DOMAINS: ''        # fediverse hosts to drop activities from; changing it is a redeploy
     # VIZ_RPC_HTTP / API_BASE use their code defaults (rpc.viz.cx / api.viz.cx).
     # NEXT_PUBLIC_* are inlined at build time, so setting them here would do
     # nothing — their defaults are already the production hosts.
