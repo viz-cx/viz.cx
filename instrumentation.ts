@@ -6,11 +6,10 @@ import * as Sentry from '@sentry/nextjs'
 export async function register() {
   if (process.env.NEXT_RUNTIME === 'nodejs') {
     await import('./sentry.server.config')
-    // Indexes on boot, like the API's lifespan does — the standalone Docker
-    // image has no shell entrypoint to run scripts/ from, and the unique/TTL
-    // indexes are load-bearing (nonces, follows, sessions). Idempotent; fails
-    // closed so a deploy that can't reach mongo never passes its healthcheck.
-    await (await import('./scripts/ensure-indexes')).ensureIndexes()
+    // Schema on boot — the standalone image has no shell entrypoint to run
+    // scripts/ from. Idempotent; fails closed so a deploy that can't reach
+    // Postgres never passes its healthcheck.
+    await (await import('./lib/db')).ensureSchema()
   }
   if (process.env.NEXT_RUNTIME === 'edge') {
     await import('./sentry.edge.config')

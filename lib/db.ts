@@ -1,16 +1,16 @@
-import { MongoClient, type Db, type Collection } from 'mongodb'
-import type { Post, CommentDoc, Follow, Profile, Session, Nonce } from './types'
+import postgres from 'postgres'
+import { SCHEMA } from './schema'
 
-declare global { var _mongoClient: MongoClient | undefined }
-const client = globalThis._mongoClient ?? new MongoClient(process.env.MONGO_URL ?? 'mongodb://127.0.0.1:27017')
-if (process.env.NODE_ENV !== 'production') globalThis._mongoClient = client
+declare global { var _sql: ReturnType<typeof postgres> | undefined }
 
-// MONGO_DB must match the db the MONGO_URL user is authorised for (infra's
-// add-app.sh names both after the app), hence a knob, not a hardcoded name.
-export const db: Db = client.db(process.env.MONGO_DB ?? 'viz_platform')
-export const posts = (): Collection<Post> => db.collection('posts')
-export const comments = (): Collection<CommentDoc> => db.collection('comments')
-export const follows = (): Collection<Follow> => db.collection('follows')
-export const profiles = (): Collection<Profile> => db.collection('profiles')
-export const sessions = (): Collection<Session> => db.collection('sessions')
-export const nonces = (): Collection<Nonce> => db.collection('nonces')
+// postgres.js: lazy connect, pooled. transform.column rewrites column names in
+// results to camelCase (created_at → createdAt) — static SQL text is NOT
+// rewritten, so queries are written in snake_case. int8 arrives as string.
+// NOTE: postgres.camel (the preset) also deep-transforms jsonb VALUE keys
+// (with_border → withBorder), which corrupts stored Editor.js block data —
+// use the column-only form so jsonb contents pass through untouched.
+export const sql = globalThis._sql ?? postgres(process.env.DATABASE_URL ?? 'postgres://postgres@localhost:5432/postgres', { transform: { column: { from: postgres.toCamel, to: postgres.fromCamel } }, max: 10 })
+if (process.env.NODE_ENV !== 'production') globalThis._sql = sql
+
+// Idempotent DDL (create ... if not exists). Multi-statement string → simple protocol.
+export async function ensureSchema(): Promise<void> { await sql.unsafe(SCHEMA) }

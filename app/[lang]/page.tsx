@@ -10,7 +10,7 @@ export default async function Home({ params, searchParams }: { params: Promise<{
   const items = await listPosts(publicPostFilter(lang), page)
   return (
     <div className="flex flex-col gap-3">
-      {items.map(p => <PostCard key={String(p._id)} post={p} lang={lang} />)}
+      {items.map(p => <PostCard key={p.id} post={p} lang={lang} />)}
       {items.length === 20 && <Link href={langHref(lang, `/?page=${page + 1}`)} className="mt-4 text-sm opacity-75">{t(lang, 'nav.older')}</Link>}
     </div>
   )

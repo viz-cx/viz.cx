@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation'
 import { isLang, t } from '@/lib/i18n'
 import { parseHandle, publicPostFilter, listPosts } from '@/lib/queries'
 import { getSessionAccount } from '@/lib/session'
-import { follows } from '@/lib/db'
+import { sql } from '@/lib/db'
 import PostCard from '@/components/post-card'
 import FollowButton from '@/components/follow-button'
 export default async function ProfilePage({ params }: { params: Promise<{ lang: string; handle: string }> }) {
@@ -11,16 +11,16 @@ export default async function ProfilePage({ params }: { params: Promise<{ lang: 
   const author = parseHandle(handle)
   if (!author) notFound()
   const me = await getSessionAccount()
-  const items = await listPosts({ ...publicPostFilter(lang), author }, 1, 50)
-  const drafts = me === author ? await listPosts({ author, lang, status: 'draft', deletedAt: { $exists: false } }, 1, 50) : []
-  const initial = me && me !== author ? !!(await follows().findOne({ follower: me, following: author })) : false
+  const items = await listPosts(sql`${publicPostFilter(lang)} and author = ${author}`, 1, 50)
+  const drafts = me === author ? await listPosts(sql`author = ${author} and lang = ${lang} and status = 'draft' and deleted_at is null`, 1, 50) : []
+  const initial = me && me !== author ? (await sql`select 1 from follows where follower = ${me} and following = ${author}`).length > 0 : false
   return (
     <div>
       <h1 className="text-2xl font-bold">@{author}</h1>
       {me && me !== author && <FollowButton following={author} initial={initial} lang={lang} />}
-      <div className="mt-6 flex flex-col gap-3">{items.map(p => <PostCard key={String(p._id)} post={p} lang={lang} />)}</div>
+      <div className="mt-6 flex flex-col gap-3">{items.map(p => <PostCard key={p.id} post={p} lang={lang} />)}</div>
       {drafts.length > 0 && <><h2 className="mt-8 font-semibold opacity-60">{t(lang, 'profile.drafts')}</h2>
-        <div className="mt-2 flex flex-col gap-3">{drafts.map(p => <PostCard key={String(p._id)} post={p} lang={lang} linked={false} />)}</div></>}
+        <div className="mt-2 flex flex-col gap-3">{drafts.map(p => <PostCard key={p.id} post={p} lang={lang} linked={false} />)}</div></>}
     </div>
   )
 }

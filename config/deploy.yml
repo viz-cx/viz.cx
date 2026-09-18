@@ -12,10 +12,11 @@
 # Explorer deep links (/wallet, /block/... etc.) 301 to explorer.viz.cx from
 # proxy.ts.
 #
-# Data: shared platform MongoDB, db `viz-cx-platform` (its own app user, not the
-# API's). Mongo is on platform_net, not Kamal's network — hostname `mongo`
-# resolves at container boot via platform-up.sh's bridge, and .kamal/hooks/
-# post-deploy attaches platform_net afterwards (same pattern as the API).
+# Data: shared platform PostgreSQL, db + user `viz_cx_platform` (its own app
+# user, not the API's). Postgres is on platform_net, not Kamal's network —
+# hostname `postgres` resolves at container boot via platform-up.sh's bridge,
+# and .kamal/hooks/post-deploy attaches platform_net afterwards (same pattern
+# as the API).
 
 service: viz-cx-platform
 image:   chiliec/viz-cx-platform    # GHCR: composed to ghcr.io/chiliec/viz-cx-platform via registry.server
@@ -36,8 +37,8 @@ proxy:
   app_port: 3000
   ssl: true
   healthcheck:
-    path: /                       # home feed — hits mongo, so it fails closed if
-                                  # the platform_net bridge is broken
+    path: /                       # home feed — hits postgres, so it fails closed
+                                  # if the platform_net bridge is broken
 
 registry:
   server: ghcr.io
@@ -48,7 +49,6 @@ registry:
 env:
   clear:
     NODE_ENV: production
-    MONGO_DB: viz-cx-platform     # must match the db MONGO_URL's user is authorised for
     SITE_URL: https://viz.cx      # absolute URLs in OG tags, RSS, sitemap, robots
     MEDIA_DIR: /app/media         # uploaded images — the volume below
     ADMIN_ACCOUNTS: babin         # VIZ accounts allowed to edit/delete any post
@@ -56,7 +56,7 @@ env:
     # NEXT_PUBLIC_* are inlined at build time, so setting them here would do
     # nothing — their defaults are already the production hosts.
   secret:
-    - MONGO_URL                   # full mongodb:// URI incl. app-user creds
+    - DATABASE_URL                # full postgres:// URI incl. app-user creds
 
 volumes:
   - /opt/viz-platform-media:/app/media   # uploads must outlive the container

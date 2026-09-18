@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { nonces, profiles } from '@/lib/db'
+import { sql } from '@/lib/db'
 import { fetchAccount } from '@/lib/chain'
 import { verifySig, loginMessage } from '@/lib/verify-sig'
 import { createSession, sessionCookie } from '@/lib/session'
@@ -9,13 +9,16 @@ export async function POST(req: NextRequest) {
   if (!rateLimit(`login:${ip}`, 10, 60_000)) return NextResponse.json({ error: 'rate limited' }, { status: 429 })
   const { account, sig } = await req.json().catch(() => ({}))
   if (typeof account !== 'string' || typeof sig !== 'string') return NextResponse.json({ error: 'bad request' }, { status: 400 })
-  const n = await nonces().findOneAndDelete({ account })            // single-use
+  // single-use AND at most 5 minutes old — the age check now lives in the query
+  const [n] = await sql<{ nonce: string }[]>`delete from nonces where nonce = (
+    select nonce from nonces where account = ${account} and created_at > now() - interval '5 minutes' order by created_at desc limit 1
+  ) returning nonce`
   if (!n) return NextResponse.json({ error: 'no nonce' }, { status: 401 })
   let acc; try { acc = await fetchAccount(account) } catch { return NextResponse.json({ error: 'chain unavailable, try again' }, { status: 502 }) }
   if (!acc) return NextResponse.json({ error: 'unknown account' }, { status: 401 })
   const pubkeys = acc.regular_authority.key_auths.map(([k]) => k)   // wire snake_case
   if (!verifySig(loginMessage(n.nonce), sig, pubkeys)) return NextResponse.json({ error: 'signature mismatch' }, { status: 401 })
-  await profiles().updateOne({ account }, { $setOnInsert: { account, createdAt: new Date() } }, { upsert: true })
+  await sql`insert into profiles (account) values (${account}) on conflict do nothing`
   const token = await createSession(account)
   const res = NextResponse.json({ account })
   res.cookies.set(sessionCookie(token))

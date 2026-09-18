@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { follows } from '@/lib/db'
+import { sql } from '@/lib/db'
 import { getSessionAccount } from '@/lib/session'
 import { rateLimit } from '@/lib/rate-limit'
 async function parse(req: NextRequest) {
@@ -13,13 +13,13 @@ export async function POST(req: NextRequest) {
   const p = await parse(req)
   if (!p) return NextResponse.json({ error: 'bad request' }, { status: 400 })
   if (!rateLimit(`follow:${p.me}`, 30, 60_000)) return NextResponse.json({ error: 'rate limited' }, { status: 429 })
-  await follows().updateOne({ follower: p.me, following: p.following }, { $setOnInsert: { follower: p.me, following: p.following, createdAt: new Date() } }, { upsert: true })
+  await sql`insert into follows (follower, following) values (${p.me}, ${p.following}) on conflict do nothing`
   return new NextResponse(null, { status: 204 })
 }
 export async function DELETE(req: NextRequest) {
   const p = await parse(req)
   if (!p) return NextResponse.json({ error: 'bad request' }, { status: 400 })
   if (!rateLimit(`follow:${p.me}`, 30, 60_000)) return NextResponse.json({ error: 'rate limited' }, { status: 429 })
-  await follows().deleteOne({ follower: p.me, following: p.following })
+  await sql`delete from follows where follower = ${p.me} and following = ${p.following}`
   return new NextResponse(null, { status: 204 })
 }
