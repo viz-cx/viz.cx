@@ -76,6 +76,10 @@ federation
     if (profile == null) return null
     return personOf(ctx, profile, await ctx.getActorKeyPairs(identifier))
   })
+  // A VIZ account name IS the WebFinger username — identity mapping. Without
+  // this Fedify assumes the same thing but logs an error on every single
+  // WebFinger lookup, which would bury real errors in the container log.
+  .mapHandle((_ctx, username) => username)
   .setKeyPairsDispatcher(async (_ctx, identifier) => {
     if (await profileOf(identifier) == null) return []
     let rows = await keyRows(identifier)
