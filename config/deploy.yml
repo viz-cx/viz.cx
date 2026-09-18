@@ -52,7 +52,8 @@ env:
     NODE_ENV: production
     SITE_URL: https://viz.cx      # absolute URLs in OG tags, RSS, sitemap, robots
     MEDIA_DIR: /app/media         # uploaded images — the volume below
-    ADMIN_ACCOUNTS: babin         # VIZ accounts allowed to edit/delete any post
+    ADMIN_ACCOUNTS: babin,lottery.id  # VIZ accounts allowed to edit/delete any post; the
+                                  # first one with a profile also signs shared-inbox fetches
     AP_BLOCKED_DOMAINS: ''        # fediverse hosts to drop activities from; changing it is a redeploy
     # VIZ_RPC_HTTP / API_BASE use their code defaults (rpc.viz.cx / api.viz.cx).
     # NEXT_PUBLIC_* are inlined at build time, so setting them here would do

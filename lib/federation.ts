@@ -131,6 +131,18 @@ federation.setObjectDispatcher(Note, '/ap/comments/{id}', async (ctx, { id }) =>
   return post ? noteOf(ctx, c, post, await inReplyToUri(ctx, c)) : null
 })
 
+// The first admin that actually has a profile. Taking ADMIN_ACCOUNTS[0] blindly
+// makes signing depend on the ORDER of an env var: the key dispatcher returns []
+// for an account with no profiles row (nobody has logged in as it), and
+// shared-inbox object lookups then go out unsigned, which authorized-fetch
+// instances refuse — with no error on our side.
+export async function adminSigner(): Promise<{ identifier: string } | null> {
+  for (const a of (process.env.ADMIN_ACCOUNTS ?? '').split(',').map(s => s.trim()).filter(Boolean)) {
+    if (await profileOf(a) != null) return { identifier: a }
+  }
+  return null
+}
+
 // Every listener starts here. A blocked or unusable actor id is dropped before
 // any write.
 const allowed = (actorId: URL | null): actorId is URL => !inbound.isBlockedActor(actorId?.href)
@@ -141,10 +153,7 @@ federation
   // Servers in authorized-fetch mode want our shared-inbox object lookups
   // signed. Borrow the first admin account's key rather than run an instance
   // actor — one fewer actor to mint, name and moderate.
-  .setSharedKeyDispatcher(() => {
-    const admin = (process.env.ADMIN_ACCOUNTS ?? '').split(',')[0]?.trim()
-    return admin ? { identifier: admin } : null
-  })
+  .setSharedKeyDispatcher(adminSigner)
   .on(Follow, async (ctx, follow) => {
     if (!allowed(follow.actorId) || follow.objectId == null) return
     const target = ctx.parseUri(follow.objectId)

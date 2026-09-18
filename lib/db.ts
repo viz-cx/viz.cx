@@ -28,4 +28,20 @@ export const fedifySql = (CACHE && globalThis._fedifySql) || postgres(URL_, { ma
 if (CACHE) globalThis._fedifySql = fedifySql
 
 // Idempotent DDL (create ... if not exists). Multi-statement string → simple protocol.
-export async function ensureSchema(): Promise<void> { await sql.unsafe(SCHEMA) }
+//
+// Serialized on an advisory lock: `create table if not exists` is only
+// idempotent against an *earlier* creation, not a concurrent one — two callers
+// racing take conflicting catalog locks and Postgres kills one with "deadlock
+// detected". That happens whenever more than one replica boots at once, and it
+// happened in the test suite as soon as a third file called this. The lock is
+// transaction-scoped, so it is released by the commit (or by the connection
+// dying mid-DDL). Arbitrary constant, unique to this app.
+const SCHEMA_LOCK = 827_011_964
+export async function ensureSchema(): Promise<void> {
+  await sql.begin(async tx => {
+    // ::bigint picks the one-argument overload; an untyped parameter is
+    // ambiguous against pg_advisory_xact_lock(int, int).
+    await tx`select pg_advisory_xact_lock(${SCHEMA_LOCK}::bigint)`
+    await tx.unsafe(SCHEMA)
+  })
+}
