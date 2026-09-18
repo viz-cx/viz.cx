@@ -10,6 +10,3 @@ export interface Post {
 export interface CommentDoc { id: string; postId: string; author: string; parentId: string | null; body: string; createdAt: Date; deletedAt: Date | null }
 export interface Follow { follower: string; following: string; createdAt: Date }
 export interface Profile { account: string; about: string | null; preferredLang: Lang | null; createdAt: Date }
-// Mongo-only shapes, deleted with the Mongo client in the cleanup task.
-export interface Session { tokenHash: string; account: string; createdAt: Date; expiresAt: Date }
-export interface Nonce { nonce: string; account: string; createdAt: Date }

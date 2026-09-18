@@ -15,8 +15,8 @@ RUN corepack enable
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-# No MONGO_URL at build time on purpose: every page (incl. sitemap.xml) is
-# force-dynamic, so nothing queries mongo during prerender.
+# No DATABASE_URL at build time on purpose: every page (incl. sitemap.xml) is
+# force-dynamic, so nothing queries Postgres during prerender.
 RUN pnpm build
 
 FROM node:24-alpine
