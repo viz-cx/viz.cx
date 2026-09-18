@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { NextRequest } from 'next/server'
-import proxy from '../proxy'
+import { proxy, config } from '../proxy'
 
 // Host comes from the header, not the URL — kamal-proxy forwards the original
 // Host, and proxy.ts reads req.headers.get('host').
@@ -22,5 +22,21 @@ describe('proxy host + explorer redirects', () => {
     const res = proxy(req('https://viz.cx/', 'viz.cx'))
     expect(res.status).toBe(200)
     expect(res.headers.get('x-middleware-rewrite')).toContain('/en')
+  })
+})
+
+describe('proxy matcher', () => {
+  // Federation lives under /ap and /.well-known; if the matcher stopped covering
+  // them, fedifyWith would never see an inbox POST or a WebFinger query.
+  const re = new RegExp(`^${config.matcher[0]}$`)
+  it('covers the federation paths', () => {
+    expect(re.test('/.well-known/webfinger')).toBe(true)
+    expect(re.test('/ap/users/babin')).toBe(true)
+    expect(re.test('/ap/users/babin/inbox')).toBe(true)
+    expect(re.test('/ap/inbox')).toBe(true)
+  })
+  it('still excludes the app routes', () => {
+    expect(re.test('/api/posts')).toBe(false)
+    expect(re.test('/_next/static/x.js')).toBe(false)
   })
 })

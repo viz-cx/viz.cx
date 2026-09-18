@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { fedifyWith } from '@fedify/next'
+import federation from './lib/federation'
 
 // Old explorer deep links 301 to explorer.viz.cx (migration spec step 5)
 const EXPLORER = /^\/(block|tx|account|validators?|committee|wallet|richlist|dashboard|learn)(\/|$)/
@@ -40,7 +42,7 @@ function buildCsp(nonce: string, isDev: boolean): string {
   ].join('; ')
 }
 
-export default function proxy(req: NextRequest) {
+export function proxy(req: NextRequest) {
   const url = req.nextUrl.clone()
   const p = url.pathname
   const nonce = Buffer.from(crypto.randomUUID()).toString('base64')
@@ -80,4 +82,14 @@ export default function proxy(req: NextRequest) {
   res.headers.set('Content-Security-Policy', csp)
   return res
 }
+// Federation requests (Accept / Content-Type of activity+json, ld+json,
+// jrd+json, xrd+xml, plus /.well-known/nodeinfo) are answered by Fedify before
+// the host redirect, the /en rewrite and the CSP nonce. Everything else falls
+// through to proxy() unchanged. proxy.ts always runs on the Node runtime in
+// Next 16, so the Postgres-backed KV/queue is fine here.
+//
+// Next always calls this with a NextRequest; @fedify/next types the parameter
+// as the base Request, which does not satisfy proxy()'s signature.
+export default fedifyWith(federation)((request: Request) => proxy(request as NextRequest))
+
 export const config = { matcher: ['/((?!_next|api|media|favicon\\.ico|robots\\.txt|sitemap|rss).*)'] }
