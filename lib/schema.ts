@@ -54,4 +54,34 @@ create table if not exists nonces (
   account text not null,
   created_at timestamptz not null default now()
 );
+-- ActivityPub. Fedify's own fedify_kv_v2 / fedify_message_v2 tables are
+-- created by @fedify/postgres itself (lazily, on first use).
+create table if not exists ap_keys (
+  account text not null references profiles(account),
+  type text not null,               -- 'RSASSA-PKCS1-v1_5' | 'Ed25519'
+  private_key jsonb not null,       -- JWK; minted lazily on first actor fetch
+  public_key jsonb not null,
+  primary key (account, type)
+);
+create table if not exists ap_followers (
+  account text not null references profiles(account),
+  actor_id text not null,
+  inbox_id text not null,
+  shared_inbox_id text,
+  handle text not null,             -- alice@mastodon.social, display only
+  created_at timestamptz not null default now(),
+  primary key (account, actor_id)
+);
+create table if not exists ap_reactions (
+  post_id bigint not null references posts(id),
+  actor_id text not null,
+  type text not null check (type in ('like','announce')),
+  primary key (post_id, actor_id, type)
+);
+alter table comments add column if not exists remote_actor text;
+alter table comments add column if not exists remote_handle text;
+alter table comments add column if not exists remote_object text;
+-- Separate from the ALTER so re-running is a no-op either way. Nullable, so
+-- local comments (all NULL) don't collide; makes inbound Create idempotent.
+create unique index if not exists comments_remote_object_idx on comments (remote_object);
 `
