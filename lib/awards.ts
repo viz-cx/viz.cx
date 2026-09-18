@@ -11,11 +11,10 @@ interface AwardsApiResponse {
   total_viz: number | null
 }
 
-/** Server-side fetch of a post's award totals. The awards API is currently
- * always `total_viz: null` (no live path captures the VIZ payout amount yet,
- * per Task 11a) — that's indistinguishable from our own failure fallback,
- * which is intentional: a broken/unreachable award API must never crash the
- * post page, only show a zero. */
+/** Server-side fetch of a post's award totals. `total_viz` is null when the
+ * API can't price SHARES (node unreachable) — indistinguishable from our own
+ * failure fallback, which is intentional: a broken/unreachable award API must
+ * never crash the post page, only show a zero. */
 export async function fetchAwardTotals(memo: string, receiver: string): Promise<{ count: number; totalViz: number | null }> {
   try {
     const base = process.env.API_BASE ?? 'https://api.viz.cx'

@@ -7,11 +7,10 @@
 # frontend (network.viz.cx repo, config/deploy.web.yml) and from the API
 # (network.viz.cx repo, config/deploy.yml) — three independent services.
 #
-# Hosts: viz.cx apex (canonical) + www.viz.cx + beta.viz.cx. The two aliases are
-# cert-only — proxy.ts 308s them to the apex. beta.viz.cx is the pre-cutover
-# (2026-08 → 2026-09) host, kept for a grace window; drop it from here + DNS
-# once traffic is gone. Explorer deep links (/wallet, /block/... etc.) 301 to
-# explorer.viz.cx from proxy.ts.
+# Hosts: viz.cx apex (canonical) + www.viz.cx (cert-only alias — proxy.ts 308s
+# it to the apex). beta.viz.cx, the pre-cutover host, was dropped 2026-09-18.
+# Explorer deep links (/wallet, /block/... etc.) 301 to explorer.viz.cx from
+# proxy.ts.
 #
 # Data: shared platform MongoDB, db `viz-cx-platform` (its own app user, not the
 # API's). Mongo is on platform_net, not Kamal's network — hostname `mongo`
@@ -34,7 +33,6 @@ proxy:
   hosts:
     - viz.cx                      # canonical
     - www.viz.cx                  # alias — proxy.ts 308s it to the apex
-    - beta.viz.cx                 # alias, grace window
   app_port: 3000
   ssl: true
   healthcheck:
