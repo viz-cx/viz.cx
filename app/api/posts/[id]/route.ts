@@ -7,11 +7,11 @@ import { validatePostInput } from '@/lib/post-io'
 import { sanitizeDoc } from '@/lib/sanitize'
 import { excerptOf } from '@/lib/excerpt'
 import { rateLimit } from '@/lib/rate-limit'
-const ID = /^\d+$/
+import { isId } from '@/lib/ids'
 const isAdmin = (a: string) => (process.env.ADMIN_ACCOUNTS ?? '').split(',').includes(a)
 async function authorize(id: string) {
   const account = await getSessionAccount()
-  if (!account || !ID.test(id)) return null
+  if (!account || !isId(id)) return null
   const [post] = await sql<Post[]>`select * from posts where id = ${id} and deleted_at is null`
   if (!post || (post.author !== account && !isAdmin(account))) return null
   return { account, post }
