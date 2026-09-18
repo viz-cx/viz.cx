@@ -13,11 +13,6 @@ describe('proxy host + explorer redirects', () => {
     expect(res.headers.get('location')).toBe('https://viz.cx/tag/x?y=1')
     expect(res.headers.get('content-security-policy')).toMatch(/script-src 'self' 'nonce-/)
   })
-  it('beta.viz.cx 308s to the apex', () => {
-    const res = proxy(req('https://beta.viz.cx/', 'beta.viz.cx'))
-    expect(res.status).toBe(308)
-    expect(res.headers.get('location')).toBe('https://viz.cx/')
-  })
   it('explorer deep links on the apex 301 to explorer.viz.cx', () => {
     const res = proxy(req('https://viz.cx/wallet?tab=keys', 'viz.cx'))
     expect(res.status).toBe(301)

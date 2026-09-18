@@ -3,8 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 // Old explorer deep links 301 to explorer.viz.cx (migration spec step 5)
 const EXPLORER = /^\/(block|tx|account|validators?|committee|wallet|richlist|dashboard|learn)(\/|$)/
 // Cert-only alias hosts (config/deploy.yml proxy.hosts) — 308 to the apex.
-// beta.viz.cx is the pre-cutover host, kept for a grace window.
-const ALIAS_HOSTS = new Set(['www.viz.cx', 'beta.viz.cx'])
+const ALIAS_HOSTS = new Set(['www.viz.cx'])
 
 // Per-request Content-Security-Policy with a fresh nonce. A nonce lets us drop
 // 'unsafe-inline' from script-src while still allowing Next's own inline
