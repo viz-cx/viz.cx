@@ -21,7 +21,7 @@ const TEST_WIF = '5KQwrPbwdL6PhXujxW37FSSQZ1JiwsST4cqQzDeyXtP79zkvFD3' as Wif
 beforeEach(() => { vi.clearAllMocks() })
 
 describe('awardAccount', () => {
-  // Pinned from network.viz.cx/web/lib/__tests__/actions.test.ts (Task 11a) —
+  // Pinned from explorer.viz.cx/web/lib/__tests__/actions.test.ts (Task 11a) —
   // keeps the energyPct→basis-points wire conversion contract stable.
   it('converts pct to basis points and passes memo', async () => {
     const { awardAccount } = await import('../lib/award-broadcast')

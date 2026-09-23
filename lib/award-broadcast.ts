@@ -17,7 +17,7 @@ import { BroadcastUnconfirmedError, CONFIRM_TIMEOUT_MS, watchForOp } from './bro
 // *call* was accepted, not that the tx validated, wait for the op to actually
 // appear on the live stream before reporting success. See broadcast-confirm.ts.
 //
-// Ported from network.viz.cx/web/lib/actions.ts (Task 11a), award-only.
+// Ported from explorer.viz.cx/web/lib/actions.ts (Task 11a), award-only.
 function makeBroadcastTransport(inner: Transport): Transport {
   return {
     call: inner.call.bind(inner),

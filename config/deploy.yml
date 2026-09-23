@@ -4,8 +4,8 @@
 #   kamal deploy
 #
 # Same box as everything else VIZ (axveer). Separate Kamal app from the explorer
-# frontend (network.viz.cx repo, config/deploy.web.yml) and from the API
-# (network.viz.cx repo, config/deploy.yml) — three independent services.
+# frontend (explorer.viz.cx repo, config/deploy.web.yml) and from the API
+# (explorer.viz.cx repo, config/deploy.yml) — three independent services.
 #
 # Hosts: viz.cx apex (canonical) + www.viz.cx (cert-only alias — proxy.ts 308s
 # it to the apex). beta.viz.cx, the pre-cutover host, was dropped 2026-09-18.

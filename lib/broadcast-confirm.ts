@@ -12,7 +12,7 @@
  * just sent. Match → confirmed, with the block it landed in. Silence → we say
  * so instead of claiming success.
  *
- * Ported from network.viz.cx/web/lib/broadcast-confirm.ts (Task 11a), unchanged
+ * Ported from explorer.viz.cx/web/lib/broadcast-confirm.ts (Task 11a), unchanged
  * except WS_URL now reads a locally-defined env var instead of importing it
  * from that repo's ./config.
  */
