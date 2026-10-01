@@ -35,7 +35,9 @@ function buildCsp(nonce: string, isDev: boolean): string {
     'frame-src https://www.youtube.com https://youtube.com https://player.vimeo.com',
     // NEXT_PUBLIC_VIZ_RPC_HTTP (lib/award-broadcast.ts) + NEXT_PUBLIC_WS_URL
     // (lib/broadcast-confirm.ts) defaults — this app's actual chain hosts.
-    "connect-src 'self' https://rpc.viz.cx wss://api.viz.cx",
+    // + the self-hosted Umami beacon (app/layout.tsx). Its <script> is admitted
+    // by the nonce, not a host entry: 'strict-dynamic' ignores host sources.
+    "connect-src 'self' https://rpc.viz.cx wss://api.viz.cx https://analytics.nextgensoft.co",
     "worker-src 'self' blob:",
     "manifest-src 'self'",
     'upgrade-insecure-requests',
