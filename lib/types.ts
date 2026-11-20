@@ -16,3 +16,9 @@ export interface CommentDoc {
 }
 export interface Follow { follower: string; following: string; createdAt: Date }
 export interface Profile { account: string; about: string | null; preferredLang: Lang | null; createdAt: Date }
+// A fediverse post from a followed remote actor; `handle` comes from the viewer's ap_following row.
+export interface RemotePost {
+  objectId: string; actorId: string; title: string | null; body: string; url: string
+  publishedAt: Date; handle: string
+}
+export interface RemoteFollowing { actorId: string; handle: string; accepted: boolean }

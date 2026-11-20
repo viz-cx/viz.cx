@@ -193,10 +193,47 @@ federation
       if (postId) await inbound.removeReaction(postId, undo.actorId.href, object instanceof Like ? 'like' : 'announce')
     }
   })
+  // The remote's answer to a Follow we sent. Either our Follow id comes back
+  // (`<our actor>#follow/<uuid>`, bare or on an embedded Follow) or an embedded
+  // Follow without it; the local account is recoverable from both.
+  .on(Accept, async (ctx, accept) => {
+    if (!allowed(accept.actorId)) return
+    const ours = (u: URL | null | undefined) => {
+      if (u == null) return null
+      const p = ctx.parseUri(new URL(u.href.split('#')[0]))
+      return p?.type === 'actor' ? p.identifier : null
+    }
+    let account = accept.objectId?.hash.startsWith('#follow/') ? ours(accept.objectId) : null
+    if (account == null) {
+      const object = await accept.getObject(ctx)
+      if (object instanceof Follow) account = ours(object.actorId)
+    }
+    if (account) await inbound.acceptFollowing(account, accept.actorId.href)
+  })
   .on(Create, async (ctx, create) => {
     if (!allowed(create.actorId)) return
     const note = await create.getObject(ctx)
-    if (!(note instanceof Note) || note.id == null || note.replyTargetId == null) return
+    if (!(note instanceof Note || note instanceof Article) || note.id == null) return
+    if (note.replyTargetId == null) {
+      // A top-level post: kept only when public, the sender's own, and from an
+      // actor somebody here follows. Everything else is dropped unread.
+      if (note.attributionId?.href !== create.actorId.href) return
+      if (!inbound.isPublicPost(note.toIds, note.ccIds)) return
+      if (!await inbound.isFollowedActor(create.actorId.href)) return
+      const url = inbound.safeHttpUrl(note.url instanceof URL ? note.url.href : note.url?.href?.href)
+        ?? inbound.safeHttpUrl(note.id.href)
+      if (url == null) return
+      await inbound.saveRemotePost({
+        objectId: note.id.href,
+        actorId: create.actorId.href,
+        title: note.name?.toString().slice(0, 300) || null,
+        body: inbound.htmlToText(note.content?.toString() ?? ''),
+        url,
+        publishedAt: note.published ? new Date(note.published.epochMilliseconds) : new Date(),
+      })
+      return
+    }
+    if (!(note instanceof Note)) return
     const target = inbound.classifyReplyTarget(ctx.parseUri(note.replyTargetId), note.replyTargetId.href)
     if (target == null) return
     const placement = await inbound.placeReply(target)
@@ -210,17 +247,22 @@ federation
       remoteObject: note.id.href,
     })
   })
+  // Both updates are keyed on (object, actor), so the one that does not apply is a no-op.
   .on(Update, async (ctx, update) => {
     if (!allowed(update.actorId)) return
     const note = await update.getObject(ctx)
-    if (!(note instanceof Note) || note.id == null) return
-    await inbound.updateRemoteComment(note.id.href, update.actorId.href, inbound.htmlToText(note.content?.toString() ?? ''))
+    if (!(note instanceof Note || note instanceof Article) || note.id == null) return
+    const body = inbound.htmlToText(note.content?.toString() ?? '')
+    await inbound.updateRemotePost(note.id.href, update.actorId.href, note.name?.toString().slice(0, 300) || null, body)
+    if (note instanceof Note) await inbound.updateRemoteComment(note.id.href, update.actorId.href, body)
   })
   .on(Delete, async (ctx, del) => {
     if (!allowed(del.actorId)) return
     // Bare URI (objectId) or embedded Tombstone — the embedded case never fetches.
     const objectId = del.objectId ?? (await del.getObject(ctx))?.id
-    if (objectId) await inbound.deleteRemoteComment(objectId.href, del.actorId.href)
+    if (objectId == null) return
+    await inbound.deleteRemoteComment(objectId.href, del.actorId.href)
+    await inbound.deleteRemotePost(objectId.href, del.actorId.href)
   })
   .on(Like, async (ctx, like) => {
     if (!allowed(like.actorId) || like.objectId == null) return

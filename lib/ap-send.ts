@@ -1,8 +1,9 @@
 import * as Sentry from '@sentry/nextjs'
-import { Article, Create, Delete, Note, PUBLIC_COLLECTION, Tombstone, Update } from '@fedify/vocab'
+import { Article, Create, Delete, Follow, Note, PUBLIC_COLLECTION, Tombstone, Undo, Update, isActor } from '@fedify/vocab'
 import federation, { inReplyToUri } from './federation'
 import { SITE_URL, articleOf, noteOf } from './ap-objects'
 import { sql } from './db'
+import { handleOf, isBlockedActor, removeFollowing, saveFollowing } from './ap-inbound'
 import type { CommentDoc, Post } from './types'
 
 // Every export here is fire-and-forget from the caller's point of view: the DB
@@ -65,4 +66,40 @@ async function remoteParent(parentId: string) {
     inboxId: new URL(f.inboxId),
     endpoints: f.sharedInboxId ? { sharedInbox: new URL(f.sharedInboxId) } : null,
   }
+}
+
+// Unlike the announce* helpers this one reports back: the user typed a handle
+// and needs to know whether it resolved. Lookups are signed with the follower's
+// own key because authorized-fetch servers (Threads among them) 404 anonymous
+// actor fetches.
+export async function followRemote(account: string, handle: string): Promise<'ok' | 'not-found' | 'blocked'> {
+  const c = ctx()
+  const actor = await c.lookupObject(handle, { documentLoader: await c.getDocumentLoader({ identifier: account }) })
+  if (!isActor(actor) || actor.id == null || actor.inboxId == null) return 'not-found'
+  // Our own actors are followed through /api/follows, not over the wire.
+  if (isBlockedActor(actor.id.href) || c.parseUri(actor.id) != null) return 'blocked'
+  await saveFollowing(account, {
+    actorId: actor.id.href,
+    inboxId: actor.inboxId.href,
+    handle: handleOf(actor.preferredUsername?.toString() ?? null, actor.id.href),
+  })
+  const me = c.getActorUri(account)
+  await c.sendActivity({ identifier: account }, actor, new Follow({ id: actId(me, 'follow'), actor: me, object: actor.id }))
+  return 'ok'
+}
+
+// The row goes first: if the Undo never arrives the remote keeps delivering,
+// and the inbox drops posts from actors nobody here follows.
+export async function unfollowRemote(account: string, actorId: string): Promise<void> {
+  const inboxId = await removeFollowing(account, actorId)
+  if (inboxId == null) return
+  try {
+    const c = ctx()
+    const me = c.getActorUri(account)
+    const object = new URL(actorId)
+    await c.sendActivity({ identifier: account }, { id: object, inboxId: new URL(inboxId) }, new Undo({
+      id: actId(me, 'undo'), actor: me,
+      object: new Follow({ id: actId(me, 'follow'), actor: me, object }),
+    }))
+  } catch (e) { swallow(e) }
 }

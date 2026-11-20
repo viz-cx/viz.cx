@@ -9,9 +9,9 @@ describe.skipIf(!process.env.DATABASE_URL)('activitypub schema', () => {
     await ensureSchema()
     await ensureSchema()
     const tables = (await sql<{ tablename: string }[]>`
-      select tablename from pg_tables where tablename in ('ap_keys','ap_followers','ap_reactions')`)
+      select tablename from pg_tables where tablename in ('ap_keys','ap_followers','ap_reactions','ap_following','ap_remote_posts')`)
       .map(r => r.tablename).sort()
-    expect(tables).toEqual(['ap_followers', 'ap_keys', 'ap_reactions'])
+    expect(tables).toEqual(['ap_followers', 'ap_following', 'ap_keys', 'ap_reactions', 'ap_remote_posts'])
     const idx = await sql`select 1 from pg_indexes where indexname = 'comments_remote_object_idx'`
     expect(idx.length).toBe(1)
   })
