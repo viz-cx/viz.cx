@@ -1,15 +1,17 @@
 import { describe, it, expect } from 'vitest'
 import { Article, Hashtag } from '@fedify/vocab'
-import { articleOf, noteOf, postPath, type UriCtx } from '../lib/ap-objects'
+import { articleOf, noteOf, personOf, postPath, type UriCtx } from '../lib/ap-objects'
 import type { CommentDoc, Post } from '../lib/types'
 
-// Only the four URI builders are used, so a plain object stands in for a real
+// Only the URI builders are used, so a plain object stands in for a real
 // Fedify Context — no federation object, no network, no DB.
 const ctx = {
   getActorUri: (a: string) => new URL(`https://viz.cx/ap/users/${a}`),
   getObjectUri: (cls: unknown, v: Record<string, string>) =>
     new URL(`https://viz.cx/ap/${cls === Article ? 'posts' : 'comments'}/${v.id}`),
   getFollowersUri: (a: string) => new URL(`https://viz.cx/ap/users/${a}/followers`),
+  getFollowingUri: (a: string) => new URL(`https://viz.cx/ap/users/${a}/following`),
+  getOutboxUri: (a: string) => new URL(`https://viz.cx/ap/users/${a}/outbox`),
   getInboxUri: (a?: string) => new URL(a ? `https://viz.cx/ap/users/${a}/inbox` : 'https://viz.cx/ap/inbox'),
 } as unknown as UriCtx
 
@@ -25,6 +27,17 @@ async function tagNames(o: Article) {
   for await (const tag of o.getTags()) out.push(String((tag as Hashtag).name))
   return out
 }
+
+describe('personOf', () => {
+  // Threads answered 500/404 to signed fetches from an actor that had neither.
+  it('carries the collections the spec requires of an actor', () => {
+    const p = personOf(ctx, { account: 'babin', about: null, preferredLang: null, createdAt: new Date('2026-09-18T10:00:00Z') }, [])
+    expect(p.inboxId?.href).toBe('https://viz.cx/ap/users/babin/inbox')
+    expect(p.outboxId?.href).toBe('https://viz.cx/ap/users/babin/outbox')
+    expect(p.followingId?.href).toBe('https://viz.cx/ap/users/babin/following')
+    expect(p.followersId?.href).toBe('https://viz.cx/ap/users/babin/followers')
+  })
+})
 
 describe('articleOf', () => {
   it('maps title/excerpt/content and the human url', async () => {

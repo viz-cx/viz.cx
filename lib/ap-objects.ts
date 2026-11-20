@@ -11,7 +11,7 @@ export const SITE_URL = process.env.SITE_URL ?? 'https://viz.cx'
 
 // These builders only need URI construction, so tests can hand in a plain
 // object instead of standing up a Federation.
-export type UriCtx = Pick<Context<void>, 'getActorUri' | 'getObjectUri' | 'getFollowersUri' | 'getInboxUri'>
+export type UriCtx = Pick<Context<void>, 'getActorUri' | 'getObjectUri' | 'getFollowersUri' | 'getFollowingUri' | 'getInboxUri' | 'getOutboxUri'>
 
 const at = (d: Date) => Temporal.Instant.from(d.toISOString())
 export const pageUrl = (path: string): URL => new URL(path, SITE_URL)
@@ -27,6 +27,8 @@ export function personOf(ctx: UriCtx, profile: Profile, keys: ActorKeyPair[]): P
     published: at(profile.createdAt),
     url: pageUrl(`/@${profile.account}`),
     inbox: ctx.getInboxUri(profile.account),
+    outbox: ctx.getOutboxUri(profile.account),       // a MUST for actors in the ActivityPub spec
+    following: ctx.getFollowingUri(profile.account),
     followers: ctx.getFollowersUri(profile.account),
     endpoints: new Endpoints({ sharedInbox: ctx.getInboxUri() }),
     publicKey: keys[0]?.cryptographicKey,            // RSA first — see keyPairsDispatcher
