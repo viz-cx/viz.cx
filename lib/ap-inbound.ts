@@ -3,6 +3,7 @@ import type { ParseUriResult } from '@fedify/fedify'
 import { Article, Note } from '@fedify/vocab'
 import { sql } from './db'
 import { isId } from './ids'
+import type { RemoteFollowing, RemotePost } from './types'
 
 // --- pure -------------------------------------------------------------------
 
@@ -33,6 +34,20 @@ export function htmlToText(html: string): string {
   const text = sanitizeHtml(withBreaks, { allowedTags: [], allowedAttributes: {} })
   return text.replace(/&[a-z#0-9]+;/gi, e => ENTITIES[e.toLowerCase()] ?? e)
     .replace(/\n{3,}/g, '\n\n').trim().slice(0, 2000)
+}
+
+const PUBLIC = 'https://www.w3.org/ns/activitystreams#Public'
+// Only publicly addressed posts are stored: a row is shown to every local
+// follower of the actor, so a DM or followers-only post must never land in one.
+export const isPublicPost = (to: readonly URL[], cc: readonly URL[]): boolean =>
+  [...to, ...cc].some(u => u.href === PUBLIC)
+
+// Remote-supplied links end up in an href, so anything but http(s) is refused.
+export function safeHttpUrl(u: string | null | undefined): string | null {
+  try {
+    const p = new URL(u ?? '')
+    return p.protocol === 'https:' || p.protocol === 'http:' ? p.href : null
+  } catch { return null }
 }
 
 export type ReplyTarget =
@@ -122,3 +137,58 @@ export async function ourPostId(parsed: ParseUriResult | null): Promise<string |
     select id from posts where id = ${t.postId} and status = 'published' and deleted_at is null`
   return p?.id ?? null
 }
+
+// --- remote follows (we follow them) ------------------------------------------
+
+// Re-following keeps the row (and its accepted flag); the caller re-sends Follow.
+export const saveFollowing = (account: string, f: { actorId: string; inboxId: string; handle: string }) =>
+  sql`insert into ap_following (account, actor_id, inbox_id, handle)
+      values (${account}, ${f.actorId}, ${f.inboxId}, ${f.handle})
+      on conflict (account, actor_id) do update set inbox_id = excluded.inbox_id, handle = excluded.handle`
+
+// actor_id in the WHERE is the authorization check: only the followed actor accepts.
+export const acceptFollowing = (account: string, actorId: string) =>
+  sql`update ap_following set accepted = true where account = ${account} and actor_id = ${actorId}`
+
+// Returns the inbox to send Undo to, or null if there was nothing to remove.
+// Posts of an actor nobody here follows any more go with the last follow.
+export async function removeFollowing(account: string, actorId: string): Promise<string | null> {
+  const [row] = await sql<{ inboxId: string }[]>`
+    delete from ap_following where account = ${account} and actor_id = ${actorId} returning inbox_id`
+  if (!row) return null
+  await sql`delete from ap_remote_posts where actor_id = ${actorId}
+            and not exists (select 1 from ap_following where actor_id = ${actorId})`
+  return row.inboxId
+}
+
+export const listFollowing = (account: string) =>
+  sql<RemoteFollowing[]>`select actor_id, handle, accepted from ap_following where account = ${account} order by created_at`
+
+export async function isFollowedActor(actorId: string): Promise<boolean> {
+  const rows = await sql`select 1 from ap_following where actor_id = ${actorId} limit 1`
+  return rows.length > 0
+}
+
+// object_id is the primary key, so a redelivery is a no-op. published_at is
+// clamped: a remote-chosen future date would pin the post to the top of feeds.
+// ponytail: no pruning; add a "delete older than N days" sweep when the table size matters.
+export const saveRemotePost = (r: {
+  objectId: string; actorId: string; title: string | null; body: string; url: string; publishedAt: Date
+}) => sql`
+  insert into ap_remote_posts (object_id, actor_id, title, body, url, published_at)
+  values (${r.objectId}, ${r.actorId}, ${r.title}, ${r.body}, ${r.url}, least(${r.publishedAt}, now()))
+  on conflict (object_id) do nothing`
+
+export const updateRemotePost = (objectId: string, actorId: string, title: string | null, body: string) =>
+  sql`update ap_remote_posts set title = ${title}, body = ${body} where object_id = ${objectId} and actor_id = ${actorId}`
+
+export const deleteRemotePost = (objectId: string, actorId: string) =>
+  sql`delete from ap_remote_posts where object_id = ${objectId} and actor_id = ${actorId}`
+
+// Only accepted follows show posts: a pending request to a locked account has
+// not been granted anything yet.
+export const remoteFeed = (account: string, limit = 50) => sql<RemotePost[]>`
+  select p.*, f.handle from ap_remote_posts p
+  join ap_following f on f.actor_id = p.actor_id
+  where f.account = ${account} and f.accepted
+  order by p.published_at desc limit ${limit}`

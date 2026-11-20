@@ -5,6 +5,8 @@ import {
   classifyReplyTarget, handleOf, htmlToText, isBlockedActor,
   placeReply, saveRemoteComment, upsertFollower, removeFollower,
   addReaction, removeReaction, reactionCounts,
+  isPublicPost, safeHttpUrl, saveFollowing, acceptFollowing, removeFollowing, listFollowing,
+  isFollowedActor, saveRemotePost, updateRemotePost, deleteRemotePost, remoteFeed,
 } from '../lib/ap-inbound'
 import { sql, fedifySql, ensureSchema } from '../lib/db'
 
@@ -38,6 +40,28 @@ describe('htmlToText', () => {
   })
 })
 
+describe('isPublicPost', () => {
+  const pub = new URL('https://www.w3.org/ns/activitystreams#Public')
+  const followers = new URL('https://m.example/users/a/followers')
+  it('accepts public in to or cc', () => {
+    expect(isPublicPost([pub], [followers])).toBe(true)
+    expect(isPublicPost([followers], [pub])).toBe(true)
+  })
+  it('rejects followers-only and direct posts', () => {
+    expect(isPublicPost([followers], [])).toBe(false)
+    expect(isPublicPost([new URL('https://viz.cx/ap/users/babin')], [])).toBe(false)
+  })
+})
+
+describe('safeHttpUrl', () => {
+  it('keeps http(s)', () => expect(safeHttpUrl('https://m.example/@a/1')).toBe('https://m.example/@a/1'))
+  it('refuses script and junk urls', () => {
+    expect(safeHttpUrl('javascript:alert(1)')).toBeNull()
+    expect(safeHttpUrl('not a url')).toBeNull()
+    expect(safeHttpUrl(null)).toBeNull()
+  })
+})
+
 describe('classifyReplyTarget', () => {
   const obj = (cls: unknown, id: string) => ({ type: 'object', class: cls, values: { id } }) as unknown as ParseUriResult
   it('our Article → post', () => expect(classifyReplyTarget(obj(Article, '42'), 'x')).toEqual({ kind: 'post', postId: '42' }))
@@ -64,7 +88,9 @@ describe.skipIf(!process.env.DATABASE_URL)('inbound writes', () => {
     await sql`delete from comments where post_id = ${postId}`
     await sql`delete from posts where id = ${postId}`
     await sql`delete from ap_followers where account = 'ap-test'`
-    await sql`delete from profiles where account = 'ap-test'`
+    await sql`delete from ap_following where account in ('ap-test', 'ap-test2')`
+    await sql`delete from ap_remote_posts where actor_id = 'https://m.example/users/r'`
+    await sql`delete from profiles where account in ('ap-test', 'ap-test2')`
     await sql.end(); await fedifySql.end()
   })
 
@@ -103,5 +129,42 @@ describe.skipIf(!process.env.DATABASE_URL)('inbound writes', () => {
     expect(await reactionCounts(postId)).toEqual({ likes: 1, boosts: 1 })
     await removeReaction(postId, 'https://m.example/users/a', 'like')
     expect(await reactionCounts(postId)).toEqual({ likes: 0, boosts: 1 })
+  })
+
+  it('remote follows: posts show only once accepted, and go with the last follower', async () => {
+    const actorId = 'https://m.example/users/r'
+    const f = { actorId, inboxId: `${actorId}/inbox`, handle: 'r@m.example' }
+    const post = { objectId: 'https://m.example/n/100', actorId, title: null, body: 'hello', url: 'https://m.example/@r/100', publishedAt: new Date(Date.now() + 86_400_000) }
+    await sql`insert into profiles (account) values ('ap-test2') on conflict do nothing`
+    expect(await isFollowedActor(actorId)).toBe(false)
+    await saveFollowing('ap-test', f); await saveFollowing('ap-test2', f)
+    expect(await isFollowedActor(actorId)).toBe(true)
+    await saveRemotePost(post); await saveRemotePost(post)   // redelivery
+    expect(await remoteFeed('ap-test')).toEqual([])           // still pending
+
+    await acceptFollowing('ap-test', 'https://evil.example/users/x')   // someone else's Accept
+    expect((await listFollowing('ap-test'))[0].accepted).toBe(false)
+    await acceptFollowing('ap-test', actorId)
+    await saveFollowing('ap-test', f)                          // re-follow keeps accepted
+    const [row] = await remoteFeed('ap-test')
+    expect(row).toMatchObject({ objectId: post.objectId, body: 'hello', handle: 'r@m.example' })
+    expect(row.publishedAt.getTime()).toBeLessThanOrEqual(Date.now() + 5_000)   // future date clamped
+
+    await updateRemotePost(post.objectId, 'https://evil.example/users/x', null, 'hijack')
+    await updateRemotePost(post.objectId, actorId, 'T', 'edited')
+    expect((await remoteFeed('ap-test'))[0]).toMatchObject({ title: 'T', body: 'edited' })
+
+    expect(await removeFollowing('ap-test', actorId)).toBe(f.inboxId)
+    expect(await removeFollowing('ap-test', actorId)).toBeNull()
+    expect((await sql`select 1 from ap_remote_posts where actor_id = ${actorId}`).length).toBe(1)   // ap-test2 still follows
+    await removeFollowing('ap-test2', actorId)
+    expect((await sql`select 1 from ap_remote_posts where actor_id = ${actorId}`).length).toBe(0)
+
+    await saveFollowing('ap-test', f); await saveRemotePost(post)
+    await deleteRemotePost(post.objectId, 'https://evil.example/users/x')
+    expect((await sql`select 1 from ap_remote_posts where object_id = ${post.objectId}`).length).toBe(1)
+    await deleteRemotePost(post.objectId, actorId)
+    expect((await sql`select 1 from ap_remote_posts where object_id = ${post.objectId}`).length).toBe(0)
+    await removeFollowing('ap-test', actorId)
   })
 })

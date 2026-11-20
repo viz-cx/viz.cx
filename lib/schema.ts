@@ -84,4 +84,27 @@ alter table comments add column if not exists remote_object text;
 -- Separate from the ALTER so re-running is a no-op either way. Nullable, so
 -- local comments (all NULL) don't collide; makes inbound Create idempotent.
 create unique index if not exists comments_remote_object_idx on comments (remote_object);
+-- Outbound follows: a local account following a remote actor. inbox_id is kept
+-- so Undo(Follow) needs no fetch; accepted flips on the remote's Accept.
+create table if not exists ap_following (
+  account text not null references profiles(account),
+  actor_id text not null,
+  inbox_id text not null,
+  handle text not null,             -- alice@mastodon.social, display only
+  accepted boolean not null default false,
+  created_at timestamptz not null default now(),
+  primary key (account, actor_id)
+);
+create index if not exists ap_following_actor_idx on ap_following (actor_id);
+-- Top-level public posts from followed actors, as plain text plus a link back.
+-- One row per remote object, shared by every local follower of that actor.
+create table if not exists ap_remote_posts (
+  object_id text primary key,
+  actor_id text not null,
+  title text,
+  body text not null,
+  url text not null,
+  published_at timestamptz not null
+);
+create index if not exists ap_remote_posts_actor_idx on ap_remote_posts (actor_id, published_at desc);
 `
