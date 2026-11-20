@@ -1,6 +1,6 @@
 import { createFederation, exportJwk, generateCryptoKeyPair, importJwk } from '@fedify/fedify'
 import {
-  Accept, Announce, Article, Create, Delete, Follow, Like, Note, Undo, Update,
+  Accept, Announce, Article, Create, Delete, Follow, Like, Note, PUBLIC_COLLECTION, Undo, Update,
   type Recipient,
 } from '@fedify/vocab'
 import { PostgresKvStore, PostgresMessageQueue } from '@fedify/postgres'
@@ -111,6 +111,40 @@ federation
   // would sit at 0 no matter how many followers the account has.
   .setCounter(async (_ctx, identifier) => {
     const [row] = await sql<{ n: string }[]>`select count(*) as n from ap_followers where account = ${identifier}`
+    return Number(row.n)
+  })
+
+// The actor's published posts, newest first, as the Create activities that
+// announced them. Ids are derived from the post so the collection is stable.
+// ponytail: latest 20 in one unpaginated collection; add cursors if a reader needs the history.
+federation
+  .setOutboxDispatcher('/ap/users/{identifier}/outbox', async (ctx, identifier) => {
+    const posts = await sql<Post[]>`
+      select * from posts where author = ${identifier} and status = 'published' and deleted_at is null
+      order by created_at desc limit 20`
+    const actor = ctx.getActorUri(identifier)
+    return {
+      items: posts.map(p => new Create({
+        id: new URL(`#create/${p.id}`, actor), actor, to: PUBLIC_COLLECTION, object: articleOf(ctx, p),
+      })),
+    }
+  })
+  .setCounter(async (_ctx, identifier) => {
+    const [row] = await sql<{ n: string }[]>`
+      select count(*) as n from posts where author = ${identifier} and status = 'published' and deleted_at is null`
+    return Number(row.n)
+  })
+
+// Remote actors this account follows (accepted only). Local follows are not
+// ActivityPub relationships and stay out of it.
+federation
+  .setFollowingDispatcher('/ap/users/{identifier}/following', async (_ctx, identifier) => {
+    const rows = await sql<{ actorId: string }[]>`
+      select actor_id from ap_following where account = ${identifier} and accepted order by created_at`
+    return { items: rows.map(r => new URL(r.actorId)) }
+  })
+  .setCounter(async (_ctx, identifier) => {
+    const [row] = await sql<{ n: string }[]>`select count(*) as n from ap_following where account = ${identifier} and accepted`
     return Number(row.n)
   })
 
